@@ -128,16 +128,28 @@ author:
       icon: "fab fa-fw fa-researchgate"
       url: "https://www.researchgate.net/profile/Qing_Yu51"
     - label: "EChartsGallery"
-      icon: "fas fa-chart-pie"
+      icon: "fas fa-fw fa-chart-pie"
       url: "https://gallery.echartsjs.com/explore.html?u=bd-167860219&type=work#sort=rank~timeframe=all~author=all"
 
 # Site Footer
 footer:
   links:
-
+    - label: "Email"
+      icon: "fas fa-fw fa-envelope-square"
+      url: mailto:qingyu@csis.u-tokyo.ac
     - label: "GitHub"
       icon: "fab fa-fw fa-github"
       url: "https://github.com/ni1o1/"
+    - label: "GoogleScholar"
+      icon: "fab fa-fw fa-google"
+      url: "https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN"
+    - label: "ResearchGate"
+      icon: "fab fa-fw fa-researchgate"
+      url: "https://www.researchgate.net/profile/Qing_Yu51"
+    - label: "EChartsGallery"
+      icon: "fas fa-fw fa-chart-pie"
+      url: "https://gallery.echartsjs.com/explore.html?u=bd-167860219&type=work#sort=rank~timeframe=all~author=all"
+
 
 
 # Reading Files
