@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+   <head>
+       <meta charset="utf-8">
+   </head>
+   <body style="height: 100%; margin: 0">
+       <div id="container" style="height: 100%"></div>
+	   		<div class="CarInfo" style="position:absolute;left: 30vw; top: 15px;z-index:2;"> 
+			<span class="Line" style="font-family:微软雅黑;color:black;font-weight:bold;">选择线路
+				<select > 
+				</select> 
+			</span> 
+		</div> 
+	   <script type="text/javascript" src="js/jquery.min.js"></script>
+       <script type="text/javascript" src="http://echarts.baidu.com/gallery/vendors/echarts/echarts-all-3.js"></script>
+       <script type="text/javascript" src="http://echarts.baidu.com/gallery/vendors/echarts/extension/dataTool.min.js"></script>
+       <script type="text/javascript" src="http://echarts.baidu.com/gallery/vendors/echarts/map/js/china.js"></script>
+       <script type="text/javascript" src="http://echarts.baidu.com/gallery/vendors/echarts/map/js/world.js"></script>
+       <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=ZUONbpqGBsYGXNIYHicvbAbM"></script>
+       <script type="text/javascript" src="http://echarts.baidu.com/gallery/vendors/echarts/extension/bmap.min.js"></script>
+       <script type="text/javascript">
+$.getJSON('data/linenames.json', function (linenames) {
+var lineinfos = linenames[0]
+var lineindexes= linenames[1]
+var fieldSelect = $(".Line").children("select"); 
+
+for(var i = 0;i<lineindexes.length;i++){ 
+$("<option value='"+lineindexes[i]+"'>" + lineinfos[i] + "</option>").appendTo(fieldSelect); 
+} 
+
+	   
+var dom = document.getElementById("container");
+var myChart = echarts.init(dom);
+var app = {};
+myChart.showLoading();
+var planePath = 'path://M1024 476.279467c0 0 0 33.4848 0 41.591467 0 72.362667 0 136.6528 0 136.6528 0 15.479467-12.100267 28.040533-27.016533 28.040533l-41.284267 0c0-56.610133-45.8752-102.5024-102.4512-102.5024s-102.4512 45.8752-102.4512 102.5024L290.304 682.564267c-0.017067-56.610133-45.8752-102.5024-102.468267-102.5024-56.558933 0-102.434133 45.8752-102.4512 102.5024L27.0336 682.564267c-14.916267 0-27.016533-12.544-27.016533-28.040533L0.017067 318.173867C0.017067 290.423467 17.988267 273.066667 44.100267 273.066667c0 0 811.3152 0 844.032 0s98.4576 43.281067 124.125867 101.870933C1025.655467 406.289067 1024 476.279467 1024 476.279467zM170.786133 324.317867 78.574933 324.317867c-15.086933 0-27.323733 12.219733-27.323733 27.306667l0 81.834667c0 15.086933 12.2368 27.2896 27.323733 27.2896l92.2112 0L170.786133 324.317867zM324.471467 324.317867l-119.534933 0 0 136.413867 119.534933 0L324.471467 324.317867zM477.610667 324.317867l-119.005867 0 0 136.413867 119.005867 0L477.610667 324.317867zM631.210667 324.317867l-119.005867 0 0 136.413867 119.005867 0L631.210667 324.317867zM784.896 324.317867l-119.534933 0 0 136.413867 119.534933 0L784.896 324.317867zM784.8448 524.919467c0-7.0144-7.645867-12.6976-17.083733-12.6976s-17.066667 5.6832-17.066667 12.6976l0 25.361067c0 7.0144 7.6288 12.6976 17.066667 12.6976s17.083733-5.6832 17.083733-12.6976L784.8448 524.919467zM966.024533 404.155733c-11.008-46.728533-71.3728-79.837867-88.1152-79.837867-41.0112 0-58.845867 0-58.845867 0l0 136.413867L971.741867 460.8C971.741867 460.8 974.848 441.719467 966.024533 404.155733zM187.835733 614.2464c37.717333 0 68.3008 30.600533 68.3008 68.352 0 37.7344-30.583467 68.334933-68.3008 68.334933-37.7344 0-68.3008-30.600533-68.3008-68.334933C119.534933 644.846933 150.101333 614.2464 187.835733 614.2464zM853.265067 614.2464c37.717333 0 68.3008 30.600533 68.3008 68.352 0 37.7344-30.583467 68.334933-68.3008 68.334933-37.7344 0-68.317867-30.600533-68.317867-68.334933C784.9472 644.846933 815.530667 614.2464 853.265067 614.2464z';//公交车
+myChart.setOption(option = {
+	title: [{
+		left:0,
+        text: "公交线路可视化",
+		subtext: '',
+		textStyle: {
+            color: '#000',
+			fontSize:30
+        }
+    },{
+		right:'12%',
+        text: "公交站点上车人数",
+		subtext: '',
+		textStyle: {
+            color: '#fff',
+			fontSize:15
+        }
+    },{
+		right:'13%',
+		top: '55%',
+        text: "公交上车客流时变",
+		subtext: '',
+		textStyle: {
+            color: '#fff',
+			fontSize:15
+        }
+    }],
+	    grid: [{
+        right: 40,
+        
+		height: '48%',
+        width: '23%',
+
+    },{
+        right: 40,
+		bottom:'3%',
+        top: '58%',
+
+		//height: '40%',
+        width: '28%',
+    },{show: true,
+            left: null,
+			right:0,
+            height: '100%',
+            width: '33%',
+            bottom: '0%',
+		backgroundColor: 'rgba(64,74,89,0.9)'
+    }],
+tooltip: {
+        trigger: 'item'
+
+    },
+        animation: false,
+        bmap: {
+            center: [114.050032,22.543052],
+            zoom: 14,
+            roam: true,
+			mapStyle: {
+            'styleJson': [          {
+                    "featureType": "all",
+                    "elementType": "all",
+                    "stylers": {
+                              "lightness": 10,
+                              "saturation": -100
+                    }
+          },          {
+                    "featureType": "subway",
+                    "elementType": "labels.icon",
+                    "stylers": {
+                              "color": "#022338",
+                              "visibility": "off"
+                    }
+          },
+          {
+                    "featureType": "poi",
+                    "elementType": "labels",
+                    "stylers": {
+                              "color": "#022338",
+                              "visibility": "off"
+                    }
+          },
+          {
+                    "featureType": "highway",
+                    "elementType": "labels.icon",
+                    "stylers": {
+                              "color": "#022338",
+                              "visibility": "off"
+                    }
+          }
+			]}
+
+        },
+        visualMap: {
+		type: 'continuous',
+            top:'5%',
+			text:['High','Low'],
+            min: 0,
+            max: 10,
+            seriesIndex: 0,
+            calculable: true,
+            inRange: {
+                color: ['lightblue','yellow','#FF8000']//['green', '#eac736','#d94e5d']
+            },
+			textStyle: {
+            color: '#000',
+			formatter: 'aaaa{value}bbbb{value2}'// 范围标签显示内容。
+}
+        
+        },
+ xAxis: [{
+        type: 'value',
+        scale: true,
+        position: 'top',
+        boundaryGap: false,
+        splitLine: {
+            show: false
+        },
+        axisLine: {
+            show: false
+        },
+        axisTick: {
+            show: false
+        },
+        axisLabel: {
+            margin: 2,
+            textStyle: {
+                color: '#aaa'
+            }
+        }
+    },{
+	gridIndex: 1, 
+	min: 0,
+	max:24,         
+	name:'时间',
+	axisLine: {
+                       lineStyle: {
+                color: '#aaa'
+            }
+        },        axisLabel: {
+            margin: 2,
+            textStyle: {
+                color: '#aaa'
+            }
+        }}],
+    yAxis: [{
+        type: 'category',
+        //  name: 'TOP 20',
+        nameGap: 16,
+        axisLine: {
+            show: true,
+            lineStyle: {
+                color: '#ddd'
+            }
+        },
+        axisTick: {
+            show: false,
+            lineStyle: {
+                color: '#ddd'
+            }
+        },
+        axisLabel: {
+            interval: 0,
+            textStyle: {
+                color: '#ddd'
+            }
+        },
+        data:[]
+    },{gridIndex: 1, min: 0, name:'客流',  axisLine: {
+                       lineStyle: {
+                color: '#aaa'
+            }
+        },      axisLabel: {
+            margin: 2,
+            textStyle: {
+                color: '#aaa'
+            }
+        }}],
+        series: [{
+		zlevel:-1,
+            type: 'scatter',
+            coordinateSystem: 'bmap',
+            symbolSize: 8,
+				    tooltip: {
+        trigger: 'item',
+        formatter: function (params) {
+            return params.name + ' : ' + params.value[2] ;
+        },
+		position: 'left'
+    },						    tooltip: {
+        trigger: 'item',
+        formatter: function(params) {
+            return params.name + '上车人数:' + params.data.value[2] + '人次';
+        }
+    },
+			label: {
+                normal: {
+                    show: false
+                },
+                emphasis: {
+                    show: false
+                }
+            },
+        },{
+		type:'lines',
+		zlevel:-1,
+		        effect: {
+            show: true,
+            period: 20,
+            trailLength: 0,
+            symbol: planePath,
+            symbolSize: 15
+		
+        },
+		coordinateSystem: 'bmap',
+		polyline:true,
+		            lineStyle: {
+                normal: {
+                    color: 'rgba(115, 135, 162, 1)',
+                  
+                    opacity: 0.8,
+                    width: 5,
+					    shadowColor: 'rgba(0, 0, 0, 0.9)',
+    shadowBlur: 10
+                }
+            },
+
+            progressiveThreshold: 500,
+            progressive: 200
+		},
+		        {
+            id: 'bar',
+            zlevel: 2,
+            type: 'bar',
+            symbol: 'none',
+            itemStyle: {
+                normal: {
+                    color: '#ddb926'
+                }
+            },
+			            label: {
+                normal: {
+                    show: true,
+                    position: 'right'
+                }
+            },
+						xAxisIndex: 0,
+            yAxisIndex: 0,
+            data: [],
+						    tooltip: {
+        trigger: 'item',
+        formatter: function(params) {
+            return params.name + '上车人数:' + params.data + '人次';
+        }
+    }
+        },{
+            id: 'bar2',
+            zlevel: 2,
+            type: 'line',
+            
+            itemStyle: {
+                normal: {
+                    color: '#ddb926'
+                }
+            },
+			xAxisIndex: 1,
+            yAxisIndex: 1,
+            data: [],
+			    tooltip: {
+        trigger: 'item',
+        formatter: function(params) {
+            return params.data[0] + '时客流量' + params.data[1] + '人次';
+        }
+    }
+        }
+		]
+    });
+    if (!app.inNode) {
+        // 添加百度地图插件
+        var bmap = myChart.getModel().getComponent('bmap').getBMap();
+        bmap.addControl(new BMap.MapTypeControl());
+    }
+
+	
+if (option && typeof option === "object") {
+    myChart.setOption(option, true);
+}
+
+;
+
+$.getJSON('data.json', function (linedata) {
+var xAxisData = [];
+var bardata = [];
+for (var i = 0; i <linedata[0].length; i += 1) {
+xAxisData.push(linedata[0][i].name)
+bardata.push(linedata[0][i].value[2])
+}
+	console.log(linedata[3])
+	myChart.hideLoading();
+    myChart.setOption({
+    yAxis:{data:xAxisData},
+	bmap:{center:[linedata[2][Math.floor(linedata[2].length/2)][0]+0.05,linedata[2][Math.floor(linedata[2].length/2)][1]]},
+        visualMap: { max: linedata[1]
+        },        
+		series: [{
+            data: linedata[0],
+			symbolSize: function (val) {
+			
+				return Math.max(30*val[2] / linedata[1],10);
+        },
+        },{data:[{coords:linedata[2]}]},{data:bardata},{data:linedata[3]}
+		]
+    });
+});
+fieldSelect.change(function (){ 
+//取得当前下拉框的值 
+	var dimension = $(this).val(); 
+
+	$.getJSON('data/'+dimension+'.json', function (linedata) {
+var xAxisData = [];
+var bardata = [];
+for (var i = 0; i <linedata[0].length; i += 1) {
+xAxisData.push(linedata[0][i].name)
+bardata.push(linedata[0][i].value[2])
+}
+	console.log()
+	myChart.hideLoading();
+    myChart.setOption({
+    yAxis:{data:xAxisData},
+	bmap:{center:[linedata[2][Math.floor(linedata[2].length/2)][0]+0.05,linedata[2][Math.floor(linedata[2].length/2)][1]]},
+        visualMap: { max: linedata[1]
+        },        
+		series: [{
+            data: linedata[0],
+			symbolSize: function (val) {
+			
+				return Math.max(30*val[2] / linedata[1],10);
+        },
+        },{data:[{coords:linedata[2]}]},{data:bardata},{data:linedata[3]}
+		]
+    });
+});
+})
+})
+       </script>
+   </body>
+</html>
