@@ -8,7 +8,9 @@ main:
     url: Publications/index.html
   - title: "Demos"
     url: Demos/index.html
-  - title: "Photographs"
+  - title: "Tutorial"
+    url: Tutorial/index.html
+  - title: "Album"
     url: Photographs/index.html
 
   # - title: "Sample Posts"
