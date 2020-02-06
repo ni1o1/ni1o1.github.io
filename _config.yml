@@ -12,7 +12,7 @@
 
 # theme                  : "minimal-mistakes-jekyll"
 # remote_theme           : "mmistakes/minimal-mistakes"
-minimal_mistakes_skin    : "contrast" # "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
+minimal_mistakes_skin    : "air" # "air", "aqua", "contrast", "dark", "dirt", "neon", "mint", "plum", "sunrise"
 
 # Site Settings
 layout: single
@@ -121,7 +121,12 @@ author:
     - label: "GitHub"
       icon: "fab fa-fw fa-github"
       url: "https://github.com/ni1o1/"
-
+    - label: "Google scholar"
+      icon: "fab fa-fw fa-google"
+      url: "https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN"
+    - label: "researchgate"
+      icon: "fab fa-fw fa-researchgate"
+      url: "https://www.researchgate.net/profile/Qing_Yu51"
 
 # Site Footer
 footer:

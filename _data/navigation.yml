@@ -2,11 +2,11 @@
 main:
 
   - title: "Introduction"
-    url: /2019/09/11/Publications.html
+    url: Introduction/index.html
   - title: "Publications"
-    url: /2018/10/05/Background.html
+    url: Publications/index.html
   - title: "Codes"
-    url: /2019/09/11/Publications.html
+    url: Codes/index.html
 
   # - title: "Sample Posts"
   #   url: /year-archive/

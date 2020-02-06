@@ -13,7 +13,14 @@
   display: none;
   visibility: hidden;
 }
-
+.social-icons {
+  .fa-researchgate {
+    color: #00ccbc;
+  }
+  .fa-google {
+    color: #4185f1;
+  }
+}
 /* for preloading images */
 
 .load {
