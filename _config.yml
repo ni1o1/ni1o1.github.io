@@ -121,12 +121,15 @@ author:
     - label: "GitHub"
       icon: "fab fa-fw fa-github"
       url: "https://github.com/ni1o1/"
-    - label: "Google scholar"
+    - label: "GoogleScholar"
       icon: "fab fa-fw fa-google"
       url: "https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN"
-    - label: "researchgate"
+    - label: "ResearchGate"
       icon: "fab fa-fw fa-researchgate"
       url: "https://www.researchgate.net/profile/Qing_Yu51"
+    - label: "EChartsGallery"
+      icon: "fas fa-chart-pie"
+      url: "https://gallery.echartsjs.com/explore.html?u=bd-167860219&type=work#sort=rank~timeframe=all~author=all"
 
 # Site Footer
 footer:

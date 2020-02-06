@@ -5,8 +5,8 @@ main:
     url: Introduction/index.html
   - title: "Publications"
     url: Publications/index.html
-  - title: "Codes"
-    url: Codes/index.html
+  - title: "Demos"
+    url: Demos/index.html
 
   # - title: "Sample Posts"
   #   url: /year-archive/
