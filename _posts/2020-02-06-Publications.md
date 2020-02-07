@@ -15,5 +15,5 @@ Here is a list of my scientific publications.
 - [Unveiling Urban Commuting Structure from Mobile Phone Data: A Case Study in Shanghai, China. *Transportation Research Board 97th Annual MeetingTransportation Research Board*](https://trid.trb.org/view/1494574)([Download pdf](/assets/mypapers/TRB2018.pdf))    
 
 # 2017
-- [Activity Space Investigations for Nonresidents Using Mobile Phone Data. *CICTP 2017: Transportation Reform and Change—Equity, Inclusiveness, Sharing, and Innovation*](https://ascelibrary.org/doi/abs/10.1061/9780784480915.015)  
+- [Activity Space Investigations for Nonresidents Using Mobile Phone Data. *CICTP 2017: Transportation Reform and Change—Equity, Inclusiveness, Sharing, and Innovation*](https://ascelibrary.org/doi/abs/10.1061/9780784480915.015)([Download pdf](/assets/mypapers/CICTP2017.pdf))    
 - [基于多源数据的公交客流规模关联分析 *综合运输*](http://www.cnki.com.cn/Article/CJFDTotal-YSZH201706015.htm)([Download pdf](/assets/mypapers/zongheyunshu.pdf))  
