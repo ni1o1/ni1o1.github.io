@@ -8,8 +8,8 @@ main:
     url: Publications/index.html
   - title: "Demos"
     url: Demos/index.html
-  - title: "Tutorial"
-    url: Tutorial/index.html
+  - title: "Tutorials"
+    url: Tutorials/index.html
   - title: "Album"
     url: Photographs/index.html
 
