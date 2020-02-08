@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+   <head>
+       <meta charset="utf-8">
+   </head>
+   <body style="height: 100%; margin: 0">
+       <div id="container" style="height: 100%"></div>
+	   <script type="text/javascript" src="js/jquery.min.js"></script>
+       <script type="text/javascript" src="https://gallerybox.echartsjs.com/dep/echarts/3.8.0/echarts.min.js"></script>
+       <script type="text/javascript" src=" https://api.map.baidu.com/getscript?v=2.0&ak=f8GgvXGNa3rCqHkmrAdAgPm3YFV12uTi"></script>
+       <script type="text/javascript" src="https://gallery.echartsjs.com/dep/echarts/latest/extension/bmap.min.js"></script>
+       <script type="text/javascript">
+var dom = document.getElementById("container");
+var myChart = echarts.init(dom);
+var app = {};
+myChart.showLoading();
+;
+var option = {
+	baseOption:{
+	timeline: {
+                axisType: 'category',
+                orient: 'vertical',
+                autoPlay: true,
+                inverse: true,
+                playInterval: 200,
+                left: null,
+                right: 0,
+                top: null,
+                bottom: 0,
+                width: 55,
+                height: null,
+                label: {
+                    normal: {
+                        textStyle: {
+                            color: '#000'
+                        }
+                    },
+                    emphasis: {
+                        textStyle: {
+                            color: '#fff'
+                        }
+                    }
+                },
+                symbol: 'circle',
+                lineStyle: {
+                    color: '#555'
+                },
+                checkpointStyle: {
+                    color: '#bbb',
+                    borderColor: '#777',
+                    borderWidth: 2
+                },
+                controlStyle: {
+                    normal: {
+                        color: '#666',
+                        borderColor: '#666'
+                    },
+                    emphasis: {
+                        color: '#aaa',
+                        borderColor: '#aaa'
+                    }
+                },
+                data: []
+            },
+	title: {
+        text: "上海居民活动点分布可视化",
+		left:'80%'
+    },
+        animation: false,
+        bmap: {
+            center: [121.4693, 31.223070],
+            zoom: 12,
+            roam: true
+        },
+        visualMap: {
+            show: false,
+            top: 'top',
+            min: 0,
+            max: 0,
+            seriesIndex: 0,
+            calculable: true,
+            inRange: {
+                color: ['blue', 'blue', 'green', 'yellow', 'red']
+            }
+        },
+		grid: [{
+            show: true,
+            left: null,
+			right:0,
+            height: '100%',
+            width: 70,
+            bottom: '0%',
+            backgroundColor: 'rgba(255,255,255,0.7)'
+        }],
+        series: [{
+            type: 'heatmap',
+            coordinateSystem: 'bmap',
+            pointSize: 15,
+            blurSize: 15
+        }]
+    },
+	options:[]}
+    /*if (!app.inNode) {
+        // 添加百度地图插件
+        var bmap = myChart.getModel().getComponent('bmap').getBMap();
+        bmap.addControl(new BMap.MapTypeControl());
+    }*/
+
+	
+
+
+$.getJSON('data2.json', function (linedata) {
+myChart.hideLoading();
+    for (var n = 0; n < linedata[1].length; n++) {
+		option.baseOption.timeline.data.push(linedata[1][n]);
+        option.options.push({
+
+        visualMap: { max: linedata[2]*1
+        },        
+		series: [{
+            data: linedata[0][n]
+        }]
+    });
+    }
+if (option && typeof option === "object") {
+    myChart.setOption(option, true);
+}
+	
+});
+
+       </script>
+   </body>
+</html>
