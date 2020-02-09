@@ -33,6 +33,8 @@
        <script type="text/javascript" src="https://echarts.baidu.com/resource/echarts-gl-latest/dist/echarts-gl.min.js"></script>
 		<script src='https://api.mapbox.com/mapbox-gl-js/v0.38.0/mapbox-gl.js'></script>
        <script type="text/javascript">
+       $.getJSON("./MapboxStyle.json", function(MapboxStyle) {
+console.log(MapboxStyle)
 	   var fieldSelect = $(".Line").children("select");
 var dom = document.getElementById("container");
 var myChart = echarts.init(dom);
@@ -41,7 +43,6 @@ option = null;
 
 mapboxgl.accessToken =  'pk.eyJ1IjoibmkxbzEiLCJhIjoiY2pldGxtNGhyMGtnNTJ3cGU4Ymt6c3Z3ciJ9.pqgh09z8NCQfONAuukSUPA';
 var uploadedDataURL = "./data/day/alldata_day1.json";
-
 
 myChart.showLoading();
 function coltowgs(LONCOL,LATCOL){
@@ -135,7 +136,7 @@ var option = {
             zoom: 11,
             pitch: 30,
             bearing: -0,
-            style: 'mapbox://styles/mapbox/dark-v9',
+            style: MapboxStyle,
             boxHeight: 25,
             //altitudeScale: 1,
             postEffect: {
@@ -217,7 +218,7 @@ myChart.showLoading();
 	setdata(uploadedDataURL)
 	
 	})
-
+})
        </script>
    </body>
 </html>
