@@ -23,6 +23,20 @@ kyoto:
   - url: assets/images/album/origin/IMG_0458.JPG
     image_path: assets/images/album/ths/IMG_0458.JPG
 Tokyo:
+  - url: assets/images/album/origin/IMG_2577.jpg
+    image_path: assets/images/album/ths/IMG_2577.jpg
+  - url: assets/images/album/origin/IMG_2525.jpg
+    image_path: assets/images/album/ths/IMG_2525.jpg
+  - url: assets/images/album/origin/IMG_2527.jpg
+    image_path: assets/images/album/ths/IMG_2527.jpg
+  - url: assets/images/album/origin/IMG_2540.jpg
+    image_path: assets/images/album/ths/IMG_2540.jpg
+  - url: assets/images/album/origin/IMG_2582.jpg
+    image_path: assets/images/album/ths/IMG_2582.jpg
+  - url: assets/images/album/origin/IMG_2543.jpg
+    image_path: assets/images/album/ths/IMG_2543.jpg
+  - url: assets/images/album/origin/IMG_2578.jpg
+    image_path: assets/images/album/ths/IMG_2578.jpg
   - url: assets/images/album/origin/IMG_1450.JPG
     image_path: assets/images/album/ths/IMG_1450.JPG
   - url: assets/images/album/origin/WechatIMG25.jpeg
@@ -155,11 +169,11 @@ headimg:
     image_path: assets/images/album/ths/IMG_1417.JPG
 
 headimg2:
-  - url: assets/images/album/origin/IMG_2016.jpg
-    image_path: assets/images/album/ths/IMG_2016.jpg
+  - url: assets/images/album/origin/WechatIMG25.jpeg
+    image_path: assets/images/album/ths/WechatIMG25.jpeg
 ---
-{% include gallery id ="headimg" class="full" %}
 {% include gallery id ="headimg2" class="full" %}
+{% include gallery id ="headimg" class="full" %}
 # Kyoto & Kobe
 {% include gallery id ="kyoto" class="full" %}
 # UTokyo
