@@ -178,9 +178,9 @@ headimg2:
 ---
 {% include gallery id ="headimg2" class="full" %}
 {% include gallery id ="headimg" class="full" %}
-# Kyoto & Kobe
-{% include gallery id ="kyoto" class="full" %}
-# UTokyo
-{% include gallery id ="UTokyo" class="full" %}
 # Tokyo
 {% include gallery id ="Tokyo" class="full" %}
+# UTokyo
+{% include gallery id ="UTokyo" class="full" %}
+# Kyoto & Kobe
+{% include gallery id ="kyoto" class="full" %}
