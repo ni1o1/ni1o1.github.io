@@ -23,6 +23,10 @@ kyoto:
   - url: assets/images/album/origin/IMG_0458.JPG
     image_path: assets/images/album/ths/IMG_0458.JPG
 Tokyo:
+  - url: assets/images/album/origin/IMG_2511.jpg
+    image_path: assets/images/album/ths/IMG_2511.jpg
+  - url: assets/images/album/origin/IMG_2513.jpg
+    image_path: assets/images/album/ths/IMG_2513.jpg
   - url: assets/images/album/origin/IMG_2577.jpg
     image_path: assets/images/album/ths/IMG_2577.jpg
   - url: assets/images/album/origin/IMG_2525.jpg
