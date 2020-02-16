@@ -23,6 +23,26 @@ kyoto:
   - url: assets/images/album/origin/IMG_0458.JPG
     image_path: assets/images/album/ths/IMG_0458.JPG
 Tokyo:
+  - url: assets/images/album/origin/IMG_2649.JPG
+    image_path: assets/images/album/ths/IMG_2649.JPG
+  - url: assets/images/album/origin/IMG_2655.JPG
+    image_path: assets/images/album/ths/IMG_2655.JPG
+  - url: assets/images/album/origin/IMG_2654.JPG
+    image_path: assets/images/album/ths/IMG_2654.JPG
+  - url: assets/images/album/origin/IMG_2656.JPG
+    image_path: assets/images/album/ths/IMG_2656.JPG
+  - url: assets/images/album/origin/IMG_2657.JPG
+    image_path: assets/images/album/ths/IMG_2657.JPG
+  - url: assets/images/album/origin/IMG_2653.JPG
+    image_path: assets/images/album/ths/IMG_2653.JPG
+  - url: assets/images/album/origin/IMG_2652.JPG
+    image_path: assets/images/album/ths/IMG_2652.JPG
+  - url: assets/images/album/origin/IMG_2650.JPG
+    image_path: assets/images/album/ths/IMG_2650.JPG
+  - url: assets/images/album/origin/IMG_2651.JPG
+    image_path: assets/images/album/ths/IMG_2651.JPG
+  - url: assets/images/album/origin/IMG_2635.jpg
+    image_path: assets/images/album/ths/IMG_2635.jpg
   - url: assets/images/album/origin/IMG_2511.jpg
     image_path: assets/images/album/ths/IMG_2511.jpg
   - url: assets/images/album/origin/IMG_2513.jpg
