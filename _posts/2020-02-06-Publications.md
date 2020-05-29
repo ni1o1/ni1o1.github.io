@@ -5,10 +5,11 @@ classes: wide
 Here is a list of my scientific publications.
 
 # 2020
+- Mobile phone GPS data in urban customized bus: dynamic line design and emission reduction potentials analysis  *Journal of Cleaner Production*  
+- [新冠肺炎疫情影响下的城际交通运输需求分析 *城市交通* ](http://kns.cnki.net/kcms/detail/11.5141.U.20200521.1714.002.html)([Download pdf](/assets/mypapers/新冠肺炎疫情影响下的城际交通运输需求分析.pdf))  
 - [Mobile phone data in urban bicycle-sharing: Market-oriented sub-area division and spatial analysis on emission reduction potentials. *Journal of Cleaner Production*](https://www.sciencedirect.com/science/article/pii/S0959652620300214)([Download pdf](/assets/mypapers/bicycle-sharing.pdf))    
 
 # 2019
-
 - [Overlapping communities in network unveil urban commuting structure from mobile phone data. *Transportation Research Board 98th Annual MeetingTransportation Research Board*](http://amonline.trb.org/68387-trb-1.4353651/t005-1.4370696/1214-1.4371409/19-00578-1.4364053/19-00578-1.4371444)([Download pdf](/assets/mypapers/TRB2019.pdf))  
 
 # 2018
