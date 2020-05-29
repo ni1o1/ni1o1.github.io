@@ -13,6 +13,7 @@ Here is a list of my scientific publications.
 - [**Yu Q**, Li W, Yang D. Overlapping communities in network unveil urban commuting structure from mobile phone data. *Transportation Research Board 98th Annual MeetingTransportation Research Board*](http://amonline.trb.org/68387-trb-1.4353651/t005-1.4370696/1214-1.4371409/19-00578-1.4364053/19-00578-1.4371444)([Download pdf](/assets/mypapers/TRB2019.pdf))  
 
 # 2018
+- [Wang Y, Chen C, **Yu Q**. Analysis of Chinese Typical Urban Public Transport Network Types and Influencing Factors//CICTP 2018: Intelligence, Connectivity, and Mobility. Reston, VA: American Society of Civil Engineers, 2018: 913-924.](https://ascelibrary.org/doi/abs/10.1061/9780784481523.091)  
 - [**Yu Q**, Li W, Duan Z, et al. Unveiling Urban Commuting Structure from Mobile Phone Data: A Case Study in Shanghai, China. 2018. *Transportation Research Board 97th Annual MeetingTransportation Research Board*](https://trid.trb.org/view/1494574)([Download pdf](/assets/mypapers/TRB2018.pdf))    
 - [李俊,**余庆**,杨东援.城市生活性物流设施网络实证研究.综合运输,2018,40(04):84-91.](http://cpfd.cnki.com.cn/Article/CPFDTOTAL-CSJT201706001103.htm)  
 
