@@ -14,10 +14,12 @@ Here is a list of my scientific publications.
 
 # 2018
 - [**Yu Q**, Li W, Duan Z, et al. Unveiling Urban Commuting Structure from Mobile Phone Data: A Case Study in Shanghai, China. 2018. *Transportation Research Board 97th Annual MeetingTransportation Research Board*](https://trid.trb.org/view/1494574)([Download pdf](/assets/mypapers/TRB2018.pdf))    
+- [李俊,**余庆**,杨东援.城市生活性物流设施网络实证研究.综合运输,2018,40(04):84-91.](http://cpfd.cnki.com.cn/Article/CPFDTOTAL-CSJT201706001103.htm)  
 
 # 2017
 - [**Yu Q**, Li W F, Duan Z Y, et al. Activity Space Investigations for Nonresidents Using Mobile Phone Data. *CICTP 2017: Transportation Reform and Change—Equity, Inclusiveness, Sharing, and Innovation*](https://ascelibrary.org/doi/abs/10.1061/9780784480915.015)([Download pdf](/assets/mypapers/CICTP2017.pdf))    
 - [**余庆**, 雷曾翔, 李玮峰, 等. 基于多源数据的公交客流规模关联分析. 综合运输, 2017, 39(6): 58-63.](http://www.cnki.com.cn/Article/CJFDTotal-YSZH201706015.htm)([Download pdf](/assets/mypapers/zongheyunshu.pdf))  
-- [李俊, 杨东援, **余庆**. 基于 POI 数据的配送企业网络布局. 2017 年中国城市交通规划年会论文集, 2017.](http://cpfd.cnki.com.cn/Article/CPFDTOTAL-CSJT201706001103.htm)
+- [李俊, 杨东援, **余庆**. 基于 POI 数据的配送企业网络布局. 2017 年中国城市交通规划年会论文集, 2017.](http://cpfd.cnki.com.cn/Article/CPFDTOTAL-CSJT201706001103.htm)  
+
 # 2016
 - [李玮峰, 程小云, **余庆**, 等. 基于多源数据的居民活动区域特征分析. 规划 60 年: 成就与挑战——2016 中国城市规划年会论文集 04 城市规划新技术应用, 2016.](http://cpfd.cnki.com.cn/Article/CPFDTOTAL-ZHCG201609004079.htm)([Download pdf](/assets/mypapers/CICTP2017.pdf))    
