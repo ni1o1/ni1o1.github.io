@@ -5,7 +5,7 @@ classes: wide
 Here is a list of my scientific publications.
 
 # 2020
-- **Yu Q**, Zhang H, Li W, et al. Mobile phone GPS data in urban customized bus: dynamic line design and emission reduction potentials analysis  *Journal of Cleaner Production*  
+- [**Yu Q**, Zhang H, Li W, et al. Mobile phone GPS data in urban customized bus: dynamic line design and emission reduction potentials analysis. Journal of Cleaner Production, 2020, p. 122471.](https://www.sciencedirect.com/science/article/pii/S095965262032518X)  
 - [何凌晖,**余庆**,李玮峰,李健,杨东援.新冠肺炎疫情影响下的城际交通运输需求分析.城市交通:1-11.https://doi.org/10.13813/j.cn11-5141/u.2020.0024.](http://kns.cnki.net/kcms/detail/11.5141.U.20200521.1714.002.html)([Download pdf](/assets/mypapers/新冠肺炎疫情影响下的城际交通运输需求分析.pdf))  
 - [**Yu Q**, Zhang H, Li W, et al. Mobile phone data in urban bicycle-sharing: Market-oriented sub-area division and spatial analysis on emission reduction potentials. Journal of Cleaner Production, 2020, 254: 119974.](https://www.sciencedirect.com/science/article/pii/S0959652620300214)([Download pdf](/assets/mypapers/bicycle-sharing.pdf))    
 
