@@ -5,6 +5,8 @@ classes: wide
 Here is a list of my scientific publications.
 
 # 2020
+- [Jiang W, Zhang H, Long Y, Chen J, Sui Y, Song X, Shibasaki R, **Yu Q**, GPS data in urban online ride-hailing: The technical potential analysis of demand prediction model, Journal of Cleaner Production, 2020, 123706](http://www.sciencedirect.com/science/article/pii/S0959652620337513)
+
 - [**Yu, Q.**; Li, W.; Zhang, H.; Yang, D. Mobile Phone Data in Urban Customized Bus: A Network-based Hierarchical Location Selection Method with an Application to System Layout Design in the Urban Agglomeration. Sustainability 2020, 12, 6203.](https://www.mdpi.com/2071-1050/12/15/6203)([Download pdf](/assets/mypapers/customizedbus2.pdf))  
 - [**Yu Q**, Zhang H, Li W, et al. Mobile phone GPS data in urban customized bus: dynamic line design and emission reduction potentials analysis. Journal of Cleaner Production, 2020, p. 122471.](https://www.sciencedirect.com/science/article/pii/S095965262032518X)([Download pdf](/assets/mypapers/customizedbus.pdf))  
 - [何凌晖,**余庆**,李玮峰,李健,杨东援.新冠肺炎疫情影响下的城际交通运输需求分析.城市交通:1-11.https://doi.org/10.13813/j.cn11-5141/u.2020.0024.](http://kns.cnki.net/kcms/detail/11.5141.U.20200521.1714.002.html)([Download pdf](/assets/mypapers/新冠肺炎疫情影响下的城际交通运输需求分析.pdf))  
