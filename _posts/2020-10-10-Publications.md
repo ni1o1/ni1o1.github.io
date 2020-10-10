@@ -3,6 +3,10 @@ classes: wide
 ---
 
 Here is a list of my scientific publications.
+# 2021
+- **Yu, Q.**, Li W, Yang D. Spatio-temporal Integration between the Bicycle-sharing Service and the Metro Transit: A Case Study in Shanghai, China. Transportation Research Board 2021 Annual Meeting(Accepted)  
+
+- Li Y, **Yu, Q.**, Li W, Yang H. Taxi GPS Data in Urban Road Network: A Methodology to Identify Key Road Clusters Based on Travel Speed – Traffic Volume Correlation. Transportation Research Board 2021 Annual Meeting(Accepted)  
 
 # 2020
 - [Jiang W, Zhang H, Long Y, Chen J, Sui Y, Song X, Shibasaki R, **Yu Q**, GPS data in urban online ride-hailing: The technical potential analysis of demand prediction model, Journal of Cleaner Production, 2020, 123706](http://www.sciencedirect.com/science/article/pii/S0959652620337513)
