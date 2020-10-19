@@ -188,6 +188,42 @@ UTokyo:
   - url: assets/images/album/origin/IMG_1282.JPG
     image_path: assets/images/album/ths/IMG_1282.JPG
 
+Sakura:
+  - url: assets/images/album/origin/s7.png
+    image_path: assets/images/album/ths/s7.png
+  - url: assets/images/album/origin/s6.png
+    image_path: assets/images/album/ths/s6.png
+  - url: assets/images/album/origin/s5.png
+    image_path: assets/images/album/ths/s5.png
+  - url: assets/images/album/origin/s4.png
+    image_path: assets/images/album/ths/s4.png
+  - url: assets/images/album/origin/s3.png
+    image_path: assets/images/album/ths/s3.png
+  - url: assets/images/album/origin/s2.png
+    image_path: assets/images/album/ths/s2.png
+  - url: assets/images/album/origin/s1.png
+    image_path: assets/images/album/ths/s1.png
+
+Tongji:
+  - url: assets/images/album/origin/t1.jpg
+    image_path: assets/images/album/ths/t1.jpg
+  - url: assets/images/album/origin/t2.jpg
+    image_path: assets/images/album/ths/t2.jpg
+  - url: assets/images/album/origin/t3.jpg
+    image_path: assets/images/album/ths/t3.jpg
+  - url: assets/images/album/origin/t4.jpg
+    image_path: assets/images/album/ths/t4.jpg
+  - url: assets/images/album/origin/t5.jpg
+    image_path: assets/images/album/ths/t5.jpg
+  - url: assets/images/album/origin/t6.jpg
+    image_path: assets/images/album/ths/t6.jpg
+  - url: assets/images/album/origin/t7.jpg
+    image_path: assets/images/album/ths/t7.jpg
+  - url: assets/images/album/origin/t8.jpg
+    image_path: assets/images/album/ths/t8.jpg
+  - url: assets/images/album/origin/t9.jpg
+    image_path: assets/images/album/ths/t9.jpg
+
 headimg:
   - url: assets/images/album/origin/IMG_1417.JPG
     image_path: assets/images/album/ths/IMG_1417.JPG
@@ -198,6 +234,10 @@ headimg2:
 ---
 {% include gallery id ="headimg2" class="full" %}
 {% include gallery id ="headimg" class="full" %}
+# Tongji
+{% include gallery id ="Tongji" class="full" %}
+# Astronaut
+{% include gallery id ="Sakura" class="full" %}
 # Tokyo
 {% include gallery id ="Tokyo" class="full" %}
 # UTokyo
