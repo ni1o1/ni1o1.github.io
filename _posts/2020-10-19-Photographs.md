@@ -223,6 +223,12 @@ Tongji:
     image_path: assets/images/album/ths/t8.jpg
   - url: assets/images/album/origin/t9.jpg
     image_path: assets/images/album/ths/t9.jpg
+  - url: assets/images/album/origin/t10.jpg
+    image_path: assets/images/album/ths/t10.jpg
+  - url: assets/images/album/origin/t11.jpg
+    image_path: assets/images/album/ths/t11.jpg
+  - url: assets/images/album/origin/t12.jpg
+    image_path: assets/images/album/ths/t12.jpg
 
 headimg:
   - url: assets/images/album/origin/IMG_1417.JPG
