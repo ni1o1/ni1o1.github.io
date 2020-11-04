@@ -9,6 +9,10 @@ Here is a list of my scientific publications.
 - Li Y, **Yu, Q.**, Li W, Yang H. Taxi GPS Data in Urban Road Network: A Methodology to Identify Key Road Clusters Based on Travel Speed – Traffic Volume Correlation. Transportation Research Board 2021 Annual Meeting(Accepted)  
 
 # 2020
+- Yu, Q.; Li, W.; Yang, D.; Zhang, H. Mobile phone data in urban commuting: A network community detection based framework to unveil the spatial structure of commuting demand, Journal of Advanced Transportation (Accepted)  
+
+- [Yu, Q.; Li, W.; Chen, J.; Yang, D.; Sui, Y.; Zhang, H. GPS data in urban taxi-sharing: A routing behavior based potential assessment method and spatiotemporal analysis on operation efficiency and energy consumption. enerarxiv 20.](https://www.enerarxiv.org/page/thesis.html?id=2416)  
+
 - [Jiang W, Zhang H, Long Y, Chen J, Sui Y, Song X, Shibasaki R, **Yu Q**, GPS data in urban online ride-hailing: The technical potential analysis of demand prediction model, Journal of Cleaner Production, 2020, 123706](http://www.sciencedirect.com/science/article/pii/S0959652620337513)
 
 - [**Yu, Q.**; Li, W.; Zhang, H.; Yang, D. Mobile Phone Data in Urban Customized Bus: A Network-based Hierarchical Location Selection Method with an Application to System Layout Design in the Urban Agglomeration. Sustainability 2020, 12, 6203.](https://www.mdpi.com/2071-1050/12/15/6203)([Download pdf](/assets/mypapers/customizedbus2.pdf))  
