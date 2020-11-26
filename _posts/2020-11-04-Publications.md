@@ -5,18 +5,13 @@ classes: wide
 Here is a list of my scientific publications.
 # 2021
 - **Yu, Q.**, Li W, Yang D. Spatio-temporal Integration between the Bicycle-sharing Service and the Metro Transit: A Case Study in Shanghai, China. Transportation Research Board 2021 Annual Meeting(Accepted)  
-
 - Li Y, **Yu, Q.**, Li W, Yang H. Taxi GPS Data in Urban Road Network: A Methodology to Identify Key Road Clusters Based on Travel Speed – Traffic Volume Correlation. Transportation Research Board 2021 Annual Meeting(Accepted)  
 
 # 2020
 - [Wang, Y.; Chen, J.; Xu, N.; Li, W.; **Yu, Q.**; Song, X. GPS Data in Urban Online Car-Hailing: Simulation on Optimization and Prediction in Reducing Void Cruising Distance. Mathematical Problems in Engineering, 2020.](https://www.hindawi.com/journals/mpe/2020/6890601/)([Download pdf](/assets/mypapers/2020MPE1.pdf))  
-
 - [**Yu, Q.**; Li, W.; Yang, D.; Zhang, H. Mobile Phone Data in Urban Commuting: A Network Community Detection-Based Framework to Unveil the Spatial Structure of Commuting Demand. Journal of Advanced Transportation, 2020.](https://doi.org/10.1155/2020/8835981)([Download pdf](/assets/mypapers/2020JAT.pdf))  
-
 - [**Yu, Q.**; Li, W.; Chen, J.; Yang, D.; Sui, Y.; Zhang, H. GPS data in urban taxi-sharing: A routing behavior based potential assessment method and spatiotemporal analysis on operation efficiency and energy consumption. enerarxiv 20.](https://www.enerarxiv.org/page/thesis.html?id=2416)  
-
 - [Jiang W, Zhang H, Long Y, Chen J, Sui Y, Song X, Shibasaki R, **Yu Q**, GPS data in urban online ride-hailing: The technical potential analysis of demand prediction model, Journal of Cleaner Production, 2020, 123706](http://www.sciencedirect.com/science/article/pii/S0959652620337513)
-
 - [**Yu, Q.**; Li, W.; Zhang, H.; Yang, D. Mobile Phone Data in Urban Customized Bus: A Network-based Hierarchical Location Selection Method with an Application to System Layout Design in the Urban Agglomeration. Sustainability 2020, 12, 6203.](https://www.mdpi.com/2071-1050/12/15/6203)([Download pdf](/assets/mypapers/customizedbus2.pdf))  
 - [**Yu Q**, Zhang H, Li W, et al. Mobile phone GPS data in urban customized bus: dynamic line design and emission reduction potentials analysis. Journal of Cleaner Production, 2020, p. 122471.](https://www.sciencedirect.com/science/article/pii/S095965262032518X)([Download pdf](/assets/mypapers/customizedbus.pdf))  
 - [何凌晖,**余庆**,李玮峰,李健,杨东援.新冠肺炎疫情影响下的城际交通运输需求分析.城市交通:1-11.https://doi.org/10.13813/j.cn11-5141/u.2020.0024.](http://kns.cnki.net/kcms/detail/11.5141.U.20200521.1714.002.html)([Download pdf](/assets/mypapers/新冠肺炎疫情影响下的城际交通运输需求分析.pdf))  
