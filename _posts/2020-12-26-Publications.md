@@ -4,8 +4,9 @@ classes: wide
 
 Here is a list of my scientific publications.
 # 2021
-- **Yu, Q.**, Li W, Yang D. Spatio-temporal Integration between the Bicycle-sharing Service and the Metro Transit: A Case Study in Shanghai, China. Transportation Research Board 2021 Annual Meeting(Accepted)  
-- Li Y, **Yu, Q.**, Li W, Yang H. Taxi GPS Data in Urban Road Network: A Methodology to Identify Key Road Clusters Based on Travel Speed – Traffic Volume Correlation. Transportation Research Board 2021 Annual Meeting(Accepted)  
+- [**Yu, Q.**; Li, W.; Yang, D.; Xie, Y. Policy Zoning for Efficient Land Utilization Based on Spatio-Temporal Integration between the Bicycle-Sharing Service and the Metro Transit. Sustainability 2021, 13, 141.](https://www.mdpi.com/2071-1050/13/1/141#cite)
+- [**Yu, Q.**, Li W, Yang D. Spatio-temporal Integration between the Bicycle-sharing Service and the Metro Transit: A Case Study in Shanghai, China. Transportation Research Board 2021 Annual Meeting](https://www.researchgate.net/deref/http%3A%2F%2Fdx.doi.org%2F10.13140%2FRG.2.2.34178.50882?_sg%5B0%5D=ZbyKBV1mpkBMNI0XBCdDlAhcfZF1qRQuYWPKyo4Vt-ZGll8Y-D8CDI5k1iAd8c4uzpoKQCK9239P-BOCH_Kn9NjETg.EUQLBxrP1WhjSFneds1pMYEuTGbnm_bhBbMfFVcc2v1BqEsnsT1F9DQ7Hm4OYjFWFuEvcp1KxL3tw3gRmaF89w)  
+- [Li Y, **Yu, Q.**, Li W, Yang H. Taxi GPS Data in Urban Road Network: A Methodology to Identify Key Road Clusters Based on Travel Speed – Traffic Volume Correlation. Transportation Research Board 2021 Annual Meeting](https://www.researchgate.net/deref/http%3A%2F%2Fdx.doi.org%2F10.13140%2FRG.2.2.18492.46723?_sg%5B0%5D=gLvnGkh6gxfmwL91QEM75MBdYXCFidQPA1HE6uyVOO1sgYBycfjMEdQIYA9DB6nUgqUl6IJR1wD10QG66V_QWNu61w.MFgJ0bx96UOhuPUab4xGQEooh7WGQUe76cXe2180suGQ2AWRXOxHpjDqZLgDmh86cYKrgyqFybuvB6XWzYgYmA)  
 
 # 2020
 - [Wang, Y.; Chen, J.; Xu, N.; Li, W.; **Yu, Q.**; Song, X. GPS Data in Urban Online Car-Hailing: Simulation on Optimization and Prediction in Reducing Void Cruising Distance. Mathematical Problems in Engineering, 2020.](https://www.hindawi.com/journals/mpe/2020/6890601/)([Download pdf](/assets/mypapers/2020MPE1.pdf))  
