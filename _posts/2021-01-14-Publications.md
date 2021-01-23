@@ -4,7 +4,7 @@ classes: wide
 
 Here is a list of my scientific publications.
 # 2021
-- [Yang, H.; **Yu, Q.** An Adaptability Analysis of the Space-Vehicle Traffic State Estimation Model for Sparsely Distributed Observation Environment. Mathematical Problems in Engineering, 2021](https://www.hindawi.com/journals/mpe/2021/6692068/)
+- [Yang, H.; **Yu, Q.*** An Adaptability Analysis of the Space-Vehicle Traffic State Estimation Model for Sparsely Distributed Observation Environment. Mathematical Problems in Engineering, 2021](https://www.hindawi.com/journals/mpe/2021/6692068/)
 - [**Yu, Q.**; Li, W.; Yang, D.; Zhang, H. Partitioning urban road network based on travel speed correlation. International Journal of Transportation Science and Technology 2021 (accepted)]
 - [Zhang, H., Yan, J., **Yu, Q.**, Obersteiner, M., Li, W., Chen, J., Zhang, Q., Jiang, M., Wallin, F., Song, X., Wu, J., Wang, X., Shibasaki, R., 2021. 1.6 Million transactions replicate distributed PV market slowdown by COVID-19 lockdown. Applied Energy 116341.](https://doi.org/10.1016/j.apenergy.2020.116341)
 - [**Yu, Q.**; Li, W.; Yang, D.; Xie, Y. Policy Zoning for Efficient Land Utilization Based on Spatio-Temporal Integration between the Bicycle-Sharing Service and the Metro Transit. Sustainability 2021, 13, 141.](https://www.mdpi.com/2071-1050/13/1/141#cite)
