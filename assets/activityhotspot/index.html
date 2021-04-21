@@ -6,9 +6,9 @@
    <body style="height: 100%; margin: 0">
        <div id="container" style="height: 100%"></div>
 	   <script type="text/javascript" src="js/jquery.min.js"></script>
-       <script type="text/javascript" src="https://gallerybox.echartsjs.com/dep/echarts/3.8.0/echarts.min.js"></script>
+       <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
        <script type="text/javascript" src=" https://api.map.baidu.com/getscript?v=2.0&ak=f8GgvXGNa3rCqHkmrAdAgPm3YFV12uTi"></script>
-       <script type="text/javascript" src="https://gallery.echartsjs.com/dep/echarts/latest/extension/bmap.min.js"></script>
+       <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/extension/bmap.js"></script>
        <script type="text/javascript">
 var dom = document.getElementById("container");
 var myChart = echarts.init(dom);
@@ -106,7 +106,7 @@ var option = {
         bmap.addControl(new BMap.MapTypeControl());
     }*/
 
-	
+​	
 
 
 $.getJSON('data2.json', function (linedata) {
@@ -117,7 +117,7 @@ myChart.hideLoading();
 
         visualMap: { max: linedata[2]*1
         },        
-		series: [{
+    	series: [{
             data: linedata[0][n]
         }]
     });

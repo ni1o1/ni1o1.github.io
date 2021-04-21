@@ -29,11 +29,11 @@
        <div id="container" style="height: 100%"></div>
 
 	   <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.js"></script>
-       <script type="text/javascript" src="https://gallerybox.echartsjs.com/dep/echarts/3.8.0/echarts.min.js"></script>
-       <script type="text/javascript" src="https://echarts.baidu.com/resource/echarts-gl-latest/dist/echarts-gl.min.js"></script>
+	   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+	   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts-gl@2/dist/echarts-gl.min.js"></script>
 		<script src='https://api.mapbox.com/mapbox-gl-js/v0.38.0/mapbox-gl.js'></script>
-       <script type="text/javascript">
-       $.getJSON("./MapboxStyle.json", function(MapboxStyle) {
+	   <script type="text/javascript">
+	   $.getJSON("./MapboxStyle.json", function(MapboxStyle) {
 console.log(MapboxStyle)
 	   var fieldSelect = $(".Line").children("select");
 var dom = document.getElementById("container");
@@ -127,11 +127,11 @@ var option = {
             outOfRange: {
                 colorAlpha: 0
             }
-			
+    		
         },
-
+    
         mapbox: {
-		
+    	
             center: [121.4693, 31.269070],
             zoom: 11,
             pitch: 30,
@@ -170,8 +170,8 @@ var option = {
             barSize: 0.5,
             silent: true
         }]
-		},
-	options:[]}
+    	},
+    options:[]}
 function setdata(uploadedDataURL){
 $.getJSON(uploadedDataURL, function (linedata) {
 myChart.hideLoading();
@@ -191,16 +191,16 @@ option.options=[]
 		
 		data.push({'value':[120,30,linedata[1]]})
 		console.log()
-        option.options.push(
+	    option.options.push(
 		{
-
-        visualMap: { max: 30000
-        },    
+	
+	    visualMap: { max: 30000
+	    },    
 		series: [{
-            data: data
-        }]
-    });
-    }
+	        data: data
+	    }]
+	});
+	}
 
 if (option && typeof option === "object") {
 

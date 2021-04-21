@@ -12,9 +12,9 @@
 			</span> 
 		</div> 
 	   <script type="text/javascript" src="js/jquery.min.js"></script>
-       <script type="text/javascript" src="https://gallerybox.echartsjs.com/dep/echarts/3.8.0/echarts.min.js"></script>
+       <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
        <script type="text/javascript" src=" https://api.map.baidu.com/getscript?v=2.0&ak=f8GgvXGNa3rCqHkmrAdAgPm3YFV12uTi"></script>
-       <script type="text/javascript" src="https://gallery.echartsjs.com/dep/echarts/latest/extension/bmap.min.js"></script>
+       <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/echarts@5/dist/extension/bmap.js"></script>
        <script type="text/javascript">
 $.getJSON('data/linenames.json', function (linenames) {
 var lineinfos = linenames[0]
@@ -25,7 +25,7 @@ for(var i = 0;i<lineindexes.length;i++){
 $("<option value='"+lineindexes[i]+"'>" + lineinfos[i] + "</option>").appendTo(fieldSelect); 
 } 
 
-	   
+
 var dom = document.getElementById("container");
 var myChart = echarts.init(dom);
 var app = {};
@@ -71,18 +71,18 @@ myChart.setOption(option = {
 
     grid: [{
             right: 150,
-
+    
             height: '44%',
             width: '300px',
-
+    
         }, {
             right: 50,
             width: '380px',
             bottom: '3%',
             top: '58%',
-
+    
             //height: '40%',
-
+    
         }, {
             show: true,
             right: '0px',
@@ -100,7 +100,7 @@ myChart.setOption(option = {
             backgroundColor: 'rgba(255,255,255,0.8)',
             zlevel: -1
         }
-
+    
     ],
     tooltip: {
         trigger: 'item',
@@ -109,7 +109,7 @@ myChart.setOption(option = {
             var least_area = 20;
             var offset_x = 30; /* 相对于point的偏移 */
             var offset_y = 30;
-
+    
             /* last_point的least_area范围内不会产生新的t_pos */
             if (Math.abs(point[0] - last_point[0]) < least_area &&
                 Math.abs(point[1] - last_point[1]) < least_area &&
@@ -173,7 +173,7 @@ myChart.setOption(option = {
                 }
             }]
         }
-
+    
     },
     dataZoom: [{
         type: 'slider',
@@ -206,7 +206,7 @@ myChart.setOption(option = {
         top: '65%',
         text: ['High', 'Low'],
         min: 0,
-
+    
         //seriesIndex: [0,2],
         calculable: false,
         inRange: {
@@ -216,7 +216,7 @@ myChart.setOption(option = {
             color: '#000',
             formatter: 'aaaa{value}bbbb{value2}' // 范围标签显示内容。
         }
-
+    
     },
     xAxis: [{
         type: 'value',
@@ -289,10 +289,10 @@ myChart.setOption(option = {
             }
         },
         axisLabel: {
-
+    
             margin: 2,
             textStyle: {
-
+    
                 color: '#fff'
             }
         }
@@ -326,14 +326,14 @@ myChart.setOption(option = {
         },
     }, {
         type: 'lines',
-
+    
         effect: {
             show: true,
             period: 20,
             trailLength: 0,
             symbol: planePath,
             symbolSize: 15
-
+    
         },
         coordinateSystem: 'bmap',
         polyline: true,
@@ -341,14 +341,14 @@ myChart.setOption(option = {
         lineStyle: {
             normal: {
                 color: 'rgba(18,89,147, 1)',
-
+    
                 opacity: 0.8,
                 width: 5,
                 shadowColor: 'rgba(0, 0, 0, 0.9)',
                 shadowBlur: 10
             }
         },
-
+    
         progressiveThreshold: 500,
         progressive: 200
     }, {
@@ -386,7 +386,7 @@ myChart.setOption(option = {
         id: 'line2',
         zlevel: 2,
         type: 'line',
-
+    
         itemStyle: {
             normal: {
                 color: '#ddb926'
@@ -410,9 +410,10 @@ myChart.setOption(option = {
         bmap.addControl(new BMap.MapTypeControl());
     }
 
-	
+
+​	
 if (option && typeof option === "object") {
-    myChart.setOption(option, true);
+​    myChart.setOption(option, true);
 }
 
 ;
@@ -436,10 +437,10 @@ bardata.push([linedata[0][i].name, linedata[0][i].value[2]])
 			symbolSize: function (val) {
 			
 				return Math.max(30*val[2] / linedata[1],10);
-        },
-        },{data:[{coords:linedata[2]}]},{data:bardata},{data:linedata[3]}
+	    },
+	    },{data:[{coords:linedata[2]}]},{data:bardata},{data:linedata[3]}
 		]
-    });
+	});
 });
 fieldSelect.change(function (){ 
 //取得当前下拉框的值 
@@ -464,10 +465,10 @@ bardata.push([linedata[0][i].name, linedata[0][i].value[2]])
 			symbolSize: function (val) {
 			
 				return Math.max(30*val[2] / linedata[1],10);
-        },
-        },{data:[{coords:linedata[2]}]},{data:bardata},{data:linedata[3]}
+	    },
+	    },{data:[{coords:linedata[2]}]},{data:bardata},{data:linedata[3]}
 		]
-    });
+	});
 });
 })
 })
