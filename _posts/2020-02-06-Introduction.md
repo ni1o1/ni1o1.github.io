@@ -11,4 +11,4 @@ I got my Bachelor Degree in Transportation and Communication at Guangdong Univer
 
 From September 2018, I began my PhD at Tongji University (College of Transportation Engineering), Shanghai, China. Starting from October 2019, I began my Joint PhD programe at the University of Tokyo, Japan.  
 
-I’m interested in transportation data science, urban systems, share transportation mode and data visuallization.
+I’m interested in transportation data science, urban travel shareability and agent based modeling

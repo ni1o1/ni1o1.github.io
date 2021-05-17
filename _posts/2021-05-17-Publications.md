@@ -2,10 +2,15 @@
 classes: wide
 ---
 
-Here is a list of my scientific publications and selected professional activities.
+Here is a list of my scientific publications, prizes and selected professional activities.
 # Book/Chapter
 
+- 余庆，李玮锋. 交通时空大数据分析、挖掘与可视化. 清华大学出版社（撰写中）
 - Yu, Q.; Li, W.; Yang,D. Data-driven Estimation for Urban Travel Shareability. Big Data and Mobility as a Service. Elsevier 
+
+# Prize
+
+- 2021数字中国创新大赛大数据赛道-城市管理大数据专题算法题 一等奖
 
 # 2021
 
