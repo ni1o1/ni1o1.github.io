@@ -14,6 +14,7 @@ Here is a list of my scientific publications, prizes and selected professional a
 
 # 2021
 
+- [Song, S.; Li, W.; **Yu, Q.**; Yang, D.;, Analysis of Individual’s Activity Space Based on the Cellular Signaling Data. Mathematical Problems in Engineering,2021.](https://www.hindawi.com/journals/mpe/2021/6690295/)
 - [Bi, H., Shang, W.-L., Chen, Y., Wang, K., **Yu, Q.**, Sui, Y., 2021. GIS aided sustainable urban road management with a unifying queueing and neural network model. Applied Energy 291, 116818. ](https://doi.org/10.1016/j.apenergy.2021.116818)
 - [Yang, H.; **Yu, Q.*** An Adaptability Analysis of the Space-Vehicle Traffic State Estimation Model for Sparsely Distributed Observation Environment. Mathematical Problems in Engineering, 2021](https://www.hindawi.com/journals/mpe/2021/6692068/)
 - [**Yu, Q.**; Li, W.; Yang, D.; Zhang, H. Partitioning urban road network based on travel speed correlation. International Journal of Transportation Science and Technology, 2021](https://www.sciencedirect.com/science/article/pii/S2046043021000034)
