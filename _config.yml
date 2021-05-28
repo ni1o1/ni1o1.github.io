@@ -128,7 +128,7 @@ author:
       url: "https://www.researchgate.net/profile/Qing_Yu51"
     - label: "EChartsGallery"
       icon: "fas fa-fw fa-chart-pie"
-      url: "https://gallery.echartsjs.com/explore.html?u=bd-167860219&type=work#sort=rank~timeframe=all~author=all"
+      url: "https://www.makeapie.com/user.html?u=bd-167860219&type=work"
 
 # Site Footer
 footer:
@@ -147,7 +147,7 @@ footer:
       url: "https://www.researchgate.net/profile/Qing_Yu51"
     - label: "EChartsGallery"
       icon: "fas fa-fw fa-chart-pie"
-      url: "https://gallery.echartsjs.com/explore.html?u=bd-167860219&type=work#sort=rank~timeframe=all~author=all"
+      url: "https://www.makeapie.com/user.html?u=bd-167860219&type=work"
 
 
 
