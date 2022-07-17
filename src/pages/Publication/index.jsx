@@ -34,7 +34,8 @@ export default function Publication() {
   1. [**Yu Q**, Yuan J. TransBigData: A Python package for transportation spatio-temporal big data processing, analysis and visualization[J]. Journal of Open Source Software, 2022, 7(71): 4021.](https://joss.theoj.org/papers/10.21105/joss.04021.pdf)
   1. [Jinyu Chen, Qiong Zhang, Ning Xu, Wenjing Li, Yuhao Yao, Peiran Li, **Qing Yu**, Chuang Wen, Xuan Song, Ryosuke Shibasaki, Haoran Zhang, et al. Roadmap to hydrogen society of Tokyo: Locating priority of hydrogen facilities based on multiple big data fusion[J]. Applied Energy, 2022, 313: 118688.](https://www.sciencedirect.com/science/article/pii/S0306261922001532)
   1. [**余庆**，李玮峰，杨东援.基于手机信令数据的扬子江城市群空间联系结构分析[J].交通与运输,2022.](https://kns.cnki.net/kcms/detail/detail.aspx?dbcode=CJFD&dbname=CJFDAUTO&filename=YSJT202203017&uniplatform=NZKPT&v=1QS8XwiyqtXLVDFNEtLfuHBJ4THjEX7dU6YpKLe3IWgcpaBvMId4d3OrV_sRQ0_r)
-
+  1. [刘晓磊,段征宇,**余庆**,毛孝鑫,马忠政.基于图卷积循环神经网络的城市轨道客流预测[J].华南理工大学学报(自然科学版),2022,50(03):21-27.](https://t.cnki.net/kcms/detail?v=2Hzf_72mFvBdsFLO9b9qrZ6RFL97CApNUVoRu7CRdkjN0Uho-lPWHE6vjEjLfcsHiW2awBnCwAkSK5_JIuk1VV-Pfg89oNZU2t8MMd7Za7AEhrCwksK-sJk8KIO7ohWj&uniplatform=NZKPT)
+ 
   ### 2021
   
   1. Li Y, Li W, **Yu Q**. Analysis of pedestrian mid block crossing demand intensity based on point of interest data. The 25th international conference of hong kong society for transportation studies(HKSTS), 2021
