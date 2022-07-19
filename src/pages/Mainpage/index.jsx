@@ -20,15 +20,15 @@ export default function Mainpage() {
   const content = (
     <>
       <Paragraph >
-        同济交通博士在读
+        南方科技大学 计算机科学与工程系 Research Associate
         <br/>
-        Tongji University/ UTokyo csis
+        Southern University of Science and Technology
       </Paragraph>
       <Divider />
       <Descriptions column={{ xs: 3, sm: 1, md: 1 }} colon={false} title="" layout='horizontal'>
         <Descriptions.Item label={<span className="iconfont icon-position" />} >Shanghai</Descriptions.Item>
         <Descriptions.Item label={<GithubOutlined />}><Link href="https://github.com/ni1o1/" target="_blank">Github</Link></Descriptions.Item>
-        <Descriptions.Item label={<MailOutlined />}><Link href="mailto:1810514@tongji.edu.cn" target="_blank">Email</Link></Descriptions.Item>
+        <Descriptions.Item label={<MailOutlined />}><Link href="mailto:yuq@sustech.edu.cn" target="_blank">Email</Link></Descriptions.Item>
         <Descriptions.Item label={<span className="iconfont icon-researchgate" />} ><Link href="https://www.researchgate.net/profile/Qing_Yu51" target="_blank">ResearchGate</Link></Descriptions.Item>
         <Descriptions.Item label={<GoogleOutlined />}><Link href="https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN" target="_blank">GoogleScholar</Link></Descriptions.Item>
         <Descriptions.Item label={<span className="iconfont icon-bilibili" />}><Link href="https://space.bilibili.com/3051484" target="_blank">Bilibili</Link></Descriptions.Item>
