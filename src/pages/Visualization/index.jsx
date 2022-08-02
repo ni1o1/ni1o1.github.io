@@ -41,6 +41,10 @@ export default function Visualization() {
     <div style={{ margin: 12 }}>
       <Title level={2}>可视化项目</Title>
       <Row gutter={[10, 10]}>
+      {Visualcard("https://github.com/ni1o1/nikebus",
+          "images/nikebus.png",
+          "南科大校巴实时位置",
+          "")}
         {Visualcard("https://github.com/ni1o1/UrbanAgglomerationAccessbility",
           "images/UrbanAgglomerationAccessbility.png",
           "城市群可达性分析系统",
