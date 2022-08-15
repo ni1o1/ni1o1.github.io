@@ -97,6 +97,7 @@ export default function Mainpage() {
           <Footer style={{ backgroundColor: 'white', textAlign: 'center' }}>© Copyright 2022, Qing Yu.</Footer>
         </Col>
       </Row>
+      <img src="https://visitor-badge.laobi.icu/badge?page_id=ni1o1githubio" alt="visitor badge" style={{ 'visibility': 'hidden' }} />
     </>
   )
 }
