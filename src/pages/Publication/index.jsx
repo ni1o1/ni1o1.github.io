@@ -9,7 +9,7 @@ export default function Publication() {
   const markdown = `
   ## 著作/章节
 
-  1. 余庆，李玮锋. 交通时空大数据分析、挖掘与可视化. 清华大学出版社（出版中）
+  1. [余庆，李玮锋. 交通时空大数据分析、挖掘与可视化. 清华大学出版社](https://item.m.jd.com/product/13381247.html)
   2. [Yu, Q.; Li, W.; Yang,D. Chapter 6: Data-driven Estimation for Urban Travel Shareability. Big Data and Mobility as a Service. Elsevier, 2022](https://www.elsevier.com/books/big-data-and-mobility-as-a-service/zhang/978-0-323-90169-7)
   
   ## 获奖
