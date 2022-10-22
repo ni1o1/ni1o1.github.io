@@ -9,7 +9,7 @@ export default function Publication() {
   const markdown = `
   ## 著作/章节
 
-  1. [余庆，李玮锋. 交通时空大数据分析、挖掘与可视化. 清华大学出版社](https://item.m.jd.com/product/13381247.html)
+  1. [余庆，李玮锋. 交通时空大数据分析、挖掘与可视化. 清华大学出版社](http://product.dangdang.com/12000002206.html)
   2. [Yu, Q.; Li, W.; Yang,D. Chapter 6: Data-driven Estimation for Urban Travel Shareability. Big Data and Mobility as a Service. Elsevier, 2022](https://www.elsevier.com/books/big-data-and-mobility-as-a-service/zhang/978-0-323-90169-7)
   
   ## 获奖
@@ -26,7 +26,7 @@ export default function Publication() {
   ## 学术论文
   
   ### 2022
-  1. Duan Z, Liu X, **Yu Q**, Li Y. Analyzing Detour Behavior of Metro Passengers Based on Mobile Phone Data. Transportation Planning and Technology.
+  1. [Duan Z, Liu X, **Yu Q**, Li Y. Analyzing Detour Behavior of Metro Passengers Based on Mobile Phone Data. Transportation Planning and Technology](https://www.tandfonline.com/doi/abs/10.1080/03081060.2022.2103559).
   1. [**Yu, Q.**, Xie, Y., Li, W., Zhang, H., Liu X. , Shang W. , Chen J. , Yang D. , Yan J. (2022). GPS data in urban bicycle-sharing: Dynamic electric fence planning with assessment of resource-saving and potential energy consumption increasement. Applied Energy,2022,322,119533.](https://doi.org/10.1016/j.apenergy.2022.119533)
   1. [Wu, Y., Li, W., **Yu, Q.**, & Li, J. (2022). Analysis of the Relationship between Dockless Bicycle-Sharing and the Metro: Connection, Competition, and Complementation. Journal of Advanced Transportation, 2022.](https://doi.org/10.1155/2022/5664004)
   1. [Hui Y, Xie Y, **Yu Q**, Liu X, Wang X. Hotspots Identification and Classification of Dockless Bicycle Sharing Service Under Electric Fence Circumstances. Journal of Advanced Transportation, 2022.](https://www.hindawi.com/journals/jat/2022/5218254/)(Corresponging Author)
