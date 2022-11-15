@@ -26,7 +26,7 @@ export default function Publication() {
   ## 学术论文
   
   ### 2022
-  1. Sun S, Zheng Y, Dong Y, Li N, Jin Z, **Yu Q**. Reducing external container trucks’ turnaround time in ports: A data-driven approach under truck appointment systems. Computers & Industrial Engineering
+  1. [Sun S, Zheng Y, Dong Y, Li N, Jin Z, **Yu Q**. Reducing external container trucks’ turnaround time in ports: A data-driven approach under truck appointment systems. Computers & Industrial Engineering](https://doi.org/10.1016/j.cie.2022.108787)
   1. [Duan Z, Liu X, **Yu Q**, Li Y. Analyzing Detour Behavior of Metro Passengers Based on Mobile Phone Data. Transportation Planning and Technology](https://www.tandfonline.com/doi/abs/10.1080/03081060.2022.2103559).
   1. [**Yu, Q.**, Xie, Y., Li, W., Zhang, H., Liu X. , Shang W. , Chen J. , Yang D. , Yan J. (2022). GPS data in urban bicycle-sharing: Dynamic electric fence planning with assessment of resource-saving and potential energy consumption increasement. Applied Energy,2022,322,119533.](https://doi.org/10.1016/j.apenergy.2022.119533)
   1. [Wu, Y., Li, W., **Yu, Q.**, & Li, J. (2022). Analysis of the Relationship between Dockless Bicycle-Sharing and the Metro: Connection, Competition, and Complementation. Journal of Advanced Transportation, 2022.](https://doi.org/10.1155/2022/5664004)
