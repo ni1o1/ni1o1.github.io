@@ -75,11 +75,11 @@ export default function Mainpage() {
                 <TabPane tab="个人简介" key="Introduction">
                   <Introduction />
                 </TabPane>
-                <TabPane tab="开源项目" key="Opensource">
-                  <Opensource />
-                </TabPane>
                 <TabPane tab="学术成果" key="Publication">
                   <Publication />
+                </TabPane>
+                <TabPane tab="开源项目" key="Opensource">
+                  <Opensource />
                 </TabPane>
                 <TabPane tab="可视化项目" key="Visualization">
                   <Visualization />
