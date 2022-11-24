@@ -12,17 +12,6 @@ export default function Publication() {
   1. [余庆，李玮锋. 交通时空大数据分析、挖掘与可视化. 清华大学出版社](http://product.dangdang.com/12000002206.html)
   2. [Yu, Q.; Li, W.; Yang,D. Chapter 6: Data-driven Estimation for Urban Travel Shareability. Big Data and Mobility as a Service. Elsevier, 2022](https://www.elsevier.com/books/big-data-and-mobility-as-a-service/zhang/978-0-323-90169-7)
   
-  ## 获奖
-  1. 2022 上海市优秀毕业生
-  1. 2022 第十三届上海市决策咨询研究成果奖 二等奖（排名第9）
-  1. 2021 博士研究生国家奖学金
-  1. 2021 SmallWorld AI 项目获R&D 100 Awards优胜奖、SMART 50 Awards（负责子模块可视化系统3D UrbanMOB开发）
-  1. [2021数字中国创新大赛大数据赛道-城市管理大数据专题算法题 一等奖](https://www.bilibili.com/video/BV1xh411S7jT)
-  1. [2021厦门大数据安全开放创新应用大赛资源规划专题创意分析题 二等奖](https://www.bilibili.com/video/BV15Q4y1U7bh)
-  1. 2021年度江苏省科技咨询协会科学技术奖 二等奖 项目名称：城市群交通规划方法和应用技术研究（排名第10）
-  1. 2020 同济大学京川奖学金 一等奖
-  
-  
   ## 学术论文
   
   论文可在这里下载:[百度网盘链接](https://pan.baidu.com/s/1gx9fDyYdJPcmL5WwZOZDnA?pwd=efak) 提取码: efak 
@@ -76,13 +65,16 @@ export default function Publication() {
   3. [李俊, 杨东援, **余庆**. 基于 POI 数据的配送企业网络布局. 2017 年中国城市交通规划年会论文集, 2017.](http://cpfd.cnki.com.cn/Article/CPFDTOTAL-CSJT201706001103.htm)
   4. [李玮峰, 程小云, **余庆**, 等. 基于多源数据的居民活动区域特征分析. 规划 60 年: 成就与挑战——2016 中国城市规划年会论文集 04 城市规划新技术应用, 2016.](http://cpfd.cnki.com.cn/Article/CPFDTOTAL-ZHCG201609004079.htm)
   
-  ## 审稿
-  
-  1. Reviewer for Applied Energy
-  2. Subreviewer for ECML/PKDD 2021
-  3. Reviewer for Complexity
-  4. Reviewer for Mathematical Problems in Engineering
-  5. Reviewer for 3rd International Forumon Connected Automated Vehicle Highway System through the China Highway & Transportation Society.
+  ## 获奖
+  1. 2022 上海市优秀毕业生
+  1. 2022 第十三届上海市决策咨询研究成果奖 二等奖（排名第9）
+  1. 2021 博士研究生国家奖学金
+  1. 2021 SmallWorld AI 项目获R&D 100 Awards优胜奖、SMART 50 Awards（负责子模块可视化系统3D UrbanMOB开发）
+  1. [2021数字中国创新大赛大数据赛道-城市管理大数据专题算法题 一等奖](https://www.bilibili.com/video/BV1xh411S7jT)
+  1. [2021厦门大数据安全开放创新应用大赛资源规划专题创意分析题 二等奖](https://www.bilibili.com/video/BV15Q4y1U7bh)
+  1. 2021年度江苏省科技咨询协会科学技术奖 二等奖 项目名称：城市群交通规划方法和应用技术研究（排名第10）
+  1. 2020 同济大学京川奖学金 一等奖
+
   `
   
   return (
