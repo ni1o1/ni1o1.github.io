@@ -41,7 +41,7 @@ export default function Visualization() {
     <div style={{ margin: 12 }}>
       <Title level={2}>可视化项目</Title>
       <Row gutter={[10, 10]}>
-      {Visualcard("https://ni1o1.github.io/SmartEV/",
+      {Visualcard("https://github.com/ni1o1/SmartEV/",
           "images/SmartEV.png",
           "智慧电池云平台",
           "")}
