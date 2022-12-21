@@ -31,10 +31,10 @@ export default function Tutorial() {
       "images/python2.webp", 
       "Python时空大数据-入门",
       "出租车GPS数据处理")}
-      {Visualcard("https://www.bilibili.com/video/BV1Eb4y1S7HC", 
+{/*       {Visualcard("https://www.bilibili.com/video/BV1Eb4y1S7HC", 
       "images/python3.webp", 
       "Python时空大数据-进阶",
-      "交通大数据分析实战")}
+      "交通大数据分析实战")} */}
     </Row>
     
     <Divider />

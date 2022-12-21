@@ -21,7 +21,7 @@ export default function Mainpage() {
     <>
       <Paragraph >
         南方科技大学 计算机科学与工程系 Research Associate
-        <br/>
+        <br />
         Southern University of Science and Technology
       </Paragraph>
       <Divider />
@@ -39,7 +39,7 @@ export default function Mainpage() {
 
   return (
     <>
-      <Heading/>
+      <Heading />
       <Row>
         <Col xs={24} sm={8} md={6} lg={6}>
           <Sider theme='light' width='100%'>
