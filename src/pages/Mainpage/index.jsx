@@ -20,13 +20,11 @@ export default function Mainpage() {
   const content = (
     <>
       <Paragraph >
-        南方科技大学 计算机科学与工程系 Research Associate
-        <br />
-        Southern University of Science and Technology
+        北京大学 城市规划与设计学院 博士后
       </Paragraph>
       <Divider />
       <Descriptions column={{ xs: 3, sm: 1, md: 1 }} colon={false} title="" layout='horizontal'>
-        <Descriptions.Item label={<span className="iconfont icon-position" />} >Shanghai</Descriptions.Item>
+        <Descriptions.Item label={<span className="iconfont icon-position" />} >Shenzhen</Descriptions.Item>
         <Descriptions.Item label={<GithubOutlined />}><Link href="https://github.com/ni1o1/" target="_blank">Github</Link></Descriptions.Item>
         <Descriptions.Item label={<MailOutlined />}><Link href="mailto:yuq@sustech.edu.cn" target="_blank">Email</Link></Descriptions.Item>
         <Descriptions.Item label={<span className="iconfont icon-researchgate" />} ><Link href="https://www.researchgate.net/profile/Qing_Yu51" target="_blank">ResearchGate</Link></Descriptions.Item>

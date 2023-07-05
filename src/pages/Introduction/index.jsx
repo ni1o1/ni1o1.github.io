@@ -9,8 +9,11 @@ export default function Introduction() {
       <Title level={2}>教育背景</Title>
       <Paragraph>
         <ul>
+        <li>
+            2023.07-至今 北京大学	城市规划与设计学院 博士后
+          </li>
           <li>
-            2022.07-至今 南方科技大学	计算机科学与工程系	Research Associate
+            2022.07-2023.06 南方科技大学	计算机科学与工程系	Research Associate
           </li>
           <li>
             2018.09-2022.06 同济大学	交通运输工程	工学博士
