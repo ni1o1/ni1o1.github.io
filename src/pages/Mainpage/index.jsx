@@ -20,7 +20,9 @@ export default function Mainpage() {
   const content = (
     <>
       <Paragraph >
-        北京大学 城市规划与设计学院 博士后
+        北京大学深圳研究生院 博士后
+        城市规划与设计学院
+        数字清洁城市实验室
       </Paragraph>
       <Divider />
       <Descriptions column={{ xs: 3, sm: 1, md: 1 }} colon={false} title="" layout='horizontal'>
