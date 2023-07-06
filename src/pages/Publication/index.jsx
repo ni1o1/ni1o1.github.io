@@ -17,6 +17,7 @@ export default function Publication() {
   论文可在这里下载:[百度网盘链接](https://pan.baidu.com/s/1gx9fDyYdJPcmL5WwZOZDnA?pwd=efak) 提取码: efak 
 
   ### 2023
+  
   1. Xie Y, Hui Y, Wang Y, **Yu Q** Walking Experience Evaluation Using Multiple Survey Methods: A Case Study of Shanghai. CICTP2023
   1. Luo S, Duan Z, **Yu Q** Analyzing the intra-city transit accessibility of hub for high-frequency single-day visitors based on mobile phone data. Transportation Research Board 102nd Annual Meeting(TRB)
   1. Liu X, Duan Z, **Yu Q** Understanding the path choice preference of metro users with diverse travel patterns: A data-driven approach. Transportation Research Board 102nd Annual Meeting(TRB)

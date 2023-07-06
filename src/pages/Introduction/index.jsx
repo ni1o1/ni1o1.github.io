@@ -10,7 +10,7 @@ export default function Introduction() {
       <Paragraph>
         <ul>
         <li>
-            2023.07-至今 北京大学	城市规划与设计学院 博士后
+            2023.07-至今 北京大学	城市规划与设计学院 数字清洁城市实验室 博士后
           </li>
           <li>
             2022.07-2023.06 南方科技大学	计算机科学与工程系	Research Associate
