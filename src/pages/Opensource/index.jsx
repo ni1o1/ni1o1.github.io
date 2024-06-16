@@ -18,9 +18,9 @@ export default function Opensource() {
   }
   return (
     <>
-      {viscard("https://github.com/ni1o1/transbigdata", "images/logo-wordmark-dark-small.png", "TransBigData", "交通时空大数据处理、分析和可视化的Python包")}
-      {viscard("https://github.com/ni1o1/pybdshadow", "images/pybdshadow.png", "pybdshadow", "计算建筑物阴影")}
-      {viscard("https://github.com/ni1o1/plot_map", "images/plot_map.png", "plot_map", "在matplotlib上绘制地图底图")}
+      {viscard("https://github.com/ni1o1/transbigdata", "images/logo-wordmark-dark-small.png", "TransBigData", "A Python package for processing, analyzing, and visualizing spatiotemporal transportation data")}
+      {viscard("https://github.com/ni1o1/pybdshadow", "images/pybdshadow.png", "pybdshadow", "Calculate building shadows")}
+      {viscard("https://github.com/ni1o1/plot_map", "images/plot_map.png", "plot_map", "Draw map basemaps on matplotlib")}
     </>
   )
 }

@@ -20,9 +20,7 @@ export default function Mainpage() {
   const content = (
     <>
       <Paragraph >
-        北京大学深圳研究生院 博士后
-        城市规划与设计学院
-        数字清洁城市实验室
+        Postdoctoral researcher, School of Urban Planning and Design, Peking University Shenzhen Graduate School
       </Paragraph>
       <Divider />
       <Descriptions column={{ xs: 3, sm: 1, md: 1 }} colon={false} title="" layout='horizontal'>
@@ -54,12 +52,7 @@ export default function Mainpage() {
               <br />
               <Row>
                 <Col span={24}>
-                  <Title level={4}>余庆</Title>
-                </Col>
-              </Row>
-              <Row>
-                <Col span={24}>
-                  <Title level={5}>Yu Qing</Title>
+                  <Title level={4}>Yu Qing (余庆)</Title>
                 </Col>
               </Row>
               <Content>
@@ -72,21 +65,21 @@ export default function Mainpage() {
           <Sider theme='light' width='100%'>
             <Card bordered={false}>
               <Tabs defaultActiveKey="Introduction" size={'large'}>
-                <TabPane tab="个人简介" key="Introduction">
+                <TabPane tab="Introduction" key="Introduction">
                   <Introduction />
                 </TabPane>
-                <TabPane tab="学术成果" key="Publication">
+                <TabPane tab="Publication" key="Publication">
                   <Publication />
                 </TabPane>
-                <TabPane tab="开源项目" key="Opensource">
+                <TabPane tab="Opensource" key="Opensource">
                   <Opensource />
                 </TabPane>
-                <TabPane tab="可视化项目" key="Visualization">
+                <TabPane tab="Projects" key="Visualization">
                   <Visualization />
                 </TabPane>
-                <TabPane tab="教程" key="Tutorial">
+{/*                 <TabPane tab="Tutorial" key="Tutorial">
                   <Tutorial />
-                </TabPane>
+                </TabPane> */}
               </Tabs>
             </Card>
           </Sider>
@@ -94,7 +87,7 @@ export default function Mainpage() {
       </Row>
       <Row>
         <Col span={24}>
-          <Footer style={{ backgroundColor: 'white', textAlign: 'center' }}>© Copyright 2022, Qing Yu.</Footer>
+          <Footer style={{ backgroundColor: 'white', textAlign: 'center' }}>© Copyright 2024, Qing Yu.</Footer>
         </Col>
       </Row>
       <img src="https://visitor-badge.laobi.icu/badge?page_id=ni1o1githubio" alt="visitor badge" style={{ 'visibility': 'hidden' }} />

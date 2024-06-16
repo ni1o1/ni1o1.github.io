@@ -16,6 +16,9 @@ export default function Publication() {
   
   论文可在这里下载:[百度网盘链接](https://pan.baidu.com/s/1gx9fDyYdJPcmL5WwZOZDnA?pwd=efak) 提取码: efak 
 
+  ### 2024
+  
+
   ### 2023
   
   1. Xie Y, Hui Y, Wang Y, **Yu Q** Walking Experience Evaluation Using Multiple Survey Methods: A Case Study of Shanghai. CICTP2023
@@ -84,10 +87,11 @@ export default function Publication() {
   1. 2020 同济大学京川奖学金 一等奖
 
   `
-  
+  const markdown2 = `[Google scholar](https://scholar.google.com/citations?hl=zh-CN&user=7m0xcqEAAAAJ&view_op=list_works&sortby=pubdate)`
   return (
     <Typography>
-    <ReactMarkdown children={markdown}  />
+      
+    <ReactMarkdown children={markdown2}  />
     </Typography>
   )
 }
