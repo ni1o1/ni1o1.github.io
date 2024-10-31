@@ -62,16 +62,7 @@ export default function Publication() {
         'right'
       )}
       <Divider />
-      <Title level={2}>Sharing Transportation</Title>
-      {research(
-        'GPS data in urban bicycle-sharing: Dynamic electric fence planning with assessment of resource-saving and potential energy consumption increasement',
-        'We use an agent-based model to simulate trips and compare the effectiveness of static versus dynamic electric fences. Results indicate that dynamic fences reduce walking distances, enhance parking order in city centers, and improve resource efficiency, saving 25.31% in bicycle resources. Additionally, dynamic fences decrease energy consumption by 5.79% daily compared to static fences.',
-        'images/research/bikesharing.png',
-        'https://www.sciencedirect.com/science/article/pii/S0306261922008509',
-        9,
-        'left'
-      )}
-      <Divider />
+
       <Title level={2}>Urban Environment and Digital Twin</Title>
       {research(
         'AdvMOB: Interactive visual analytic system of billboard advertising exposure analysis based on urban digital twin technique',
@@ -79,11 +70,20 @@ export default function Publication() {
         'images/research/advmob.png',
         'https://www.sciencedirect.com/science/article/pii/S1474034624004774',
         8,
-        'right'
+        'left'
       )}
-
       <Divider />
 
+      <Title level={2}>Sharing Transportation</Title>
+      {research(
+        'GPS data in urban bicycle-sharing: Dynamic electric fence planning with assessment of resource-saving and potential energy consumption increasement',
+        'We use an agent-based model to simulate trips and compare the effectiveness of static versus dynamic electric fences. Results indicate that dynamic fences reduce walking distances, enhance parking order in city centers, and improve resource efficiency, saving 25.31% in bicycle resources. Additionally, dynamic fences decrease energy consumption by 5.79% daily compared to static fences.',
+        'images/research/bikesharing.png',
+        'https://www.sciencedirect.com/science/article/pii/S0306261922008509',
+        9,
+        'right'
+      )}
+      <Divider />
 
     </Typography >
   )
