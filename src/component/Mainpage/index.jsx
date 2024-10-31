@@ -3,9 +3,8 @@ import { Layout, Button, Divider, Avatar, Row, Col, Descriptions, Card, PageHead
 import { AntDesignOutlined, GoogleOutlined, MailOutlined, GithubOutlined, YoutubeOutlined } from '@ant-design/icons';
 import Introduction from '@/pages/Introduction';
 import Publication from '@/pages/Publication';
-import Tutorial from '@/pages/Tutorial';
-import Visualization from '@/pages/Visualization';
-import Opensource from '@/pages/Opensource';
+import Projects from '@/pages/Projects';
+import Research from '@/pages/Research';
 import Heading from '@/component/Heading';
 import 'antd/dist/antd.css';
 import './index.css';
@@ -20,7 +19,11 @@ export default function Mainpage() {
   const content = (
     <>
       <Paragraph >
-        Postdoctoral researcher, School of Urban Planning and Design, Peking University Shenzhen Graduate School
+        Ph. D. /Postdoctor
+        <br />
+        Peking University Shenzhen Graduate School
+        <br />
+        Smart City Lab, School of Urban Planning and Design
       </Paragraph>
       <Divider />
       <Descriptions column={{ xs: 3, sm: 1, md: 1 }} colon={false} title="" layout='horizontal'>
@@ -37,7 +40,7 @@ export default function Mainpage() {
 
   return (
     <>
-      <Heading />
+     {/*  <Heading /> */}
       <Row>
         <Col xs={24} sm={8} md={6} lg={6}>
           <Sider theme='light' width='100%'>
@@ -46,7 +49,7 @@ export default function Mainpage() {
             >
               <Row>
                 <Col span={24}>
-                  <Avatar size="large" src='images/avatar.jpg' />
+                  <Avatar size="large" style={{width:100,height:100}} src='images/avatar.jpg' />
                 </Col>
               </Row>
               <br />
@@ -68,18 +71,15 @@ export default function Mainpage() {
                 <TabPane tab="Introduction" key="Introduction">
                   <Introduction />
                 </TabPane>
+                <TabPane tab="Research" key="Research">
+                  <Research />
+                </TabPane>
                 <TabPane tab="Publication" key="Publication">
                   <Publication />
                 </TabPane>
-                <TabPane tab="Opensource" key="Opensource">
-                  <Opensource />
+                <TabPane tab="Project" key="Projects">
+                  <Projects />
                 </TabPane>
-                <TabPane tab="Projects" key="Visualization">
-                  <Visualization />
-                </TabPane>
-{/*                 <TabPane tab="Tutorial" key="Tutorial">
-                  <Tutorial />
-                </TabPane> */}
               </Tabs>
             </Card>
           </Sider>
@@ -87,7 +87,7 @@ export default function Mainpage() {
       </Row>
       <Row>
         <Col span={24}>
-          <Footer style={{ backgroundColor: 'white', textAlign: 'center' }}>© Copyright 2024, Qing Yu.</Footer>
+          <Footer style={{ backgroundColor: 'white', textAlign: 'center' }}>Copyright © 2024 Peking University Shenzhen Graduate School | yuq@pku.edu.cn</Footer>
         </Col>
       </Row>
       <img src="https://visitor-badge.laobi.icu/badge?page_id=ni1o1githubio" alt="visitor badge" style={{ 'visibility': 'hidden' }} />

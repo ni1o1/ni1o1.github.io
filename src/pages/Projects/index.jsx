@@ -12,13 +12,12 @@ export default function Visualization() {
       <a href={src}>
         <Card
           hoverable
-          bordered={false}
+          bordered={true}
           size='small'
           cover={<img alt="transbigdata" src={imgpath} style={{ 'object-fit': 'cover' }} height='150' />}
           type='inner'
         >
-
-          <Meta title={title} description={description} />
+          <Meta title={title} description={description} style={{ 'height': '80px' }} />
         </Card>
       </a>
     </Col>
@@ -28,7 +27,7 @@ export default function Visualization() {
       <a href={src}>
         <Card
           hoverable
-          bordered={false}
+          bordered={true}
           size='small'
           cover={<img alt="transbigdata" src={imgpath} style={{ 'object-fit': 'cover' }} height='150' />}
         >
@@ -37,9 +36,29 @@ export default function Visualization() {
       </a>
     </Col>
   }
+  function viscard(herf, src, title, description) {
+    return <Col span={8} xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
+      <a href={herf}>
+        <Card
+          hoverable
+          size='small'
+          cover={<img alt="transbigdata" src={src} style={{ 'object-fit': 'contain' }} height='150' />}
+    
+        >
+          <Meta title={title} description={description} style={{'height':'100px'}}/>
+        </Card>
+      </a>
+    </Col>
+  }
   return (
     <div style={{ margin: 12 }}>
-      <Title level={2}>Projects</Title>
+      <Title level={2}>Python packages</Title>
+        <Row gutter={[10, 10]}>
+          {viscard("https://github.com/ni1o1/transbigdata", "images/logo-wordmark-dark-small.png", "TransBigData", "Processing, analyzing, and visualizing spatiotemporal transportation data")}
+          {viscard("https://github.com/ni1o1/pybdshadow", "images/pybdshadow.png", "pybdshadow", "Estimate building shadows from building footprints")}
+        </Row>
+        <Divider />
+      <Title level={2}>Visualization Projects</Title>
       <Row gutter={[10, 10]}>
         {Visualcard("https://github.com/ni1o1/GeoJSONViewer",
           "images/GeoJSONviewer.png",
@@ -84,7 +103,7 @@ export default function Visualization() {
         {Visualcard("https://github.com/ni1o1/advtise-demo",
           "images/advtise-demo.png",
           "Building 3D Shadow Calculation",
-          "Calculate the visible range of advertisements considering building obstructions")}
+          "Visible area of advertisements considering building obstructions")}
         {Visualcard("https://ni1o1.github.io/xiamenmetro/",
           "images/xiamenmetro.png",
           "Xiamen Metro Comprehensive Evaluation System",
@@ -96,9 +115,7 @@ export default function Visualization() {
       </Row>
       <Divider />
       <Title level={2}>ECharts demo</Title>
-      <Paragraph>
-        <a href='https://github.com/ni1o1/echartsexamples' target='_blank'>Source code</a>
-      </Paragraph>
+
       <Row gutter={[10, 10]}>
         {Visualcard2("https://ni1o1.github.io/echartsexamples/xiamenhouseprice/",
           "images/厦门二手房价可视化.png",
@@ -149,6 +166,9 @@ export default function Visualization() {
           "Yangtze River Delta Interactive OD Relationship Diagram",
           "")}
       </Row>
+            <Paragraph>
+        <a href='https://github.com/ni1o1/echartsexamples' target='_blank'>Source code</a>
+      </Paragraph>
     </div>
   )
 }
