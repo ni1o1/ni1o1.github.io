@@ -47,7 +47,7 @@ export default function Publication() {
       <Title level={2}>Transportation Energy and Emissions</Title>
       {research(
         'Potential and flexibility analysis of electric taxi fleets V2G system based on trajectory data and agent-based modeling',
-        'We conducted a study to analyze the potential and flexibility of electric taxi fleets using Vehicle-to-Grid (V2G) technology. By utilizing real-world electric taxi trajectory data, we developed a framework to infer vehicle charging, energy consumption, and State of Charge (SoC) reconstruction. We established a V2G potential estimation model for individual electric taxis and used an agent-based model to simulate system flexibility during various V2G events. Our methodology was applied to 19,900 electric taxis in Shenzhen over a month, revealing the V2G system’s ability to supply significant power during peak periods and recover within a short time without disrupting regular operations, highlighting the potential for more efficient and sustainable energy management.',
+        'We studied the Vehicle-to-Grid (V2G) potential of electric taxis, developing a framework to analyze charging and energy use. Our model, applied to 19,900 taxis in Shenzhen, shows significant peak power supply and quick recovery, promoting efficient energy management.',
         'images/research/v2g.png',
         'https://www.sciencedirect.com/science/article/pii/S0306261923016872',
         9,
@@ -55,7 +55,7 @@ export default function Publication() {
       )}
       {research(
         'GPS data in taxi-sharing system: Analysis of potential demand and assessment of fuel consumption based on routing probability model',
-        'We presents a framework to design an efficient taxi-sharing system using driver routing probability-based matching and dispatching algorithms. Our method matches multiple taxi trips into shared routes, considering time and location feasibility. We examine three scenarios with varying operational strategies to assess potential improvements in efficiency and fuel consumption reduction. Results indicate that while taxi-sharing can reduce overall fuel consumption by minimizing idle trips, it may increase traffic in high-demand urban areas, particularly around key intersections.',
+        'We developed a taxi-sharing system using probability-based matching algorithms to combine trips, aiming to reduce fuel consumption. Testing different strategies, we found it could decrease idle time but potentially increase traffic in busy urban spots.',
         'images/research/taxisharing.png',
         'https://www.sciencedirect.com/science/article/pii/S0306261922003452',
         9,
@@ -69,8 +69,16 @@ export default function Publication() {
         'We developed AdvMOB, an interactive visual analytics system to assess billboard advertising exposure in urban environments. It integrates personal information and trajectory data to accurately measure the impact of individual billboards, providing comprehensive evaluation and comparison of exposure through an intuitive interface. This system has the potential to significantly improve the design of billboard advertisements by delivering nuanced insights and comprehensive support.',
         'images/research/advmob.png',
         'https://www.sciencedirect.com/science/article/pii/S1474034624004774',
-        8,
+        10,
         'left'
+      )}
+      {research(
+        'Real-time gas explosion prediction at urban scale by GIS and graph neural network',
+        'We developed an integrated GIS and graph neural network approach to accurately predict the consequences of gas explosions in urban areas, offering a 1000-fold speed improvement over CFD methods. Our model, with an R2 of 0.946 and MSE of 5.36E-4, enhances urban resilience planning during energy transitions.',
+        'images/research/explode.jpg',
+        'https://www.sciencedirect.com/science/article/pii/S0306261924019974',
+        13,
+        'right'
       )}
       <Divider />
 
@@ -82,6 +90,14 @@ export default function Publication() {
         'https://www.sciencedirect.com/science/article/pii/S0306261922008509',
         9,
         'right'
+      )}
+      {research(
+        'Enhancing carbon efficiency in shared micro-mobility systems: An agent-based fleet size and layout assessment approach',
+        'We created a model to evaluate carbon benefits of shared bike scales, finding that a fleet of 4500–7500 bikes in a 100 km2 area can reduce weekly CO2 emissions by 10,000–11,000 kg, guiding sustainable SMMS planning.',
+        'images/research/bsjclp.png',
+        'https://www.sciencedirect.com/science/article/pii/S0959652624006565',
+        9,
+        'left'
       )}
       <Divider />
 

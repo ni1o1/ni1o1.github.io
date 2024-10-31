@@ -37,12 +37,12 @@ export default function Mainpage() {
       </Descriptions>
     </>
   );
-
+const bgc = '#fff';
   return (
-    <>
-      <Row >
+    <div style={{'backgroundColor':bgc}}>
+      <Row  >
         <Col xs={24} sm={8} md={6} lg={6}>
-          <Card bordered={false} >
+          <Card bordered={false}  style={{'backgroundColor':bgc}}>
             <Sider theme='light' width='100%'>
               <PageHeader
                 className="site-page-header"
@@ -63,14 +63,13 @@ export default function Mainpage() {
                 </Content>
               </PageHeader>
             </Sider>
-            
           </Card>
          
         </Col>
         <Col xs={24} sm={16} md={18} lg={18}>
 
             <Sider theme='light' width='100%'>
-            <Card bordered={false} >
+            <Card bordered={false}>
               <Tabs defaultActiveKey="Introduction" size={'large'}>
                 <TabPane tab="Introduction" key="Introduction">
                   <Introduction />
@@ -92,10 +91,10 @@ export default function Mainpage() {
       </Row>
       <Row>
         <Col span={24}>
-          <Footer style={{ backgroundColor: 'white', textAlign: 'center' }}>Copyright © 2024 Peking University Shenzhen Graduate School | yuq@pku.edu.cn</Footer>
+          <Footer style={{ backgroundColor: bgc, textAlign: 'center' }}>Copyright © 2024 Peking University Shenzhen Graduate School | yuq@pku.edu.cn</Footer>
         </Col>
       </Row>
       <img src="https://visitor-badge.laobi.icu/badge?page_id=ni1o1githubio" alt="visitor badge" style={{ 'visibility': 'hidden' }} />
-    </>
+    </div>
   )
 }
