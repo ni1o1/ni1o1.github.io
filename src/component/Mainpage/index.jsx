@@ -5,6 +5,7 @@ import Introduction from '@/pages/Introduction';
 import Publication from '@/pages/Publication';
 import Projects from '@/pages/Projects';
 import Research from '@/pages/Research';
+import Group from '@/pages/Group';
 import Heading from '@/component/Heading';
 import 'antd/dist/antd.css';
 import './index.css';
@@ -21,9 +22,9 @@ export default function Mainpage() {
       <Paragraph >
         Ph. D. /Postdoctor
         <br />
-        Peking University Shenzhen Graduate School
+        北京大学城市规划与设计学院 | School of Urban Planning & Design, Peking University Shenzhen
         <br />
-        Smart City Lab, School of Urban Planning and Design
+        智慧城市实验室 | Smart City Lab 
       </Paragraph>
       <Divider />
       <Descriptions column={{ xs: 3, sm: 1, md: 1 }} colon={false} title="" layout='horizontal' >
@@ -55,7 +56,7 @@ const bgc = '#fff';
                 <br />
                 <Row>
                   <Col span={24}>
-                    <Title level={4}>Yu Qing (余庆)</Title>
+                    <Title level={4}>余庆 | Qing Yu </Title>
                   </Col>
                 </Row>
                 <Content>
@@ -71,17 +72,20 @@ const bgc = '#fff';
             <Sider theme='light' width='100%'>
             <Card bordered={false}>
               <Tabs defaultActiveKey="Introduction" size={'large'}>
-                <TabPane tab="Introduction" key="Introduction">
+                <TabPane tab="简介 | Introduction" key="Introduction">
                   <Introduction />
                 </TabPane>
-                <TabPane tab="Research" key="Research">
+                <TabPane tab="研究 | Research" key="Research">
                   <Research />
                 </TabPane>
-                <TabPane tab="Publication" key="Publication">
+                <TabPane tab="文章 | Publication" key="Publication">
                   <Publication />
                 </TabPane>
-                <TabPane tab="Project" key="Projects">
+                <TabPane tab="开源 | Open Source" key="Projects">
                   <Projects />
+                </TabPane>
+                <TabPane tab="研究组 | Group" key="Group">
+                  <Group />
                 </TabPane>
               </Tabs>
               </Card>

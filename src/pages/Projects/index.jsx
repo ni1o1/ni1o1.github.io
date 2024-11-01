@@ -52,13 +52,13 @@ export default function Visualization() {
   }
   return (
     <div style={{ margin: 12 }}>
-      <Title level={2}>Python packages</Title>
+      <Title level={4}>Python库 | Python packages</Title>
         <Row gutter={[10, 10]}>
           {viscard("https://github.com/ni1o1/transbigdata", "images/logo-wordmark-dark-small.png", "TransBigData", "Processing, analyzing, and visualizing spatiotemporal transportation data")}
           {viscard("https://github.com/ni1o1/pybdshadow", "images/pybdshadow.png", "pybdshadow", "Estimate building shadows from building footprints")}
         </Row>
         <Divider />
-      <Title level={2}>Visualization Projects</Title>
+      <Title level={4}>开源可视化项目 | Visualization Projects</Title>
       <Row gutter={[10, 10]}>
         {Visualcard("https://github.com/ni1o1/GeoJSONViewer",
           "images/GeoJSONviewer.png",
@@ -114,7 +114,7 @@ export default function Visualization() {
           "Click on the road network to display road speed correlations")}
       </Row>
       <Divider />
-      <Title level={2}>ECharts demo</Title>
+      <Title level={4}>ECharts demo</Title>
 
       <Row gutter={[10, 10]}>
         {Visualcard2("https://ni1o1.github.io/echartsexamples/xiamenhouseprice/",
