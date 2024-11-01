@@ -24,7 +24,7 @@
 - Urban planning & mobility
 - Agent-based simulation
 
-#### 学术编辑 | Editorial 
+#### 学术兼职 | Editorial 
 
 - Young Editorial Board Member, Nexus
 - Assistant Editor, Energy 360
