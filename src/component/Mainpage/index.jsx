@@ -20,7 +20,7 @@ export default function Mainpage() {
   const content = (
     <>
       <Paragraph >
-        Ph. D. /Postdoctor
+        博士后 | Ph. D. /Postdoctor
         <br />
         北京大学城市规划与设计学院 | School of Urban Planning & Design, Peking University Shenzhen
         <br />
