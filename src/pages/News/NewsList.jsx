@@ -19,8 +19,10 @@ export default function Intro() {
         axios.get(`posts/${filename}`).then(res => {
 
           const fileContent = res.data;
-
+          console.log(fileContent)
           const parsedContent = matter(fileContent);
+          console.log(parsedContent)
+
           newsList = [...newsList, {
             filename: filename.replace('./', ''), // 格式化文件名以便在路由中使用
             data: parsedContent.attributes,
@@ -30,11 +32,9 @@ export default function Intro() {
         })
       })
     })
-
-
   }
     , []);
-
+  console.log(news)
   return (
     <>
       <Typography>
