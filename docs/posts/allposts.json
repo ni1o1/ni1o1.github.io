@@ -1,3 +1,26 @@
 {
- "posts" :["post1", "post2"]  
+    "posts": [
+        {
+            "filename": "post1",
+            "title": "个人主页搭建完成",
+            "date": "2024-11-07",
+            "tags": [
+                "个人主页",
+                "React",
+                "Github Pages"
+            ],
+            "brief": "React纯手搭"
+        },
+        {
+            "filename": "post2",
+            "title": "AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
+            "date": "2024-11-08",
+            "tags": [
+                "可视化系统",
+                "广告牌",
+                "数字孪生"
+            ],
+            "brief": "近期于《Advanced Engineering Informatics》发表论文《AdvMOB 基于数字孪生技术的广告牌曝光分析交互可视化系统》"
+        }
+    ]
 }
