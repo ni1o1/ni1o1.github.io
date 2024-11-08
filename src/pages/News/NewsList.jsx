@@ -13,6 +13,11 @@ export default function Intro() {
     const fetchNews = async () => {
       const files = require.context('./', false, /\.md$/);
 
+      files.keys().forEach((file) => {
+        const fileContent = files(file);
+        // 使用 fileContent
+      });
+      
       const newsList = await Promise.all(
         files.keys().map(async (filename) => {
           const fileContent = await import(`./${filename.replace('./', '')}`)
