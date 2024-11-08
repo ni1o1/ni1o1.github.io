@@ -1,8 +1,9 @@
 // Introduction.js
 import React, { useEffect, useState } from 'react';
-import { Typography,  List, Tag } from 'antd';
+import { Typography, List, Tag } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import matter from 'front-matter';
+import axios from 'axios';
 export default function Intro() {
 
   const navigate = useNavigate();
@@ -10,35 +11,29 @@ export default function Intro() {
 
 
   useEffect(() => {
-    const fetchNews = async () => {
-      const files = require.context('./', false, /\.md$/);
+    let newsList = [];
+    axios.get('posts/allposts.json').then(res => {
+      const files = res.data;
+      files.posts.map((filename) => {
 
-      files.keys().forEach((file) => {
-        const fileContent = files(file);
-        // 使用 fileContent
-      });
-      
-      const newsList = await Promise.all(
-        files.keys().map(async (filename) => {
-          const fileContent = await import(`./${filename.replace('./', '')}`)
-            .then((res) => fetch(res.default)) // Fetch the imported content
-            .then((response) => response.text());
+        axios.get(`posts/${filename}`).then(res => {
+
+          const fileContent = res.data;
 
           const parsedContent = matter(fileContent);
-          return {
+          newsList = [...newsList, {
             filename: filename.replace('./', ''), // 格式化文件名以便在路由中使用
             data: parsedContent.attributes,
             content: parsedContent.body,
-          };
+          }]
+          setNews(newsList.sort((a, b) => new Date(b.data.date) - new Date(a.data.date)));
         })
-      );
+      })
+    })
 
-      const sortedNewsList = newsList.sort((a, b) => new Date(b.data.date) - new Date(a.data.date));
-      setNews(sortedNewsList);
-    };
 
-    fetchNews();
-  }, []);
+  }
+    , []);
 
   return (
     <>

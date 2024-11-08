@@ -23,10 +23,9 @@ export default function NewsDetail() {
 
   useEffect(() => {
     const fetchMarkdown = async () => {
-      const fileContent = await import(`./${filename}`)
-        .then((res) => fetch(res.default)) // Fetch the imported content
-        .then((response) => response.text());
-        
+      const response = await fetch(`posts/${filename}`)
+      const fileContent = await response.text();
+      
       const parsedContent = matter(fileContent);
       setContent(parsedContent);
     };
