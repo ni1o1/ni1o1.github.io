@@ -25,7 +25,6 @@ export default function NewsDetail() {
     const fetchMarkdown = async () => {
       const response = await fetch(`posts/${filename}`)
       const fileContent = await response.text();
-      
       const parsedContent = matter(fileContent);
       setContent(parsedContent);
     };
