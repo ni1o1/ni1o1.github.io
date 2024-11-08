@@ -13,7 +13,7 @@
         },
         {
             "filename": "post2",
-            "title": "AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
+            "title": "论文发表 | AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
             "date": "2024-11-08",
             "tags": [
                 "可视化系统",
@@ -21,6 +21,17 @@
                 "数字孪生"
             ],
             "brief": "近期于《Advanced Engineering Informatics》发表论文《AdvMOB 基于数字孪生技术的广告牌曝光分析交互可视化系统》"
+        },
+        {
+            "filename": "post3",
+            "title": "Energy 360 期刊青年编委招收",
+            "date": "2024-11-09",
+            "tags": [
+                "编委",
+                "Energy 360",
+                "期刊"
+            ],
+            "brief": "Energy 360 期刊青年编委招收，爱思唯尔旗下，非OA"
         }
     ]
 }
