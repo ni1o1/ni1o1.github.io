@@ -2,12 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, List, Tag } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import matter from 'front-matter';
+//import matter from 'front-matter';
 import axios from 'axios';
+
 export default function Intro() {
 
   const navigate = useNavigate();
   const [news, setNews] = useState([]);
+  const yamlFront = require('yaml-front-matter');
 
 
   useEffect(() => {
@@ -17,24 +19,20 @@ export default function Intro() {
       files.posts.map((filename) => {
 
         axios.get(`posts/${filename}`).then(res => {
-
           const fileContent = res.data;
-          console.log(fileContent)
-          const parsedContent = matter(fileContent);
-          console.log(parsedContent)
+          const parsedContent = yamlFront.loadFront(fileContent);
 
           newsList = [...newsList, {
             filename: filename.replace('./', ''), // 格式化文件名以便在路由中使用
-            data: parsedContent.attributes,
-            content: parsedContent.body,
+            data: parsedContent,
           }]
+
           setNews(newsList.sort((a, b) => new Date(b.data.date) - new Date(a.data.date)));
         })
       })
     })
   }
     , []);
-  console.log(news)
   return (
     <>
       <Typography>

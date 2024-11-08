@@ -6,9 +6,11 @@ import {  Breadcrumb,Divider } from 'antd';
 
 import { useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import matter from 'front-matter';
+//import matter from 'front-matter';
 
 export default function NewsDetail() {
+  const yamlFront = require('yaml-front-matter');
+
 
   const navigate = useNavigate();
   const { filename } = useParams();
@@ -25,13 +27,14 @@ export default function NewsDetail() {
     const fetchMarkdown = async () => {
       const response = await fetch(`posts/${filename}`)
       const fileContent = await response.text();
-      const parsedContent = matter(fileContent);
+      const parsedContent = yamlFront.loadFront(fileContent);
+      //const parsedContent = matter(fileContent);
       setContent(parsedContent);
     };
 
     fetchMarkdown();
   }, [filename]);
-
+console.log(Content)
   return (
     <>
        <Breadcrumb>
@@ -44,12 +47,12 @@ export default function NewsDetail() {
           </a>
         </Breadcrumb.Item>
         <Breadcrumb.Item >
-          {Content.attributes.title}
+          {Content.title}
         </Breadcrumb.Item>
       </Breadcrumb>
       <Divider></Divider>
       <div className='markdown-body'>
-      <ReactMarkdown children={Content.body}  />
+      <ReactMarkdown children={Content.__content}  />
       </div>
     </>
   );
