@@ -1,6 +1,6 @@
 // Introduction.js
 import React, { useEffect, useState } from 'react';
-import { Typography, List, Tag } from 'antd';
+import { Typography, List, Tag, Space } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -33,13 +33,15 @@ export default function Intro() {
                   navigate(`/news/${item.filename}`)
                 }}>{item.title}
                 </a>}
-                description={<>
-                  {item.tags && item.tags.map(f => (
-                    <Tag bordered={false} >
-                      {f}
-                    </Tag>))}
+                description={<Space>
                   {item.date}
-                </>}
+                  <div>
+                    {item.tags && item.tags.map(f => (
+                      <Tag bordered={false} >
+                        {f}
+                      </Tag>))}
+                  </div>
+                </Space>}
               />
               {item.brief}
             </List.Item>
