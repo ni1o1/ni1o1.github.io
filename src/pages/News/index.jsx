@@ -38,10 +38,10 @@ export default function Intro() {
                     <Tag bordered={false} >
                       {f}
                     </Tag>))}
-                  {item.brief}
+                  {item.date}
                 </>}
               />
-              {item.date}
+              {item.brief}
             </List.Item>
           )}
         />
