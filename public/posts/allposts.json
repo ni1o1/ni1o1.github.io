@@ -2,7 +2,8 @@
     "posts": [
         {
             "filename": "post1",
-            "title": "个人主页搭建完成",
+            "filename_en": "post1_en",
+            "title": "个人主页搭建完成 | Personal Homepage Setup Complete",
             "date": "2024-11-07",
             "tags": [
                 "个人主页",
@@ -13,7 +14,8 @@
         },
         {
             "filename": "post2",
-            "title": "论文发表 | AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
+            "filename_en": "post2_en",
+            "title": "AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统 | AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology",
             "date": "2024-11-08",
             "tags": [
                 "可视化系统",
@@ -24,7 +26,8 @@
         },
         {
             "filename": "post3",
-            "title": "Energy 360 期刊青年编委招收",
+            "filename_en": "post3_en",
+            "title": "Energy 360 期刊青年编委招收 | Energy 360: Call for Young Editorial Board Members",
             "date": "2024-11-09",
             "tags": [
                 "编委",
