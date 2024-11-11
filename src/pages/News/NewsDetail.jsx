@@ -2,12 +2,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Tabs } from 'antd';
+import { Tabs, Button } from 'antd';
+import {
+  ArrowLeftOutlined
+} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const { TabPane } = Tabs;
 export default function NewsDetail() {
 
+  const navigate = useNavigate();
   const { filename } = useParams();
   const [Content, setContent] = useState({
   });
@@ -26,10 +31,9 @@ export default function NewsDetail() {
 
 
   const [language, setLanguage] = useState('');
- 
+
   useEffect(() => {
 
-    console.log(navigator.language)
     if (navigator.language === 'zh-CN') {
       setLanguage('cn')
     } else {
@@ -42,7 +46,21 @@ export default function NewsDetail() {
     <>
 
       <div className='markdown-body'>
-        <Tabs activeKey={language} size={'small'}  centered
+        <Tabs
+        tabBarStyle={{ marginBottom: 0 ,
+         // backgroundColor: '#f0f2f5'
+        }}
+          tabBarExtraContent={{
+            'left': <Button
+              size='large'
+              shape="circle"
+              type='text'
+              onClick={() => {
+                navigate('/news')
+              }}><ArrowLeftOutlined /></Button>
+          }}
+          centered
+          activeKey={language} size={'small'} 
           onTabClick={(key) => {
             setLanguage(key)
           }}
