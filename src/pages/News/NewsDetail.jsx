@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Tabs, Button } from 'antd';
+import { Tabs, Button,Skeleton } from 'antd';
 import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
@@ -44,35 +44,37 @@ export default function NewsDetail() {
 
   return (
     <>
-
-      <div className='markdown-body'>
-        <Tabs
-        tabBarStyle={{ marginBottom: 0 ,
-         // backgroundColor: '#f0f2f5'
-        }}
-          tabBarExtraContent={{
-            'left': <Button
-              size='large'
-              shape="circle"
-              type='text'
-              onClick={() => {
-                navigate('/news')
-              }}><ArrowLeftOutlined /></Button>
-          }}
-          centered
-          activeKey={language} size={'small'} 
-          onTabClick={(key) => {
-            setLanguage(key)
-          }}
-        >
-          <TabPane tab="中文" key="cn">
-            <ReactMarkdown children={Content} />
-          </TabPane>
-          <TabPane tab="English" key="en">
-            <ReactMarkdown children={Content_en} />
-          </TabPane>
-        </Tabs>
-      </div>
+      <Skeleton loading={Content.length == 0} active title>
+        <div className='markdown-body'>
+          <Tabs
+            tabBarStyle={{
+              marginBottom: 0,
+              // backgroundColor: '#f0f2f5'
+            }}
+            tabBarExtraContent={{
+              'left': <Button
+                size='large'
+                shape="circle"
+                type='text'
+                onClick={() => {
+                  navigate('/news')
+                }}><ArrowLeftOutlined /></Button>
+            }}
+            centered
+            activeKey={language} size={'small'}
+            onTabClick={(key) => {
+              setLanguage(key)
+            }}
+          >
+            <TabPane tab="中文" key="cn">
+              <ReactMarkdown children={Content} />
+            </TabPane>
+            <TabPane tab="English" key="en">
+              <ReactMarkdown children={Content_en} />
+            </TabPane>
+          </Tabs>
+        </div>
+      </Skeleton>
     </>
   );
 }

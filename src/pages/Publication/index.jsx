@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Divider } from 'antd';
+import { Typography, Divider,Skeleton } from 'antd';
 import ReactMarkdown from 'react-markdown'
 
 
@@ -14,9 +14,11 @@ export default function Publication() {
   }, []);
 
   return (
-  
-          <div className='markdown-body'>
-          <ReactMarkdown children={markdown} />
-        </div>
+
+    <div className='markdown-body'>
+      <Skeleton loading={markdown == ''} active title>
+        <ReactMarkdown children={markdown} />
+      </Skeleton>
+    </div>
   )
 }

@@ -1,6 +1,6 @@
 // Introduction.js
 import React, { useEffect, useState } from 'react';
-import { Typography, List, Tag, Space } from 'antd';
+import { Typography, List, Tag, Space, Skeleton } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -18,36 +18,38 @@ export default function Intro() {
 
   return (
     <>
-      <Typography>
-        <List
-          itemLayout="vertical"
-          size="large"
-          dataSource={news}
-          pagination={{
-            pageSize: 3,
-          }}
-          renderItem={(item, index) => (
-            <List.Item>
-              <List.Item.Meta
-                title={<a onClick={() => {
-                  navigate(`/news/${item.filename}`)
-                }}>{item.title}
-                </a>}
-                description={<Space>
-                  {item.date}
-                  <div>
-                    {item.tags && item.tags.map(f => (
-                      <Tag bordered={false} >
-                        {f}
-                      </Tag>))}
-                  </div>
-                </Space>}
-              />
-              {item.brief}
-            </List.Item>
-          )}
-        />
-      </Typography>
+      <Skeleton loading={news.length == 0} active title>
+        <Typography>
+          <List
+            itemLayout="vertical"
+            size="large"
+            dataSource={news}
+            pagination={{
+              pageSize: 3,
+            }}
+            renderItem={(item, index) => (
+              <List.Item>
+                <List.Item.Meta
+                  title={<a onClick={() => {
+                    navigate(`/news/${item.filename}`)
+                  }}>{item.title}
+                  </a>}
+                  description={<Space>
+                    {item.date}
+                    <div>
+                      {item.tags && item.tags.map(f => (
+                        <Tag bordered={false} >
+                          {f}
+                        </Tag>))}
+                    </div>
+                  </Space>}
+                />
+                {item.brief}
+              </List.Item>
+            )}
+          />
+        </Typography>
+      </Skeleton>
     </>
   );
 }
