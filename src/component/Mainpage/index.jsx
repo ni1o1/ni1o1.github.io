@@ -1,6 +1,6 @@
 import React from 'react'
 import { Layout, Button, Divider, Avatar, Row, Col, Descriptions, Card, PageHeader, Tag, Typography, Tabs } from 'antd';
-import { AntDesignOutlined, GoogleOutlined, MailOutlined, GithubOutlined, YoutubeOutlined } from '@ant-design/icons';
+import { AntDesignOutlined,TranslationOutlined, GoogleOutlined, MailOutlined, GithubOutlined, YoutubeOutlined } from '@ant-design/icons';
 import Introduction from '@/pages/Introduction';
 import Publication from '@/pages/Publication';
 import Projects from '@/pages/Projects';
@@ -8,11 +8,10 @@ import Research from '@/pages/Research';
 import Group from '@/pages/Group';
 import News from '@/pages/News';
 import NewsDetail from '@/pages/News/NewsDetail';
-import Heading from '@/component/Heading';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import './github-markdown-light.css';
 //import 'antd/dist/antd.css';
-
+import { useTranslation } from 'react-i18next';
 import './index.css';
 
 const { Title, Paragraph, Text, Link } = Typography;
@@ -21,25 +20,26 @@ const { Header, Footer, Sider, Content } = Layout;
 const { TabPane } = Tabs;
 
 export default function Mainpage() {
+  const { t,i18n } = useTranslation();
 
   const content = (
     <>
       <Paragraph >
-        博士后 | Ph. D. /Postdoctor
+        {t('博士后')}
         <br />
-        北京大学城市规划与设计学院 | School of Urban Planning & Design, Peking University Shenzhen
+        {t('北京大学城市规划与设计学院')}
         <br />
-        智慧城市实验室 | Smart City Lab
+        {t('智慧城市实验室')}
       </Paragraph>
       <Divider />
       <Descriptions column={{ xs: 3, sm: 1, md: 1 }} colon={false} title="" layout='horizontal' >
-        <Descriptions.Item label={<span className="iconfont icon-position" />} >Shenzhen</Descriptions.Item>
-        <Descriptions.Item label={<MailOutlined />}><Link href="mailto:yuq@pku.edu.cn" target="_blank">Email: yuq@pku.edu.cn</Link></Descriptions.Item>
+        <Descriptions.Item label={<span className="iconfont icon-position" />} >{t('深圳')}</Descriptions.Item>
+        <Descriptions.Item label={<MailOutlined />}><Link href="mailto:yuq@pku.edu.cn" target="_blank">{t('邮箱')}: yuq@pku.edu.cn</Link></Descriptions.Item>
         <Descriptions.Item label={<GithubOutlined />}><Link href="https://github.com/ni1o1/" target="_blank">Github</Link></Descriptions.Item>
         <Descriptions.Item label={<span className="iconfont icon-researchgate" />} ><Link href="https://www.researchgate.net/profile/Qing_Yu51" target="_blank">ResearchGate</Link></Descriptions.Item>
-        <Descriptions.Item label={<GoogleOutlined />}><Link href="https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN" target="_blank">GoogleScholar</Link></Descriptions.Item>
-        <Descriptions.Item label={<span className="iconfont icon-bilibili" />}><Link href="https://space.bilibili.com/3051484" target="_blank">Bilibili</Link></Descriptions.Item>
-        <Descriptions.Item label={<YoutubeOutlined />} > <Link href="https://www.youtube.com/channel/UCF0DRqniKUOEMRub8eyRutQ" target="_blank">Youtube</Link></Descriptions.Item>
+        <Descriptions.Item label={<GoogleOutlined />}><Link href="https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN" target="_blank">{t('谷歌学术')}</Link></Descriptions.Item>
+        <Descriptions.Item label={<span className="iconfont icon-bilibili" />}><Link href="https://space.bilibili.com/3051484" target="_blank">{t('哔哩哔哩')}</Link></Descriptions.Item>
+        <Descriptions.Item label={<YoutubeOutlined />} > <Link href="https://www.youtube.com/channel/UCF0DRqniKUOEMRub8eyRutQ" target="_blank">{t('油管')}</Link></Descriptions.Item>
       </Descriptions>
     </>
   );
@@ -65,7 +65,7 @@ export default function Mainpage() {
                   <br />
                   <Row>
                     <Col span={24}>
-                      <Title level={4}>余庆 | Qing Yu </Title>
+                      <Title level={4}>{t('余庆')} </Title>
                     </Col>
                   </Row>
                   <Content>
@@ -83,22 +83,23 @@ export default function Mainpage() {
 
 
                 <Tabs defaultActiveKey="intro" size={'large'}
+                tabBarExtraContent={<Button type='text' onClick={() => { i18n.changeLanguage(i18n.language == 'en' ? 'zh' : 'en')}}
+                >{i18n.language == 'en' ? '中文' : 'English'}</Button>}
                   onTabClick={(key) => {
-                    console.log(key)
                     navigate(`/${key}`)
                   }}
                 >
-                  <TabPane tab="简介 | Introduction" key="intro" >
+                  <TabPane tab={t("简介")} key="intro" >
                   </TabPane>
-                  <TabPane tab="新闻 | News" key="news">
+                  <TabPane tab={t("新闻")} key="news">
                   </TabPane>
-                  <TabPane tab="研究 | Research" key="research">
+                  <TabPane tab={t("研究")} key="research">
                   </TabPane>
-                  <TabPane tab="文章 | Publication" key="publication">
+                  <TabPane tab={t("文章")} key="publication">
                   </TabPane>
-                  <TabPane tab="开源 | Open Source" key="projects">
+                  <TabPane tab={t("开源")} key="projects">
                   </TabPane>
-                  <TabPane tab="研究组 | Group" key="group">
+                  <TabPane tab={t("团队")} key="group">
                   </TabPane>
                 </Tabs>
 
@@ -122,7 +123,7 @@ export default function Mainpage() {
         </Row>
         <Row>
           <Col span={24}>
-            <Footer style={{ backgroundColor: bgc, textAlign: 'center' }}>Copyright © 2024 Peking University Shenzhen Graduate School | yuq@pku.edu.cn</Footer>
+            <Footer style={{ backgroundColor: bgc, textAlign: 'center' }}>{t("版权所有")} © 2024 {t("北京大学城市规划与设计学院")} | yuq@pku.edu.cn</Footer>
           </Col>
         </Row>
       </div>

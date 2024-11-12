@@ -1,11 +1,14 @@
 import React from 'react'
 import { Card, Row, Col, Typography, Divider } from 'antd';
 
+import { useTranslation } from 'react-i18next';
+
 const { Meta } = Card;
 const { Title, Paragraph } = Typography;
 
 
 export default function Visualization() {
+  const { t,i18n } = useTranslation();
 
   function Visualcard(src, imgpath, title, description) {
     return <Col span={8} xs={24} sm={24} md={24} lg={12} xl={8} xxl={6}>
@@ -52,13 +55,13 @@ export default function Visualization() {
   }
   return (
     <div style={{ margin: 12 }}>
-      <Title level={4}>Python库 | Python packages</Title>
+      <Title level={4}>{t("Python库")}</Title>
         <Row gutter={[10, 10]}>
           {viscard("https://github.com/ni1o1/transbigdata", "images/logo-wordmark-dark-small.png", "TransBigData", "Processing, analyzing, and visualizing spatiotemporal transportation data")}
           {viscard("https://github.com/ni1o1/pybdshadow", "images/pybdshadow.png", "pybdshadow", "Estimate building shadows from building footprints")}
         </Row>
         <Divider />
-      <Title level={4}>开源可视化项目 | Visualization Projects</Title>
+      <Title level={4}>{t("开源可视化项目")}</Title>
       <Row gutter={[10, 10]}>
         {Visualcard("https://github.com/ni1o1/GeoJSONViewer",
           "images/GeoJSONviewer.png",

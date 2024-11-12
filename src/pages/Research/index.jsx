@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Divider, Col, Row } from 'antd';
-
+import { useTranslation } from 'react-i18next';
 const { Title, Paragraph, Text, Link } = Typography;
 
 
 export default function Publication() {
+  const { t,i18n } = useTranslation();
 
 
   function research(title, description, imgpath, src, textlength, position) {
@@ -41,8 +42,7 @@ export default function Publication() {
   }
   return (
     <Typography>
-
-      <Divider orientation="left"><Title level={3}>交通能源与排放 | Transportation Energy and Emissions</Title></Divider>
+      <Divider orientation="left"><Title level={3}>{t("交通能源与排放")}</Title></Divider>
       {research(
         'Potential and flexibility analysis of electric taxi fleets V2G system based on trajectory data and agent-based modeling',
         'We studied the Vehicle-to-Grid (V2G) potential of electric taxis, developing a framework to analyze charging and energy use. Our model, applied to 19,900 taxis in Shenzhen, shows significant peak power supply and quick recovery, promoting efficient energy management.',
@@ -60,7 +60,7 @@ export default function Publication() {
         'right'
       )}
 
-<Divider orientation="left"><Title level={3}>城市环境与数字孪生 | Urban Environment and Digital Twin</Title></Divider>
+<Divider orientation="left"><Title level={3}>{t("城市环境与数字孪生")}</Title></Divider>
       {research(
         'AdvMOB: Interactive visual analytic system of billboard advertising exposure analysis based on urban digital twin technique',
         'We developed AdvMOB, an interactive visual analytics system to assess billboard advertising exposure in urban environments. It integrates personal information and trajectory data to accurately measure the impact of individual billboards, providing comprehensive evaluation and comparison of exposure through an intuitive interface. This system has the potential to significantly improve the design of billboard advertisements by delivering nuanced insights and comprehensive support.',
@@ -78,7 +78,7 @@ export default function Publication() {
         'right'
       )}
 
-      <Divider orientation="left"><Title level={3}>共享交通 | Sharing Transportation</Title></Divider>
+      <Divider orientation="left"><Title level={3}>{t("共享交通")}</Title></Divider>
       {research(
         'GPS data in urban bicycle-sharing: Dynamic electric fence planning with assessment of resource-saving and potential energy consumption increasement',
         'We use an agent-based model to simulate trips and compare the effectiveness of static versus dynamic electric fences. Results indicate that dynamic fences reduce walking distances, enhance parking order in city centers, and improve resource efficiency, saving 25.31% in bicycle resources. Additionally, dynamic fences decrease energy consumption by 5.79% daily compared to static fences.',

@@ -3,37 +3,43 @@
         {
             "filename": "post1",
             "filename_en": "post1_en",
-            "title": "个人主页搭建完成 | Personal Homepage Setup Complete",
+            "title": "个人主页搭建完成",
+            "title_en": "Personal Homepage Setup Complete",
             "date": "2024-11-07",
             "tags": [
                 "个人主页",
                 "React",
                 "Github Pages"
             ],
-            "brief": "React纯手搭"
+            "brief": "React纯手搭",
+            "brief_en": "Build by React"
         },
         {
             "filename": "post2",
             "filename_en": "post2_en",
-            "title": "AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统 | AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology",
+            "title": "AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
+            "title_en": "AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology",
             "date": "2024-11-08",
             "tags": [
                 "可视化系统",
                 "广告牌",
                 "数字孪生"
             ],
-            "brief": "近期于《Advanced Engineering Informatics》发表论文《AdvMOB 基于数字孪生技术的广告牌曝光分析交互可视化系统》"
+            "brief": "近期于《Advanced Engineering Informatics》发表论文《AdvMOB 基于数字孪生技术的广告牌曝光分析交互可视化系统》",
+            "brief_en": "Recently published a paper in 'Advanced Engineering Informatics' titled 'AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology'"
         },
         {
             "filename": "post3",
             "filename_en": "post3_en",
-            "title": "Energy 360 期刊青年编委招收 | Energy 360: Call for Young Editorial Board Members",
+            "title": "Energy 360 期刊青年编委招收",
+            "title_en":"Energy 360: Call for Young Editorial Board Members",
             "date": "2024-11-09",
             "tags": [
                 "编委",
                 "Energy 360"
             ],
-            "brief": "Energy 360 期刊青年编委招收，爱思唯尔旗下，非OA"
+            "brief": "Energy 360 期刊青年编委招收，爱思唯尔旗下，非OA",
+            "brief_en": "Energy 360: Call for Young Editorial Board Members, under Elsevier, non-OA"
         }
     ]
 }
