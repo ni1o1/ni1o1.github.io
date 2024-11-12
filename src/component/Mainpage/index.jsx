@@ -1,6 +1,6 @@
 import React from 'react'
-import { Layout, Button, Divider, Avatar, Row, Col, Descriptions, Card, PageHeader, Tag, Typography, Tabs } from 'antd';
-import { AntDesignOutlined,TranslationOutlined, GoogleOutlined, MailOutlined, GithubOutlined, YoutubeOutlined } from '@ant-design/icons';
+import { Layout, Button, Divider, Avatar, Row, Col, Descriptions, Card, PageHeader,  Typography, Tabs } from 'antd';
+import { AntDesignOutlined, TranslationOutlined, GoogleOutlined, MailOutlined, GithubOutlined, YoutubeOutlined } from '@ant-design/icons';
 import Introduction from '@/pages/Introduction';
 import Publication from '@/pages/Publication';
 import Projects from '@/pages/Projects';
@@ -8,6 +8,7 @@ import Research from '@/pages/Research';
 import Group from '@/pages/Group';
 import News from '@/pages/News';
 import NewsDetail from '@/pages/News/NewsDetail';
+import Heading from '@/component/Heading';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom'
 import './github-markdown-light.css';
 //import 'antd/dist/antd.css';
@@ -20,7 +21,7 @@ const { Header, Footer, Sider, Content } = Layout;
 const { TabPane } = Tabs;
 
 export default function Mainpage() {
-  const { t,i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const content = (
     <>
@@ -48,85 +49,101 @@ export default function Mainpage() {
   const navigate = useNavigate();
 
   return (
- 
-      <div style={{ 'backgroundColor': bgc }}>
-        <Row  >
-          <Col xs={24} sm={8} md={6} lg={6}>
-            <Card bordered={false} style={{ 'backgroundColor': bgc }}>
-              <Sider theme='light' width='100%'>
-                <PageHeader
-                  className="site-page-header"
-                >
-                  <Row>
-                    <Col span={24}>
-                      <Avatar size="large" style={{ width: 100, height: 100 }} src='images/avatar.jpg' />
-                    </Col>
-                  </Row>
-                  <br />
-                  <Row>
-                    <Col span={24}>
-                      <Title level={4}>{t('余庆')} </Title>
-                    </Col>
-                  </Row>
-                  <Content>
-                    {content}
-                  </Content>
-                </PageHeader>
-              </Sider>
+
+    <div style={{
+      'backgroundColor': bgc
+    }}>
+
+      <Row  >
+
+        <Col xs={24} sm={8} md={6} lg={6}>
+          <Card bordered={false} style={{ 'backgroundColor': bgc }}>
+            <Sider theme='light' width='100%'>
+              <PageHeader
+                className="site-page-header"
+              >
+                <Row>
+                  <Col span={24}>
+                    <Avatar size="large" style={{ width: 100, height: 100 }} src='images/avatar.jpg' />
+                  </Col>
+                </Row>
+                <br />
+                <Row>
+                  <Col span={24}>
+                    <Title level={4}>{t('余庆')} </Title>
+                  </Col>
+                </Row>
+                <Content>
+                  {content}
+                </Content>
+              </PageHeader>
+            </Sider>
+          </Card>
+
+        </Col>
+        <Col xs={24} sm={16} md={18} lg={18}>
+
+          <Sider theme='light' width='100%'>
+            <Card bordered={false}>
+
+
+              <Tabs defaultActiveKey="intro" size={'large'}
+                tabBarExtraContent={
+                
+                    <Button type='primary' onClick={() => { i18n.changeLanguage(i18n.language == 'en' ? 'zh' : 'en') }}
+                    >{i18n.language == 'en' ? '中文' : 'English'}</Button>
+
+                }
+                onTabClick={(key) => {
+                  navigate(`/${key}`)
+                }}
+              >
+                <TabPane tab={t("简介")} key="intro" >
+                </TabPane>
+                <TabPane tab={t("新闻")} key="news">
+                </TabPane>
+                <TabPane tab={t("研究")} key="research">
+                </TabPane>
+                <TabPane tab={t("论著")} key="publication">
+                </TabPane>
+                <TabPane tab={t("开源")} key="projects">
+                </TabPane>
+                <TabPane tab={t("团队")} key="group">
+                </TabPane>
+              </Tabs>
+
+
+              <Routes>
+                <Route path="/" element={<Introduction />} />
+                <Route path="/intro" element={<Introduction />} />
+                <Route path="/news" element={<News />} />
+                <Route path="/research" element={<Research />} />
+                <Route path="/publication" element={<Publication />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/group" element={<Group />} />
+                <Route path="/news/:filename" element={<NewsDetail />} />
+              </Routes>
             </Card>
 
-          </Col>
-          <Col xs={24} sm={16} md={18} lg={18}>
 
-            <Sider theme='light' width='100%'>
-              <Card bordered={false}>
+          </Sider>
 
+        </Col>
+      </Row>
+      <Row>
+        <Col span={24}>
+          <Footer style={{ backgroundColor: '#f0f2f5', textAlign: 'center' }}>{t("版权所有")} © 2024 {t("北京大学智慧城市实验室")} | yuq@pku.edu.cn
+            <br />
+            <img className="headimg" src="heading/heading.png" style={{
+              'margin': '10px',
+              'right': '0',
+              'object-fit': 'contain'
+            }} height='40' ></img>
+          </Footer>
+        </Col>
+      </Row>
 
-                <Tabs defaultActiveKey="intro" size={'large'}
-                tabBarExtraContent={<Button type='text' onClick={() => { i18n.changeLanguage(i18n.language == 'en' ? 'zh' : 'en')}}
-                >{i18n.language == 'en' ? '中文' : 'English'}</Button>}
-                  onTabClick={(key) => {
-                    navigate(`/${key}`)
-                  }}
-                >
-                  <TabPane tab={t("简介")} key="intro" >
-                  </TabPane>
-                  <TabPane tab={t("新闻")} key="news">
-                  </TabPane>
-                  <TabPane tab={t("研究")} key="research">
-                  </TabPane>
-                  <TabPane tab={t("文章")} key="publication">
-                  </TabPane>
-                  <TabPane tab={t("开源")} key="projects">
-                  </TabPane>
-                  <TabPane tab={t("团队")} key="group">
-                  </TabPane>
-                </Tabs>
-
-
-                <Routes>
-                  <Route path="/" element={<Introduction />} />
-                  <Route path="/intro" element={<Introduction />} />
-                  <Route path="/news" element={<News />} />
-                  <Route path="/research" element={<Research />} />
-                  <Route path="/publication" element={<Publication />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/group" element={<Group />} />
-                  <Route path="/news/:filename" element={<NewsDetail />} />
-                </Routes>
-              </Card>
-
-
-            </Sider>
-
-          </Col>
-        </Row>
-        <Row>
-          <Col span={24}>
-            <Footer style={{ backgroundColor: bgc, textAlign: 'center' }}>{t("版权所有")} © 2024 {t("北京大学城市规划与设计学院")} | yuq@pku.edu.cn</Footer>
-          </Col>
-        </Row>
-      </div>
+    </div>
 
   )
 }
