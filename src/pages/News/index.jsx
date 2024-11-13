@@ -26,7 +26,7 @@ export default function Intro() {
             size="large"
             dataSource={news}
             pagination={{
-              pageSize: 3,
+              pageSize: 10,
             }}
             renderItem={(item, index) => (
               <List.Item>
