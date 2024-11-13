@@ -1,5 +1,5 @@
 body {
-    font-family: 'Optima', sans-serif; /* Change 'YourFontName' to your desired font */
+    font-family: -apple-system,'Optima',BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji" !important; 
     margin: 0;
     padding: 0;
     box-sizing: border-box;

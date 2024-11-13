@@ -5,6 +5,7 @@ export default function Heading() {
    <>
    <img className="headimg" src="heading/heading.png" style={{ 
     'margin': '10px',
+    'left': '0',
     'object-fit': 'contain' }} height='40' ></img>
    </>
   )
