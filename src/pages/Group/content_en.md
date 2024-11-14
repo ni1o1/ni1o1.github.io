@@ -5,3 +5,4 @@ The Smart City Laboratory of Peking University is affiliated with the School of 
 - Mainpage: [https://www.pkudccl.com/](https://www.pkudccl.com/)
 - Leader: [Prof. Haoran Zhang](https://urban.pkusz.edu.cn/info/1013/3002.htm)
 - Contact us: h.zhang@pku.edu.cn, yuq@pku.edu.cn
+- Address: Room C120, School of Urban Planning and Design, Peking University Shenzhen Graduate School, 2199 Lishui Road, Nanshan District, Shenzhen, Guangdong, China

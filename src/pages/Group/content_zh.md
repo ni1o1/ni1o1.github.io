@@ -7,3 +7,4 @@
 - 主页: [https://www.pkudccl.com/](https://www.pkudccl.com/)
 - 学术带头人: [Prof. Haoran Zhang](https://urban.pkusz.edu.cn/info/1013/3002.htm)
 - 联系我们: h.zhang@pku.edu.cn, yuq@pku.edu.cn
+- 地址: 广东省深圳市南山区丽水路2199号，北京大学深圳研究生院，城市规划与设计学院，C120
