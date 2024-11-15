@@ -1,4 +1,5 @@
 {
+
     "posts": [
         {
             "filename": "post1",
@@ -12,7 +13,8 @@
                 "Github Pages"
             ],
             "brief": "React纯手搭",
-            "brief_en": "Build by React"
+            "brief_en": "Build by React",
+            "show": false
         },
         {
             "filename": "post2",
@@ -26,7 +28,8 @@
                 "数字孪生"
             ],
             "brief": "近期于《Advanced Engineering Informatics》发表论文《AdvMOB 基于数字孪生技术的广告牌曝光分析交互可视化系统》",
-            "brief_en": "Recently published a paper in 'Advanced Engineering Informatics' titled 'AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology'"
+            "brief_en": "Recently published a paper in 'Advanced Engineering Informatics' titled 'AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology'",
+            "show": true
         },
         {
             "filename": "post3",
@@ -39,7 +42,8 @@
                 "Energy 360"
             ],
             "brief": "Energy 360 期刊青年编委招收，爱思唯尔旗下，非OA",
-            "brief_en": "Energy 360: Call for Young Editorial Board Members, under Elsevier, non-OA"
+            "brief_en": "Energy 360: Call for Young Editorial Board Members, under Elsevier, non-OA",
+            "show": true
         },
         {
             "filename": "post4",
@@ -53,7 +57,8 @@
                 "建筑"
             ],
             "brief": "2024年12月16日于瑞典梅拉达伦大学",
-            "brief_en": "at Mälardalen University, Sweden on December 16, 2024"
+            "brief_en": "at Mälardalen University, Sweden on December 16, 2024",
+            "show": true
         },
         {
             "filename": "post5",
@@ -67,7 +72,8 @@
                 "充电站"
             ],
             "brief": "《基于多源时空数据的城市充电基础设施系统韧性时空特征及演变机制研究》获中国博士后科学基金第76批面上资助",
-            "brief_en": "The project 'Research on the Resilience Spatiotemporal Characteristics and Evolution Mechanism of Urban Charging Infrastructure System Based on Multi-source Spatiotemporal Data' won the 76th of general funding from the China Postdoctoral Science Foundation"
+            "brief_en": "The project 'Research on the Resilience Spatiotemporal Characteristics and Evolution Mechanism of Urban Charging Infrastructure System Based on Multi-source Spatiotemporal Data' won the 76th of general funding from the China Postdoctoral Science Foundation",
+            "show": true
         }
     ]
 }
