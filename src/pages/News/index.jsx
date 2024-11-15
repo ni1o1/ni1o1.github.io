@@ -13,7 +13,7 @@ export default function Intro() {
   useEffect(() => {
     axios.get('posts/allposts.json').then(res => {
       const files = res.data;
-      setNews(files.posts.sort((a, b) => new Date(b.date) - new Date(a.date)));
+      setNews(files.posts.filter(f=>f.show).sort((a, b) => new Date(b.date) - new Date(a.date)));
     })
   }, [])
 
