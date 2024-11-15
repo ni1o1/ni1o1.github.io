@@ -54,6 +54,20 @@
             ],
             "brief": "2024年12月16日于瑞典梅拉达伦大学",
             "brief_en": "at Mälardalen University, Sweden on December 16, 2024"
+        },
+        {
+            "filename": "post5",
+            "filename_en": "post5_en",
+            "title":"课题获中国博士后科学基金第76批面上资助",
+            "title_en":"Project Granted by the 76th of general funding from the China Postdoctoral Science Foundation",
+            "date": "2024-11-14",
+            "tags": [
+                "基金",
+                "电动汽车",
+                "充电站"
+            ],
+            "brief": "《基于多源时空数据的城市充电基础设施系统韧性时空特征及演变机制研究》获中国博士后科学基金第76批面上资助",
+            "brief_en": "The project 'Research on the Resilience Spatiotemporal Characteristics and Evolution Mechanism of Urban Charging Infrastructure System Based on Multi-source Spatiotemporal Data' won the 76th of general funding from the China Postdoctoral Science Foundation"
         }
     ]
 }
