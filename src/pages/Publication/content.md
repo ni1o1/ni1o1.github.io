@@ -12,7 +12,7 @@
 1. Q Jiao, X Chen, L Cheng, Q Yu (2025) Agent-Based Simulation for Passenger Flow Visualization and Control Strategies Analysis in Rail Transit. Transportation Research Board Annual Meeting
 2. Z Zhang, Q Yu, K Gao, HD He (2025) Modeling and Evaluating Carbon Emission Reductions of Vehicle Electrification for urban Ride-Hailing service. Transportation Research Board Annual Meeting
 3. Q Jiao, Q Yu, X Chen, L Cheng, D Ngoduy (2025). Evaluating Urban Rail Travel Reservation Strategy: A Dynamic Passenger Flow Simulation Approach. Transportmetrica B: TransportDynamics (pre-proof)
-4. Q Jiao, J Wang, L Cheng, X Chen, Q Yu. (2025). Carbon Emission Reduction Effects of Heterogeneous Car Travelers under Green Travel Incentive Strategies. Applied Energy (pre-proof)
+4. [Jiao, Q., Wang, J., Cheng, L., Chen, X., & **Yu, Q**. (2025). Carbon emission reduction effects of heterogeneous car travelers under green travel incentive strategies. Applied Energy, 379, 124826.](https://www.sciencedirect.com/science/article/pii/S0306261924022098)
 5. [Shi, J., Li, J., Zhang, H., Xie, B., Xie, Z., **Yu, Q.**, & Yan, J. (2025). Real-time gas explosion prediction at urban scale by GIS and graph neural network. Applied Energy, 377, 124614.](https://www.sciencedirect.com/science/article/pii/S0306261924019974)
 
 

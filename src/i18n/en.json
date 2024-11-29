@@ -32,5 +32,8 @@
     "城市规划":"Urban Planning",
     "讲座":"Lecture",
     "光伏":"Photovoltaic",
-    "建筑":"Building"
+    "建筑":"Building",
+    "基金":"Funding",
+    "电动汽车":"Electric Vehicle",
+    "充电站":"Charging Station"
 }
