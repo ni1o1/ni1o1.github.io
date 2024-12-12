@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunktodolist=self.webpackChunktodolist||[]).push([[269],{8269:function(t,e,s){t.exports=s.p+"static/media/content.58ac5ed1e1126ce3b86f.md"}}]);

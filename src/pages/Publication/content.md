@@ -9,7 +9,7 @@
 
 ### 2025
 1. Yu, Q., Dong, K., Guo, Z., Li, J., Tan, H., Jin, Y., … Yan, J. (2024). Global Estimation of Building-Integrated Facade and Rooftop Photovoltaic Potential by Integrating 3D Building Footprint and Spatio-Temporal Datasets. arXiv Retrieved from [http://arxiv.org/abs/2412.01291](http://arxiv.org/abs/2412.01291)
-2. Yu, Q., Li J., Feng D., Liu X., Yuan J., Zhang H., Wang X. (2025). Modeling Electric Vehicle Behavior: Insights from Long-term Charging and Energy Consumption Patterns through Empirical Trajectory Data. Applied Energy (pre-proof)
+2. [**Yu, Q.**, Li J., Feng D., Liu X., Yuan J., Zhang H., Wang X. (2025). Modeling Electric Vehicle Behavior: Insights from Long-term Charging and Energy Consumption Patterns through Empirical Trajectory Data. Applied Energy, 380, 125066.](https://www.sciencedirect.com/science/article/pii/S0306261924024504?via%3Dihub) 
 3. Q Jiao, X Chen, L Cheng, Q Yu (2025) Agent-Based Simulation for Passenger Flow Visualization and Control Strategies Analysis in Rail Transit. Transportation Research Board Annual Meeting
 4. Z Zhang, Q Yu, K Gao, HD He (2025) Modeling and Evaluating Carbon Emission Reductions of Vehicle Electrification for urban Ride-Hailing service. Transportation Research Board Annual Meeting
 5. Q Jiao, Q Yu, X Chen, L Cheng, D Ngoduy (2025). Evaluating Urban Rail Travel Reservation Strategy: A Dynamic Passenger Flow Simulation Approach. Transportmetrica B: TransportDynamics (pre-proof)

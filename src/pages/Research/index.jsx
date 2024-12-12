@@ -43,6 +43,7 @@ export default function Publication() {
   return (
     <Typography>
       <Divider orientation="left"><Title level={3}>{t("交通能源与排放")}</Title></Divider>
+      
       {research(
         'Potential and flexibility analysis of electric taxi fleets V2G system based on trajectory data and agent-based modeling',
         'We studied the Vehicle-to-Grid (V2G) potential of electric taxis, developing a framework to analyze charging and energy use. Our model, applied to 19,900 taxis in Shenzhen, shows significant peak power supply and quick recovery, promoting efficient energy management.',
@@ -52,12 +53,20 @@ export default function Publication() {
         'left'
       )}
       {research(
+        'Modeling electric vehicle behavior: Insights from long-term charging and energy consumption patterns through empirical trajectory data',
+        'We studied the regular charging patterns and potential demand of electric vehicles in spatial and temporal dimensions through long-term empirical data analysis and classification of charging behaviors of different types of electric vehicles.',
+        'images/research/EVmodeling.jpg',
+        'https://www.sciencedirect.com/science/article/pii/S0306261924024504',
+        10,
+        'right'
+      )}
+      {research(
         'GPS data in taxi-sharing system: Analysis of potential demand and assessment of fuel consumption based on routing probability model',
         'We developed a taxi-sharing system using probability-based matching algorithms to combine trips, aiming to reduce fuel consumption. Testing different strategies, we found it could decrease idle time but potentially increase traffic in busy urban spots.',
         'images/research/taxisharing.png',
         'https://www.sciencedirect.com/science/article/pii/S0306261922003452',
         9,
-        'right'
+        'left'
       )}
 
 <Divider orientation="left"><Title level={3}>{t("城市环境与数字孪生")}</Title></Divider>

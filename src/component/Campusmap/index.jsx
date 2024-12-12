@@ -6,26 +6,46 @@ import DeckGL from '@deck.gl/react';
 import { AmbientLight, LightingEffect, MapView, FirstPersonView, _SunLight as SunLight } from '@deck.gl/core';
 import { _MapContext as MapContext, StaticMap, NavigationControl, ScaleControl, FlyToInterpolator } from 'react-map-gl';
 import { GeoJsonLayer } from 'deck.gl';
+import {PolygonLayer} from '@deck.gl/layers';
+import axios from 'axios';
 
 const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibmkxbzEiLCJhIjoiY2t3ZDgzMmR5NDF4czJ1cm84Z3NqOGt3OSJ9.yOYP6pxDzXzhbHfyk3uORg';
 
 export default function Introduction() {
     const { t, i18n } = useTranslation();
     //地图光效
-    const [lightx, setlightx] = useState(1554937300)
-    const [lightintensity, setlightintensity] = useState(2)
-    const ambientLight = new AmbientLight({
-        color: [255, 255, 255],
-        intensity: 1.0
-    });
+    //获取当前时间戳
+
+    const timestamp = new Date().getTime() / 1000;
+    const [lightx, setlightx] = useState(timestamp)
+    const [bddata,setbddata] = useState({
+        "type": "FeatureCollection",
+        "features": []
+    })
+
+    useEffect(() => {
+        //允许右键旋转视角
+        document.getElementById("deckgl-wrapper").addEventListener("contextmenu", evt => evt.preventDefault());
+        axios.get('/data/bd.geojson').then(res => {
+            setbddata(res.data)
+        })
+      }, [])
 
 
-    const sunLight = new SunLight({
+    const dirLight = new SunLight({
         timestamp: lightx,
         color: [255, 255, 255],
-        intensity: lightintensity
-    });
-    const lightingEffect = new LightingEffect({ ambientLight, sunLight });
+        intensity: 5,
+        _shadow: true
+      });
+
+      const [effects] = useState(() => {
+        const lightingEffect = new LightingEffect({ dirLight });
+        lightingEffect.shadowColor = [0, 0, 0, 0.5];
+        return [lightingEffect];
+      });
+
+
 
     const material = {
         ambient: 0.1,
@@ -34,14 +54,37 @@ export default function Introduction() {
         specularColor: [60, 64, 70]
     };
 
-    const theme = {
-        buildingColor: [255, 255, 255],
-        trailColor0: [253, 128, 93],
-        trailColor1: [23, 184, 190],
-        material,
-        effects: [lightingEffect]
-    };
     const layers = [
+        new PolygonLayer({
+            id: 'ground',
+            data: [[[113.96, 22.58],
+            [113.96, 22.60],
+            [113.98, 22.60],
+            [113.98, 22.58],
+        ]],
+            stroked: false,
+            getPolygon: f => f,
+            getFillColor: [0, 0, 0,0]
+          }),
+        new GeoJsonLayer({
+            id: 'geojson',
+            data:bddata,
+            opacity: 1,
+            stroked: false,
+            filled: true,
+            extruded: true,
+            wireframe: false,
+            getElevation: f => f.properties.height,
+            getFillColor: f=>{
+                if(f.properties.building_id==2963){
+                    return [255, 0, 0]
+                }else{
+                    return [255, 255, 255]
+                }},
+                wireframe: true,
+            getLineColor: [0,0,0],
+            pickable: true
+          }),
         new GeoJsonLayer({
             id: 'GeoJsonLayer',
             data: {
@@ -51,7 +94,7 @@ export default function Introduction() {
                     "type": "Feature",
                     "geometry": {
                       "type": "Point",
-                      "coordinates": [113.9716795403871, 22.59656570376175]
+                      "coordinates": [113.9717795403871, 22.59676570376175]
                     },
                     "properties": {
                         "name": "PKUSZ Smart City Lab"
@@ -60,11 +103,18 @@ export default function Introduction() {
                 ]
               },
             stroked: false,
+            extruded: false,
+            material: {
+                ambient: 1.0,       // 环境光强度100%
+                diffuse: 0.0,       // 无漫反射
+                shininess: 0.0,     // 无高光
+                specularColor: [0,0,0] // 无镜面高光色
+              },
             filled: true,
             pointType: 'circle+text',
             pickable: true,
             getText: (f) => f.properties.name,
-            getTextPixelOffset: [130, 0],
+            getTextPixelOffset: [130, -15],
             getTextBackgroundColor:[0,0,0,255],
             textFontFamily:'Optima, sans-serif',
             textBackground:true,
@@ -72,7 +122,7 @@ export default function Introduction() {
             getTextSize:20,
             textBackgroundPadding: [7, 5],
             getTextColor:[255,255,255],
-            getFillColor: [255,0,0],
+            getFillColor: [255,0,0,0],
             getLineWidth: 20,
             getPointRadius: 4,
             pointRadiusMinPixels:8,
@@ -84,13 +134,13 @@ export default function Introduction() {
 
         <DeckGL
             layers={layers}
-            effects={theme.effects}
+             effects={effects}
             initialViewState={{
-                longitude: 113.9716795403871, 
+                longitude: 113.9719795403871, 
                 latitude: 22.59656570376175,
-                zoom: 16.5,
-                pitch: 0,
-                bearing: 0
+                zoom: 16.8,
+                pitch: 50,
+                bearing: -150
             }}
             controller={true}
         >

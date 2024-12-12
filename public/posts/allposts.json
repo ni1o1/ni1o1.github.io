@@ -19,8 +19,8 @@
         {
             "filename": "post2",
             "filename_en": "post2_en",
-            "title": "AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
-            "title_en": "AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology",
+            "title": "论文发表 | AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
+            "title_en": "Paper published | AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology",
             "date": "2024-11-08",
             "tags": [
                 "可视化系统",
@@ -73,6 +73,20 @@
             ],
             "brief": "《基于多源时空数据的城市充电基础设施系统韧性时空特征及演变机制研究》获中国博士后科学基金第76批面上资助",
             "brief_en": "The project 'Research on the Resilience Spatiotemporal Characteristics and Evolution Mechanism of Urban Charging Infrastructure System Based on Multi-source Spatiotemporal Data' won the 76th of general funding from the China Postdoctoral Science Foundation",
+            "show": true
+        },
+        {
+            "filename": "post6",
+            "filename_en": "post6_en",
+            "title":"论文发表 | 基于轨迹数据的电动汽车充电和能耗模式行为建模",
+            "title_en":"Paper published | Modeling electric vehicle behavior: Insights from long-term charging and energy consumption patterns through empirical trajectory data",
+            "date": "2024-12-12",
+            "tags": [
+                "电动汽车",
+                "充电站"
+            ],
+            "brief": "通过长期实证数据分析和分类不同类型电动汽车的充电行为，揭示电动汽车在空间和时间维度上的规律性充电模式与潜在需求",
+            "brief_en": "Through long-term empirical data analysis and classification of charging behaviors of different types of electric vehicles, reveal the regular charging patterns and potential demand of electric vehicles in spatial and temporal dimensions",
             "show": true
         }
     ]
