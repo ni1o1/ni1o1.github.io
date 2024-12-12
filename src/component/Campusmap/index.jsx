@@ -16,8 +16,10 @@ export default function Introduction() {
     //地图光效
     //获取当前时间戳
 
-    const timestamp = new Date().getTime() / 1000;
+    //const timestamp = new Date().getTime() ;
+    const timestamp = Date.now()
     const [lightx, setlightx] = useState(timestamp)
+
     const [bddata,setbddata] = useState({
         "type": "FeatureCollection",
         "features": []
@@ -35,7 +37,7 @@ export default function Introduction() {
     const dirLight = new SunLight({
         timestamp: lightx,
         color: [255, 255, 255],
-        intensity: 5,
+        intensity: 8,
         _shadow: true
       });
 
@@ -46,13 +48,6 @@ export default function Introduction() {
       });
 
 
-
-    const material = {
-        ambient: 0.1,
-        diffuse: 0.6,
-        shininess: 22,
-        specularColor: [60, 64, 70]
-    };
 
     const layers = [
         new PolygonLayer({

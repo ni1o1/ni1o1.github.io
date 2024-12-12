@@ -8,7 +8,7 @@
 ## 期刊与会议论文 | Journal Papers
 
 ### 2025
-1. Yu, Q., Dong, K., Guo, Z., Li, J., Tan, H., Jin, Y., … Yan, J. (2024). Global Estimation of Building-Integrated Facade and Rooftop Photovoltaic Potential by Integrating 3D Building Footprint and Spatio-Temporal Datasets. arXiv Retrieved from [http://arxiv.org/abs/2412.01291](http://arxiv.org/abs/2412.01291)
+1. [**Yu, Q.**, Dong, K., Guo, Z., Li, J., Tan, H., Jin, Y., … Yan, J. (2024). Global Estimation of Building-Integrated Facade and Rooftop Photovoltaic Potential by Integrating 3D Building Footprint and Spatio-Temporal Datasets. arXiv Retrieved from http://arxiv.org/abs/2412.01291](http://arxiv.org/abs/2412.01291)
 2. [**Yu, Q.**, Li J., Feng D., Liu X., Yuan J., Zhang H., Wang X. (2025). Modeling Electric Vehicle Behavior: Insights from Long-term Charging and Energy Consumption Patterns through Empirical Trajectory Data. Applied Energy, 380, 125066.](https://www.sciencedirect.com/science/article/pii/S0306261924024504?via%3Dihub) 
 3. Q Jiao, X Chen, L Cheng, Q Yu (2025) Agent-Based Simulation for Passenger Flow Visualization and Control Strategies Analysis in Rail Transit. Transportation Research Board Annual Meeting
 4. Z Zhang, Q Yu, K Gao, HD He (2025) Modeling and Evaluating Carbon Emission Reductions of Vehicle Electrification for urban Ride-Hailing service. Transportation Research Board Annual Meeting
@@ -33,7 +33,7 @@
 ### 2023
 
 1. [Shang, W. L., Chen, Y., **Yu, Q.**, Song, X., Chen, Y., Ma, X., ... & Ochieng, W. (2023). Spatio-temporal analysis of carbon footprints for urban public transport systems based on smart card data. Applied Energy, 352, 121859.](https://www.sciencedirect.com/science/article/pii/S0306261923012230)
-3. Xie Y, Hui Y, Wang Y, **Yu Q** Walking Experience Evaluation Using Multiple Survey Methods: A Case Study of Shanghai. CICTP2023
+3. [Xie, Y., Hui, Y., Wang, Y., & **Yu, Q.** (2023). Walking Experience Evaluation Using Multiple Survey Methods: A Case Study of Shanghai. In CICTP 2023 (pp. 2432-2441).](https://ascelibrary.org/doi/10.1061/9780784484869.230)
 4. Luo S, Duan Z, **Yu Q** Analyzing the intra-city transit accessibility of hub for high-frequency single-day visitors based on mobile phone data. Transportation Research Board 102nd Annual Meeting(TRB)
 5. Liu X, Duan Z, **Yu Q** Understanding the path choice preference of metro users with diverse travel patterns: A data-driven approach. Transportation Research Board 102nd Annual Meeting(TRB)
 
