@@ -1,20 +1,21 @@
 ## 论著 | Books
 
 1. [余庆， 袁见， 宋轩. 交通时空大数据详解：车辆轨迹数据分析、挖掘与可视化（Python版）. 清华大学出版社](http://www.tup.tsinghua.edu.cn/bookscenter/book_10231801.html)
-2. [余庆，李玮锋. 交通时空大数据分析、挖掘与可视化. 清华大学出版社](http://product.dangdang.com/12000002206.html)
+2. [余庆，李玮锋. 交通时空大数据分析、挖掘与可视化. 清华大学出版社](http://www.tup.tsinghua.edu.cn/booksCenter/book_09389001.html)
 3. [**Yu, Q.**; Li, W.; Yang,D. Chapter 6: Data-driven Estimation for Urban Travel Shareability. Big Data and Mobility as a Service. Elsevier, 2022](https://www.elsevier.com/books/big-data-and-mobility-as-a-service/zhang/978-0-323-90169-7)
 2. [**Yu, Q.**, Shang, W. L., Chen, J., & Zhang, H. (2023). Web-based spatio-temporal data visualization technology for urban digital twin. In Handbook of Mobility Data Mining (pp. 185-201). Elsevier.](https://www.sciencedirect.com/science/article/pii/B9780443184284000025)
    
 ## 期刊与会议论文 | Journal Papers
 
 ### 2025
-1. [**Yu, Q.**, Dong, K., Guo, Z., Li, J., Tan, H., Jin, Y., … Yan, J. (2024). Global Estimation of Building-Integrated Facade and Rooftop Photovoltaic Potential by Integrating 3D Building Footprint and Spatio-Temporal Datasets. arXiv Retrieved from http://arxiv.org/abs/2412.01291](http://arxiv.org/abs/2412.01291)
+1. [**Yu, Q.**, Dong, K., Guo, Z., Li, J., Tan, H., Jin, Y., … Yan, J. (2024). Global Estimation of Building-Integrated Facade and Rooftop Photovoltaic Potential by Integrating 3D Building Footprint and Spatio-Temporal Datasets. arXiv Retrieved from http://arxiv.org/abs/2412.01291](http://arxiv.org/abs/2412.01291) (preprint)
 2. [**Yu, Q.**, Li J., Feng D., Liu X., Yuan J., Zhang H., Wang X. (2025). Modeling Electric Vehicle Behavior: Insights from Long-term Charging and Energy Consumption Patterns through Empirical Trajectory Data. Applied Energy, 380, 125066.](https://www.sciencedirect.com/science/article/pii/S0306261924024504?via%3Dihub) 
-3. Q Jiao, X Chen, L Cheng, Q Yu (2025) Agent-Based Simulation for Passenger Flow Visualization and Control Strategies Analysis in Rail Transit. Transportation Research Board Annual Meeting
-4. Z Zhang, Q Yu, K Gao, HD He (2025) Modeling and Evaluating Carbon Emission Reductions of Vehicle Electrification for urban Ride-Hailing service. Transportation Research Board Annual Meeting
-5. Q Jiao, Q Yu, X Chen, L Cheng, D Ngoduy (2025). Evaluating Urban Rail Travel Reservation Strategy: A Dynamic Passenger Flow Simulation Approach. Transportmetrica B: TransportDynamics (pre-proof)
-6. [Jiao, Q., Wang, J., Cheng, L., Chen, X., & **Yu, Q**. (2025). Carbon emission reduction effects of heterogeneous car travelers under green travel incentive strategies. Applied Energy, 379, 124826.](https://www.sciencedirect.com/science/article/pii/S0306261924022098)
-7. [Shi, J., Li, J., Zhang, H., Xie, B., Xie, Z., **Yu, Q.**, & Yan, J. (2025). Real-time gas explosion prediction at urban scale by GIS and graph neural network. Applied Energy, 377, 124614.](https://www.sciencedirect.com/science/article/pii/S0306261924019974)
+3. X Liu, **Q Yu**, W Bian, Y Hao, C Zhang, L Xiang, H Jiang, X Luo (2025). Unraveling Spatiotemporal Dynamics of Ridesharing Potential: Nonlinear Effects of the Built Environment. Transportation Research Part D: Transport and Environment (pre-proof)
+4. Q Jiao, X Chen, L Cheng, **Q Yu** (2025) Agent-Based Simulation for Passenger Flow Visualization and Control Strategies Analysis in Rail Transit. Transportation Research Board Annual Meeting
+5. Z Zhang, **Q Yu**, K Gao, HD He (2025) Modeling and Evaluating Carbon Emission Reductions of Vehicle Electrification for urban Ride-Hailing service. Transportation Research Board Annual Meeting
+6. Q Jiao, **Q Yu**, X Chen, L Cheng, D Ngoduy (2025). Evaluating Urban Rail Travel Reservation Strategy: A Dynamic Passenger Flow Simulation Approach. Transportmetrica B: Transport Dynamics (pre-proof)
+7. [Jiao, Q., Wang, J., Cheng, L., Chen, X., & **Yu, Q**. (2025). Carbon emission reduction effects of heterogeneous car travelers under green travel incentive strategies. Applied Energy, 379, 124826.](https://www.sciencedirect.com/science/article/pii/S0306261924022098)
+8. [Shi, J., Li, J., Zhang, H., Xie, B., Xie, Z., **Yu, Q.**, & Yan, J. (2025). Real-time gas explosion prediction at urban scale by GIS and graph neural network. Applied Energy, 377, 124614.](https://www.sciencedirect.com/science/article/pii/S0306261924019974)
 
 
 ### 2024
