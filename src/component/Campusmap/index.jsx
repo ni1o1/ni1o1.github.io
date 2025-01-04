@@ -8,6 +8,7 @@ import { _MapContext as MapContext, StaticMap, NavigationControl, ScaleControl, 
 import { GeoJsonLayer } from 'deck.gl';
 import {PolygonLayer} from '@deck.gl/layers';
 import axios from 'axios';
+import { ScenegraphLayer } from 'deck.gl';
 
 const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibmkxbzEiLCJhIjoiY2t3ZDgzMmR5NDF4czJ1cm84Z3NqOGt3OSJ9.yOYP6pxDzXzhbHfyk3uORg';
 
@@ -50,6 +51,7 @@ export default function Introduction() {
 
 
     const layers = [
+     
         new PolygonLayer({
             id: 'ground',
             data: [[[113.96, 22.58],
@@ -61,6 +63,18 @@ export default function Introduction() {
             getPolygon: f => f,
             getFillColor: [0, 0, 0,0]
           }),
+          new ScenegraphLayer({
+            id: 'ScenegraphLayer',
+            data: [{ 'coord': [113.974171 - 0.00196, 22.594238 + 0.00234] }
+            ],
+            getColor: [49,144,252],
+            getPosition: (d) => d.coord,
+            getOrientation: (d) => [0, 180, 90],
+            scenegraph: "data/bd.glb",
+            sizeScale: 0.0013,
+            _lighting: 'pbr',
+            pickable: true
+          }),   
         new GeoJsonLayer({
             id: 'geojson',
             data:bddata,
@@ -72,7 +86,7 @@ export default function Introduction() {
             getElevation: f => f.properties.height,
             getFillColor: f=>{
                 if(f.properties.building_id==2963){
-                    return [255, 0, 0]
+                    return [49,144,252]
                 }else{
                     return [255, 255, 255]
                 }},
@@ -89,7 +103,7 @@ export default function Introduction() {
                     "type": "Feature",
                     "geometry": {
                       "type": "Point",
-                      "coordinates": [113.9717795403871, 22.59676570376175]
+                      "coordinates": [113.9721795403871, 22.59676570376175]
                     },
                     "properties": {
                         "name": "PKUSZ Smart City Lab"
@@ -119,9 +133,9 @@ export default function Introduction() {
             getTextColor:[255,255,255],
             getFillColor: [255,0,0,0],
             getLineWidth: 20,
-            getPointRadius: 4,
-            pointRadiusMinPixels:8,
-            pointRadiusMaxPixels:8,
+            getPointRadius: 0,
+            pointRadiusMinPixels:0,
+            pointRadiusMaxPixels:0,
         })
     ]
 
@@ -133,8 +147,8 @@ export default function Introduction() {
             initialViewState={{
                 longitude: 113.9719795403871, 
                 latitude: 22.59656570376175,
-                zoom: 16.8,
-                pitch: 50,
+                zoom: 18.3,
+                pitch: 60,
                 bearing: -150
             }}
             controller={true}
