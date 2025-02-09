@@ -88,6 +88,21 @@
             "brief": "通过长期实证数据分析和分类不同类型电动汽车的充电行为，揭示电动汽车在空间和时间维度上的规律性充电模式与潜在需求",
             "brief_en": "Through long-term empirical data analysis and classification of charging behaviors of different types of electric vehicles, reveal the regular charging patterns and potential demand of electric vehicles in spatial and temporal dimensions",
             "show": true
+        },
+        {
+            "filename": "post7",
+            "filename_en": "post7_en",
+            "title":"论文发表 | 通过物联网人工智能（AIoT）、地理信息系统（GIS）和气象学的协同作用，推进建筑立面太阳能潜力评估",
+            "title_en":"Paper published | Advancing building facade solar potential assessment through AIoT, GIS, and meteorology synergy",
+            "date": "2025-02-09",
+            "tags": [
+                "光伏潜力",
+                "城市环境",
+                "地理信息系统"
+            ],
+            "brief": "通过结合物联网人工智能（AIoT）、地理信息系统（GIS）和气象数据，提出了一种创新方法，精确评估建筑立面光伏潜力，考虑了三维遮挡效应和城市环境因素。",
+            "brief_en": "By integrating Artificial Intelligence of Things (AIoT), Geographic Information Systems (GIS), and meteorological data, an innovative method is proposed to accurately assess building facade photovoltaic potential, considering 3D shading effects and urban environmental factors.",
+            "show": true
         }
     ]
 }

@@ -1,0 +1,6 @@
+.markdown-body img {
+  max-width: 600px !important;
+  width: 100% !important;
+  display: block !important;
+  margin: 0 auto !important;
+}

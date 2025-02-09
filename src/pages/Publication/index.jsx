@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Divider,Skeleton } from 'antd';
 import ReactMarkdown from 'react-markdown'
-
+import './index.css'
 
 export default function Publication() {
   const [markdown, setMarkdown] = useState('');
