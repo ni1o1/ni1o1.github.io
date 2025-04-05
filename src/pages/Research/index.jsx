@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Divider, Col, Row } from 'antd';
 import { useTranslation } from 'react-i18next';
+import Researchgraph from '@/component/Researchgraph';
 const { Title, Paragraph, Text, Link } = Typography;
 
 
@@ -42,6 +43,7 @@ export default function Publication() {
   }
   return (
     <Typography>
+      {/* <Researchgraph/> */}
       <Divider orientation="left"><Title level={3}>{t("交通能源与排放")}</Title></Divider>
       
       {research(

@@ -103,6 +103,24 @@
             "brief": "通过结合物联网人工智能（AIoT）、地理信息系统（GIS）和气象数据，提出了一种创新方法，精确评估建筑立面光伏潜力，考虑了三维遮挡效应和城市环境因素。",
             "brief_en": "By integrating Artificial Intelligence of Things (AIoT), Geographic Information Systems (GIS), and meteorological data, an innovative method is proposed to accurately assess building facade photovoltaic potential, considering 3D shading effects and urban environmental factors.",
             "show": true
-        }
+        },
+        {
+            "filename": "yu_2025_bipv",
+            "filename_en": "yu_2025_bipv_en",
+            "title": "论文发表 | Nexus | 基于3D建筑足迹和时空数据的全球建筑一体化光伏电站潜力估算",
+            "title_en": "Article Publication | Nexus | Global estimation of building-integrated facade and rooftop photovoltaic potential by integrating 3D building footprint and spatio-temporal datasets",
+            "date": "2025-06-17",
+            "tags": [
+             "城市能源系统",
+             "可再生能源",
+             "太阳能",
+             "建筑一体化光伏潜力",
+             "3D建筑足迹",
+             "地理信息科学"
+            ],
+            "brief": "该研究通过整合3D建筑模型和时空数据集，评估了全球范围内建筑立面和屋顶光伏发电的潜力。",
+            "brief_en": "This research assesses the potential of building-integrated photovoltaics (BIPV) on building facades and rooftops globally by integrating 3D building models and spatio-temporal datasets.",
+            "show": true
+           }
     ]
 }
