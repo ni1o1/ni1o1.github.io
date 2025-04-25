@@ -17,7 +17,7 @@ export default function Publication() {
       </Paragraph>
     </Col>)
     const img = (<Col xs={24} sm={24} md={24} lg={24 - textlength}>
-      <img alt="transbigdata" src={imgpath} style={{ 'object-fit': 'contain' }} width='100%' height='400px' />
+      <img alt="transbigdata" src={imgpath} style={{ objectFit: 'contain' }} width='100%' height='400px' />
     </Col>)
     let totalcontent
     if (position == 'left') {

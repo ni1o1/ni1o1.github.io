@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Typography, Divider, Skeleton, Card } from 'antd';
 import ReactMarkdown from 'react-markdown'
 import { useTranslation } from 'react-i18next';
-import Campusmap from '@/component/Campusmap';
-
+/* import Campusmap from '@/component/Campusmap';
+ */
 export default function Introduction() {
   const [markdown, setMarkdown] = useState('');
   const { t, i18n } = useTranslation();
@@ -24,16 +24,13 @@ const height = 500;
     <div className='markdown-body'>
       <Skeleton loading={markdown == ''} active title>
         <ReactMarkdown children={markdown} />
-        <div style={{  height,margin:50 }}>
+        {/* <div style={{  height,margin:50 }}>
           <Card>
             <div style={{height:height-100}}>
-
             <Campusmap />
             </div>
           </Card>
-
-
-        </div>
+        </div> */}
       </Skeleton>
     </div>
   )

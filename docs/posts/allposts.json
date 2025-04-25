@@ -109,7 +109,7 @@
             "filename_en": "yu_2025_bipv_en",
             "title": "论文发表 | Nexus | 基于3D建筑足迹和时空数据的全球建筑一体化光伏电站潜力估算",
             "title_en": "Article Publication | Nexus | Global estimation of building-integrated facade and rooftop photovoltaic potential by integrating 3D building footprint and spatio-temporal datasets",
-            "date": "2025-06-17",
+            "date": "2025-04-05",
             "tags": [
              "城市能源系统",
              "可再生能源",
@@ -121,6 +121,23 @@
             "brief": "该研究通过整合3D建筑模型和时空数据集，评估了全球范围内建筑立面和屋顶光伏发电的潜力。",
             "brief_en": "This research assesses the potential of building-integrated photovoltaics (BIPV) on building facades and rooftops globally by integrating 3D building models and spatio-temporal datasets.",
             "show": true
-           }
+           },
+           {
+            "filename": "partDYH",
+            "filename_en": "partDYH_en",
+            "title": "论文发表 | TR part D | 高速公路收费折扣政策与路网扩建对碳排放的影响",
+            "title_en": "Article Publication | TR part D |Carbon Emission Implications of Toll Discount Policies and Network Expansions in Highway",
+            "date": "2025-04-24",
+            "tags": [
+              "高速公路排放",
+              "收费政策",
+              "自下而上排放估算",
+              "因果推断",
+              "可持续交通"
+            ],
+            "brief": "本研究通过整合ETC和GIS数据量化收费政策对高速公路碳排放的影响，发现货运转向高速公路可实现系统级减排。",
+            "brief_en": "This study quantifies toll policies' impacts on highway emissions using ETC-GIS integration, demonstrating system-wide reduction through optimized freight routing.",
+            "show": true
+          }
     ]
 }

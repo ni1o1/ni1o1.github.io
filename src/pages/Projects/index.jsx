@@ -15,9 +15,9 @@ export default function Visualization() {
       <a href={src}>
         <Card
           hoverable
-          bordered={true}
+          variant="outlined"
           size='small'
-          cover={<img alt="transbigdata" src={imgpath} style={{ 'object-fit': 'cover' }} height='150' />}
+          cover={<img alt="transbigdata" src={imgpath} style={{ objectFit: 'cover' }} height='150' />}
           type='inner'
         >
           <Meta title={title} description={description} style={{ 'height': '80px' }} />
@@ -30,9 +30,9 @@ export default function Visualization() {
       <a href={src}>
         <Card
           hoverable
-          bordered={true}
+          variant="outlined"
           size='small'
-          cover={<img alt="transbigdata" src={imgpath} style={{ 'object-fit': 'cover' }} height='150' />}
+          cover={<img alt="transbigdata" src={imgpath} style={{ objectFit: 'cover' }} height='150' />}
         >
           {/* <Meta title={title} description={description} /> */}
         </Card>
@@ -45,7 +45,7 @@ export default function Visualization() {
         <Card
           hoverable
           size='small'
-          cover={<img alt="transbigdata" src={src} style={{ 'object-fit': 'contain' }} height='150' />}
+          cover={<img alt="transbigdata" src={src} style={{ objectFit: 'contain' }} height='150' />}
     
         >
           <Meta title={title} description={description} style={{'height':'100px'}}/>

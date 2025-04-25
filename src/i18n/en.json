@@ -35,5 +35,22 @@
     "建筑":"Building",
     "基金":"Funding",
     "电动汽车":"Electric Vehicle",
-    "充电站":"Charging Station"
+    "充电站":"Charging Station",
+    "React":"React",
+    "Github Pages":"Github Pages",
+    "Energy 360":"Energy 360",
+    "光伏潜力":"Photovoltaic Potential",
+    "城市环境":"Urban Environment",
+    "地理信息系统":"Geographic Information System",
+    "城市能源系统":"Urban Energy System",
+    "可再生能源":"Renewable Energy",
+    "太阳能":"Solar Energy",
+    "建筑一体化光伏潜力":"Building Integrated Photovoltaic Potential",
+    "3D建筑足迹":"3D Building Footprint",
+    "地理信息科学":"Geographic Information Science",
+    "高速公路排放":"Highway Emissions",
+    "收费政策":"Toll Policy",
+    "自下而上排放估算":"Bottom-up Emission Estimation",
+    "因果推断":"Causal Inference",
+    "可持续交通":"Sustainable Transportation"
 }
