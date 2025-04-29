@@ -14,18 +14,18 @@ export default function NewsDetail() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { filename } = useParams();
-  const [Content, setContent] = useState({
-  });
+  const [Content, setContent] = useState('');
 
   useEffect(() => {
     axios.get(`posts/${filename}_${i18n.language}`).then(res => {
-      setContent(res.data);
+      // Assuming the markdown content is the direct response text
+      setContent(res.data || ''); 
     });
   }, [i18n.language]);
 
   return (
     <>
-      <Skeleton loading={Content.length == 0} active title>
+      <Skeleton loading={Content === ''} active title>
         <div className='markdown-body'>
           <Button
             size='large'

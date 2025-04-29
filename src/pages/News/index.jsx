@@ -29,7 +29,7 @@ export default function Intro() {
               pageSize: 10,
             }}
             renderItem={(item, index) => (
-              <List.Item>
+              <List.Item key={item.filename}>
                 <List.Item.Meta
                   title={<a onClick={() => {
                     navigate(`/news/${item.filename}`)
@@ -38,8 +38,8 @@ export default function Intro() {
                   description={<Space>
                     {item.date}
                     <div>
-                      {item.tags && item.tags.map(f => (
-                        <Tag bordered={false} >
+                      {item.tags && item.tags.map((f, tagIndex) => (
+                        <Tag key={f} bordered={false} >
                           {t(f)}
                         </Tag>))}
                     </div>
