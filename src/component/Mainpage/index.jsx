@@ -130,7 +130,7 @@ export default function Mainpage() {
       </div>
       <Row>
         <Col span={24}>
-          <Footer style={{ backgroundColor: '#f0f2f5', textAlign: 'center' }}>{t("版权所有")} © 2025 {t("北京大学智慧城市实验室")} | yuq@pku.edu.cn
+          <Footer style={{ backgroundColor: '#ffffff', textAlign: 'center' }}>{t("版权所有")} © 2025 {t("北京大学智慧城市实验室")} | yuq@pku.edu.cn
             <br />
             <img className="headimg" src="heading/heading.png" style={{
               'margin': '10px',
