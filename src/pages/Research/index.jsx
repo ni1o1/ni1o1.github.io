@@ -96,7 +96,9 @@ export default function ResearchPage() {
             style={{ width: '50%' }}
           >
             {allKeywords.map(keyword => (
-              <Option key={keyword} value={keyword}>{t(keyword)}</Option>
+              <Option key={keyword} value={keyword}>
+                {t(keyword)} <span style={{fontSize: '12px', color: '#999'}}>({keywordCounts[keyword]}{t(' 篇')})</span>
+              </Option>
             ))}
           </Select>
         </Col>
@@ -124,6 +126,7 @@ export default function ResearchPage() {
           </List.Item>
         )}
         pagination={{
+          position: 'both',
           pageSize: 5,
           showSizeChanger: false,
         }}
