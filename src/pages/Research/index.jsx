@@ -12,9 +12,13 @@ const researchData = rawResearchData.map((item, index) => ({
   position: 'left' // Default position
 }));
 
-const allKeywords = [
-  ...new Set(rawResearchData.flatMap(item => item.keywords))
-];
+const keywordCounts = rawResearchData.flatMap(item => item.keywords).reduce((acc, keyword) => {
+  acc[keyword] = (acc[keyword] || 0) + 1;
+  return acc;
+}, {});
+
+const allKeywords = [...new Set(rawResearchData.flatMap(item => item.keywords))]
+  .sort((a, b) => keywordCounts[b] - keywordCounts[a]);
 
 export default function ResearchPage() {
   const { t, i18n } = useTranslation();
@@ -64,7 +68,7 @@ export default function ResearchPage() {
           style={{ 
             objectFit: 'cover', 
             width: '100%', 
-            height: '120px', // Reduced height for compactness
+            height: '180px', // Reduced height for compactness
             borderRadius: '4px' // Reduced border radius
           }} 
         />

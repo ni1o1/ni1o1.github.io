@@ -57,5 +57,8 @@
     "高速公路": "Highway",
     "交通能源": "Transportation Energy",
     "灾害韧性": "Disaster Resilience",
-    "代表性成果": "Research Highlights"
+    "代表性成果": "Research Highlights",
+    "可解释机器学习": "Explainable Machine Learning",
+    "轨道交通":"Railway",
+    "关键词筛选":"Keyword Selection"
 }
