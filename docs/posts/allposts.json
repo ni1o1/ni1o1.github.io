@@ -19,8 +19,8 @@
         {
             "filename": "post2",
             "filename_en": "post2_en",
-            "title": "论文发表 | AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
-            "title_en": "Paper published | AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology",
+            "title": "论文发表 | AEI | AdvMOB: 基于数字孪生技术的广告牌曝光分析交互可视化系统",
+            "title_en": "Paper published | AEI | AdvMOB: Interactive Visual Analytic System for Billboard Advertising Exposure Analysis Based on Digital Twin Technology",
             "date": "2024-11-08",
             "tags": [
                 "可视化系统",
@@ -78,8 +78,8 @@
         {
             "filename": "post6",
             "filename_en": "post6_en",
-            "title":"论文发表 | 基于轨迹数据的电动汽车充电和能耗模式行为建模",
-            "title_en":"Paper published | Modeling electric vehicle behavior: Insights from long-term charging and energy consumption patterns through empirical trajectory data",
+            "title":"论文发表 | APEN | 基于轨迹数据的电动汽车充电和能耗模式行为建模",
+            "title_en":"Paper published | APEN | Modeling electric vehicle behavior: Insights from long-term charging and energy consumption patterns through empirical trajectory data",
             "date": "2024-12-12",
             "tags": [
                 "电动汽车",
@@ -92,8 +92,8 @@
         {
             "filename": "post7",
             "filename_en": "post7_en",
-            "title":"论文发表 | 通过物联网人工智能（AIoT）、地理信息系统（GIS）和气象学的协同作用，推进建筑立面太阳能潜力评估",
-            "title_en":"Paper published | Advancing building facade solar potential assessment through AIoT, GIS, and meteorology synergy",
+            "title":"论文发表 | ADAPEN | 通过物联网人工智能（AIoT）、地理信息系统（GIS）和气象学的协同作用，推进建筑立面太阳能潜力评估",
+            "title_en":"Paper published | ADAPEN | Advancing building facade solar potential assessment through AIoT, GIS, and meteorology synergy",
             "date": "2025-02-09",
             "tags": [
                 "光伏潜力",

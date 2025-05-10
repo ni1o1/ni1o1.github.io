@@ -24,39 +24,22 @@ export default function Mainpage() {
 
   const content = (
     <>
-      <Paragraph >
-        {t('博士后')}
+      <div style={{ marginBottom: '16px' }}>
+        <Text strong>{t('博士后')}</Text>
         <br />
-        {t('北京大学城市规划与设计学院')}
+        <Text type="secondary" style={{ fontSize: '0.8em' }}>{t('北京大学深圳研究生院')}</Text>
         <br />
-        {t('智慧城市实验室')}
-      </Paragraph>
-      <Divider />
-      <List style={{ padding: 0 }}>
-        <List.Item style={{ padding: '8px 0', borderBottom: 'none' }}>
-
-          <span style={{ textAlign: 'left' }}><span className="iconfont icon-position" style={{ marginRight: 8 }} />{t('深圳')}</span>
-        </List.Item>
-        <List.Item style={{ padding: '8px 0', borderBottom: 'none' }}>
-
-          <Link href="mailto:yuq@pku.edu.cn" target="_blank" style={{ textAlign: 'left' }}><MailOutlined style={{ marginRight: 8 }} /> yuq@pku.edu.cn</Link>
-        </List.Item>
-        <List.Item style={{ padding: '8px 0', borderBottom: 'none' }}>
-
-          <Link href="https://github.com/ni1o1/" target="_blank" style={{ textAlign: 'left' }}> <GithubOutlined style={{ marginRight: 8 }} />Github</Link>
-        </List.Item>
-        <List.Item style={{ padding: '8px 0', borderBottom: 'none' }}>
-
-          <Link href="https://www.researchgate.net/profile/Qing_Yu51" target="_blank" style={{ textAlign: 'left' }}><span className="iconfont icon-researchgate" style={{ marginRight: 8 }} />ResearchGate</Link>
-        </List.Item>
-        <List.Item style={{ padding: '8px 0', borderBottom: 'none' }}>
-
-          <Link href="https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN" target="_blank" style={{ textAlign: 'left' }}><GoogleOutlined style={{ marginRight: 8 }} />{t('谷歌学术')}</Link>
-        </List.Item>
-        <List.Item style={{ padding: '8px 0', borderBottom: 'none' }}>
-          <Link href="https://space.bilibili.com/3051484" target="_blank" style={{ textAlign: 'left' }}><span className="iconfont icon-bilibili" style={{ marginRight: 8 }} />{t('哔哩哔哩')}</Link>
-        </List.Item>
-      </List>
+        <Text type="secondary" style={{ fontSize: '0.8em' }}>{t('城市规划与设计学院')}</Text>
+        <br />
+        <Text type="secondary" style={{ fontSize: '0.8em' }}>{t('智慧城市实验室')}</Text>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        <Link href="mailto:yuq@pku.edu.cn" target="_blank" ><MailOutlined /> </Link>
+        <Link href="https://github.com/ni1o1/" target="_blank" ><GithubOutlined /> </Link>
+        <Link href="https://www.researchgate.net/profile/Qing_Yu51" target="_blank" ><span className="iconfont icon-researchgate" /></Link>
+        <Link href="https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN" target="_blank" ><GoogleOutlined /></Link>
+        <Link href="https://space.bilibili.com/3051484" target="_blank" ><span className="iconfont icon-bilibili" /></Link>
+      </div>
     </>
   );
   const bgc = '#fff';
@@ -76,7 +59,7 @@ export default function Mainpage() {
       padding: 0
     }}>
       <div style={{ display: 'flex', flex: 1, margin: 0 }}>
-        <div style={{ width: '300px', maxWidth: '300px', display: 'flex', flexDirection: 'column', padding: 0 }}>
+        <div style={{ width: '200px', maxWidth: '200px', display: 'flex', flexDirection: 'column', padding: 0 }}>
           <Card variant="borderless" style={{ 'backgroundColor': bgc, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
             <Sider theme='light' width='100%' style={{ height: '100%', background: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
               <PageHeader
