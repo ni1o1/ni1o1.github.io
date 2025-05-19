@@ -1,5 +1,18 @@
 [
   {
+    "title_zh": "时空特征编码的屋顶光伏潜力评估深度学习方法",
+    "title_en": "Spatiotemporal Feature Encoded Deep Learning Method for Rooftop PV Potential Assessment",
+    "description": "我们通过引入一种创新的深度学习框架，该框架有效地编码多种时空数据源，该方法能准确预测阴影投射并计算屋顶光伏潜力（年发电潜力MAPE为2.85%，遮挡效应评估mIoU为89.23%，计算速度提高约158倍），这证明了该框架在保证高精度的同时显著提升了计算效率，适用于大规模城市能源评估。",
+    "description_en": "By introducing an innovative deep learning framework that effectively encodes a diverse array of spatiotemporal data sources, we found that this method can accurately predict shadow casting and calculate rooftop PV potential (achieving an average MAPE of 2.85% for annual energy generation potential, a mean mIoU of 89.23% for shading effect evaluation, and computational speed approximately 158 times faster), which demonstrates the framework's ability to significantly enhance computational efficiency while ensuring high precision, thus making it suitable for large-scale urban energy evaluations.",
+    "imgpath": "images/research/rooftop_pv_dl.jpg",
+    "src": "Applied Energy (Manuscript APEN-D-25-04583R1)",
+    "keywords": [
+      "光伏",
+      "深度学习",
+      "城市环境"
+    ]
+  },
+  {
     "title_zh": "基于3D建筑足迹和时空数据的全球建筑一体化光伏电站潜力估算",
     "title_en": "Global estimation of building-integrated facade and rooftop photovoltaic potential by integrating 3D building footprint and spatio-temporal datasets",
     "description": "我们通过整合3D建筑足迹模型与气象数据，提出了一种评估建筑一体化光伏(BIPV)潜力的整体方法，发现全球120个城市中建筑立面光伏潜力巨大，平均可达屋顶潜力的68.2%，这证明了立面光伏在城市可持续能源系统中的战略重要性。",
