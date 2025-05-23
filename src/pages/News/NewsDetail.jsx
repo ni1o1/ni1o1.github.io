@@ -2,13 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Tabs, Button, Skeleton } from 'antd';
+import { Space, Button, Skeleton } from 'antd';
 import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
+import ViewCounter from '../../ViewCounter'; // 假设它和 NewsDetail.jsx 在同一目录下
 
 export default function NewsDetail() {
   const { t, i18n } = useTranslation();
@@ -27,13 +28,16 @@ export default function NewsDetail() {
     <>
       <Skeleton loading={Content === ''} active title>
         <div className='markdown-body'>
-          <Button
-            size='large'
-            shape="circle"
-            type='text'
-            onClick={() => {
-              navigate('/news')
-            }}><ArrowLeftOutlined /></Button>
+        <Space align="center" style={{ marginBottom: '16px' }}>
+            <Button
+              size='large'
+              shape="circle"
+              type='text'
+              onClick={() => {
+                navigate('/news')
+              }}><ArrowLeftOutlined /></Button>
+            <ViewCounter itemId={filename} increment={true} />
+          </Space>
           <ReactMarkdown children={Content} />
         </div>
       </Skeleton>

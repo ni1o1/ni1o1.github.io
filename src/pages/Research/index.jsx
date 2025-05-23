@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Col, Row, List, Tag, Select, Card } from 'antd';
 import { useTranslation } from 'react-i18next';
 import rawResearchData from './researchData.json';
+import LikeDislike from '../../LikeDislike'; // 导入我们的新组件
+
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
 
 const researchData = rawResearchData.map((item, index) => ({
   ...item,
-  id: index + 1,
   textlength: 13, // Default text length
   position: 'left' // Default position
 }));
@@ -44,9 +45,11 @@ export default function ResearchPage() {
   const renderItemContent = (item) => {
     const textContent = (
       <Col xs={24} sm={24} md={24} lg={item.textlength} style={{ paddingRight: '10px' }}>
-        <Title level={5} style={{ marginBottom: '4px', fontSize: '16px' }}>
-          {i18n.language === 'zh' ? item.title_zh : item.title_en}
-        </Title>
+        <a href={item.src} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }} className="research-title-link">
+          <Title level={5} style={{ marginBottom: '4px', fontSize: '16px' }}>
+            {i18n.language === 'zh' ? item.title_zh : item.title_en}
+          </Title>
+        </a>
         <Paragraph style={{ textAlign: 'justify', marginBottom: '8px', fontSize: '13px' }} ellipsis={{ rows: 3, expandable: true, symbol: t('更多') }}>
           {i18n.language === 'zh' ? item.description : item.description_en}
         </Paragraph>
@@ -56,6 +59,7 @@ export default function ResearchPage() {
               {t(tag)} 
             </Tag>
           ))}
+          <LikeDislike itemId={item.id} />
         </div>
       </Col>
     );
@@ -78,7 +82,8 @@ export default function ResearchPage() {
     if (item.position === 'right') {
       return <Row gutter={[20, 20]} align="middle">{imageContent}{textContent}</Row>;
     } 
-    return <Row gutter={[20, 20]} align="middle">{textContent}{imageContent}</Row>; 
+    return <Row gutter={[20, 20]} align="middle">{textContent}{imageContent}
+    </Row>; 
   };
 
   return (
@@ -109,9 +114,7 @@ export default function ResearchPage() {
         dataSource={filteredResearch}
         renderItem={item => (
           <List.Item key={item.id} style={{padding: '0px 0'}}>
-            <a href={item.src} target="_blank" rel="noopener noreferrer" style={{textDecoration: 'none'}}>
               <Card 
-                hoverable 
                 style={{ 
                   width: '100%', 
                   marginBottom: '12px', // Reduced margin
@@ -122,7 +125,6 @@ export default function ResearchPage() {
               >
                 {renderItemContent(item)}
               </Card>
-            </a>
           </List.Item>
         )}
         pagination={{
