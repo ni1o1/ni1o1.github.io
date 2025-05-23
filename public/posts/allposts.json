@@ -2,6 +2,23 @@
 
     "posts": [
         {
+            "filename": "apen126171",
+            "filename_en": "apen126171_en",
+            "title":"论文发表 | Applied Energy | 用于屋顶光伏潜力评估的时空特征编码深度学习方法",
+            "title_en":"Spatiotemporal Feature Encoded Deep Learning Method for Rooftop PV Potential Assessment",
+            "date": "2025-05-23",
+            "tags": [
+            "太阳能",
+            "可再生能源",
+            "深度学习",
+            "3D建筑足迹",
+            "城市能源系统"
+            ],
+            "brief": "本研究提出一种深度学习方法，通过整合三维建筑、太阳位置和气象数据，高效准确地预测屋顶阴影并评估光伏潜力。",
+            "brief_en": "This study proposes a deep learning method that integrates 3D building, solar position, and meteorological data to efficiently and accurately predict rooftop shadows and assess PV potential.",
+            "show": true
+            },
+        {
             "filename": "post1",
             "filename_en": "post1_en",
             "title": "个人主页搭建完成",
