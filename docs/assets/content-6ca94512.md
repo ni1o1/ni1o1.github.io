@@ -8,7 +8,7 @@
 ## 期刊与会议论文 | Journal Papers
 
 ### 2025
-1. [Xu, J., Guo, Z.\*, **Yu, Q.\***, Dong, K., Tan, H., Zhang, H., & Yan, J. (2025). Spatiotemporal feature encoded deep learning method for rooftop PV potential assessment. Applied Energy](https://www.sciencedirect.com/journal/applied-energy)
+1. [Xu, J., Guo, Z.\*, **Yu, Q.\***, Dong, K., Tan, H., Zhang, H., & Yan, J. (2025). Spatiotemporal feature encoded deep learning method for rooftop PV potential assessment. Applied Energy](https://doi.org/10.1016/j.apenergy.2025.126171)
 2. [Jiang, H., Hong, S., Wang, Z., & **Yu, Q.** (2025). Integrated charging scheduling and energy management for electrified-autonomous flexible transit with energy storage systems design. Applied Energy, 126011](https://doi.org/10.1016/j.apenergy.2025.126011)
 3. [Yang, Z., Gokon, H., & **Yu, Q.** (2025). Machine learning-based identification and assessment of snow disaster risks using multi-source data: Insights from Fukui prefecture, Japan. Progress in Disaster Science, 100426.](https://doi.org/10.1016/j.pdisas.2025.100426)
 4. [Yang, H., Huang, C., **Yu, Q.\***, Li, J., Yuan, M., & Zhang, Z. (2025). Carbon emission implications of toll discount policies and network expansions in highway. Transportation Research Part D: Transport and Environment.](https://doi.org/10.1016/j.trd.2025.104758)
