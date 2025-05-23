@@ -96,7 +96,7 @@ const LikeDislike = ({ itemId }) => {
         icon={<LikeOutlined />}
         onClick={() => handleAction('liked')}
         disabled={userAction === 'liked'}
-        style={{ color: userAction === 'liked' ? '#1890ff' : 'rgba(0, 0, 0, 0.88)' }} // Ant Design primary color or default text color
+        style={{ color: userAction === 'liked' ? '#1890ff' : 'rgba(0, 0, 0, 0.45)' }} // Ant Design primary color or default text color
       >
         {likes}
       </Button>
@@ -105,7 +105,7 @@ const LikeDislike = ({ itemId }) => {
         icon={<DislikeOutlined />}
         onClick={() => handleAction('disliked')}
         disabled={userAction === 'disliked'}
-        style={{ color: userAction === 'disliked' ? '#ff4d4f' : 'rgba(0, 0, 0, 0.88)' }} // Ant Design error color or default text color
+        style={{ color: userAction === 'disliked' ? '#ff4d4f' : 'rgba(0, 0, 0, 0.45)' }} // Ant Design error color or default text color
       >
         {dislikes}
       </Button>

@@ -9,8 +9,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
-import ViewCounter from '../../ViewCounter'; // 假设它和 NewsDetail.jsx 在同一目录下
-
+import ViewCounter from '../../ViewCounter'; 
+import LikeDislike from '../../LikeDislike'; 
 export default function NewsDetail() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -37,6 +37,7 @@ export default function NewsDetail() {
                 navigate('/news')
               }}><ArrowLeftOutlined /></Button>
             <ViewCounter itemId={filename} increment={true} />
+            <LikeDislike itemId={filename} />
           </Space>
           <ReactMarkdown children={Content} />
         </div>

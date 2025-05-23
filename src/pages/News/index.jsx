@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import ViewCounter from '../../ViewCounter'; // 1. 导入 ViewCounter 组件
-
+import LikeDislike from '../../LikeDislike'; 
 export default function News() {
 
   const navigate = useNavigate();
@@ -34,14 +34,17 @@ export default function News() {
             }}>{i18n.language == 'zh' ? item.title : item.title_en}
             </a>}
             description={<Space>
-              <ViewCounter itemId={item.filename} />
+
               <span>{item.date}</span>
+              <ViewCounter itemId={item.filename} />
+              <LikeDislike itemId={item.filename} />
               <div>
                 {item.tags && item.tags.map((f, tagIndex) => (
                   <Tag key={f} bordered={false} color="blue">
                     {t(f)}
                   </Tag>))}
               </div>
+              
             </Space>}
           />
           {i18n.language == 'zh' ? item.brief : item.brief_en}
