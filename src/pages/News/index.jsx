@@ -10,7 +10,7 @@ import LikeDislike from '../../LikeDislike';
 
 
 
-export default function Intro() {
+export default function News() {
   const navigate = useNavigate();
   const [news, setNews] = useState([]);
   const { t, i18n } = useTranslation();
@@ -66,7 +66,7 @@ export default function Intro() {
   return (
     <List
       itemLayout="vertical"
-      size="large"
+      size="small"
       dataSource={news}
       pagination={{ pageSize: 10 }}
       renderItem={(item) => {
@@ -75,12 +75,11 @@ export default function Intro() {
         const ratings = statsMap.ratings.get(item.filename) || { likes: 0, dislikes: 0 };
 
         return (
-          <List.Item key={item.filename}>
+          <List.Item key={item.filename}  style={{ marginBottom: '16px', padding: '16px', border: '1px solid #f0f0f0', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
             <List.Item.Meta
               title={<a onClick={() => navigate(`/news/${item.filename}`)}>{i18n.language === 'zh' ? item.title : item.title_en}</a>}
               description={
                 <Space>
-
                   <span>{item.date}</span>
                   <ViewCounter views={views} />
                   <LikeDislike
