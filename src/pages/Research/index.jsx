@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+// ResearchPage.jsx (Refactored for Batch Fetching)
+
+import React, { useState, useEffect } from 'react'; // 1. 确保导入 useEffect 和 useState
 import { Typography, Col, Row, List, Tag, Select, Card } from 'antd';
 import { useTranslation } from 'react-i18next';
+import AV from 'leancloud-storage'; // 2. 导入 AV
 import rawResearchData from './researchData.json';
-import LikeDislike from '../../LikeDislike'; // 导入我们的新组件
+import LikeDislike from '../../LikeDislike';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
 
 const researchData = rawResearchData.map((item, index) => ({
   ...item,
-  textlength: 13, // Default text length
-  position: 'left' // Default position
+  textlength: 13,
+  position: 'left'
 }));
 
 const keywordCounts = rawResearchData.flatMap(item => item.keywords).reduce((acc, keyword) => {
@@ -25,6 +28,37 @@ export default function ResearchPage() {
   const { t, i18n } = useTranslation();
   const [selectedKeywords, setSelectedKeywords] = useState([]);
   const [filteredResearch, setFilteredResearch] = useState(researchData);
+  
+  // 3. 添加新 state 来存储批量获取的数据
+  const [ratingsMap, setRatingsMap] = useState(new Map());
+
+  // 4. 新增 useEffect 用于批量获取所有成果的点赞数据
+  useEffect(() => {
+    const itemIds = researchData.map(item => item.id);
+    if (itemIds.length === 0) return;
+
+    const fetchAllRatings = async () => {
+      try {
+        const query = new AV.Query('Ratings');
+        query.containedIn('itemId', itemIds); // 使用 containedIn 一次性查询所有
+        query.limit(1000); // 如果成果超过100个，需要设置 limit
+        const results = await query.find();
+        
+        // 将结果转换为一个 Map，方便快速查找
+        const newRatingsMap = new Map(results.map(item => [item.get('itemId'), {
+          likes: item.get('likes') || 0,
+          dislikes: item.get('dislikes') || 0,
+          objectId: item.id
+        }]));
+        
+        setRatingsMap(newRatingsMap);
+      } catch (error) {
+        console.error("Failed to batch fetch ratings:", error);
+      }
+    };
+    
+    fetchAllRatings();
+  }, []); // 空依赖数组意味着这个 effect 只在组件首次加载时运行一次
 
   useEffect(() => {
     if (selectedKeywords.length > 0) {
@@ -36,13 +70,16 @@ export default function ResearchPage() {
     } else {
       setFilteredResearch(researchData);
     }
-  }, [selectedKeywords, researchData]); // Added researchData to dependency array
+  }, [selectedKeywords]);
 
   const handleKeywordChange = (values) => {
     setSelectedKeywords(values);
   };
 
   const renderItemContent = (item) => {
+    // 5. 从 state Map 中为当前项查找点赞数据
+    const ratingData = ratingsMap.get(item.id) || { likes: 0, dislikes: 0, objectId: null };
+
     const textContent = (
       <Col xs={24} sm={24} md={24} lg={item.textlength} style={{ paddingRight: '10px' }}>
         <a href={item.src} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }} className="research-title-link">
@@ -59,7 +96,13 @@ export default function ResearchPage() {
               {t(tag)} 
             </Tag>
           ))}
-          <LikeDislike itemId={item.id} />
+          {/* 6. 将获取到的数据作为 props 传入 LikeDislike 组件 */}
+          <LikeDislike 
+            itemId={item.id} 
+            initialLikes={ratingData.likes}
+            initialDislikes={ratingData.dislikes}
+            objectId={ratingData.objectId}
+          />
         </div>
       </Col>
     );
@@ -69,12 +112,7 @@ export default function ResearchPage() {
         <img 
           alt={i18n.language === 'zh' ? item.title_zh : item.title_en} 
           src={item.imgpath} 
-          style={{ 
-            objectFit: 'cover', 
-            width: '100%', 
-            height: '180px', // Reduced height for compactness
-            borderRadius: '4px' // Reduced border radius
-          }} 
+          style={{ objectFit: 'cover', width: '100%', height: '180px', borderRadius: '4px' }} 
         />
       </Col>
     );
@@ -82,8 +120,7 @@ export default function ResearchPage() {
     if (item.position === 'right') {
       return <Row gutter={[20, 20]} align="middle">{imageContent}{textContent}</Row>;
     } 
-    return <Row gutter={[20, 20]} align="middle">{textContent}{imageContent}
-    </Row>; 
+    return <Row gutter={[20, 20]} align="middle">{textContent}{imageContent}</Row>; 
   };
 
   return (
@@ -110,18 +147,13 @@ export default function ResearchPage() {
       </Row>
 
       <List
-        grid={{ gutter: 24, xs: 1, sm: 1, md: 1, lg: 1, xl: 1, xxl: 1 }} // Ensure one item per row, but Card will handle layout
+        grid={{ gutter: 24, xs: 1, sm: 1, md: 1, lg: 1, xl: 1, xxl: 1 }}
         dataSource={filteredResearch}
         renderItem={item => (
           <List.Item key={item.id} style={{padding: '0px 0'}}>
               <Card 
-                style={{ 
-                  width: '100%', 
-                  marginBottom: '12px', // Reduced margin
-                  borderRadius: '6px', // Reduced border radius
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)' // Softer shadow
-                }}
-                bodyStyle={{ padding: '12px' }} // Reduced card padding
+                style={{ width: '100%', marginBottom: '12px', borderRadius: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)'}}
+                bodyStyle={{ padding: '12px' }}
               >
                 {renderItemContent(item)}
               </Card>

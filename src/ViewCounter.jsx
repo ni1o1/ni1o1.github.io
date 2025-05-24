@@ -1,31 +1,25 @@
-// src/ViewCounter.jsx (Final, Robust Version)
-import React, { useState, useEffect, useRef } from 'react'; // 1. 导入 useRef
+// src/ViewCounter.jsx (Simplified for Batching)
+import React, { useState, useEffect, useRef } from 'react';
 import AV from 'leancloud-storage';
 import { Tag } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
 
-const ViewCounter = ({ itemId, increment = false }) => {
-  const [views, setViews] = useState('...');
-  
-  // 2. 创建一个 ref 作为“哨兵”，初始值为 false
-  // 它会记录“+1”这个动作是否已经执行过
+const ViewCounter = ({ itemId, increment = false, views: initialViews = 0 }) => {
+  const [views, setViews] = useState(initialViews);
   const hasIncremented = useRef(false);
 
+  // This effect now only runs on the detail page (when increment is true)
   useEffect(() => {
-    const processViews = async () => {
-      if (!itemId) return;
+    // Only fetch/increment if in increment mode
+    if (increment) {
+      const processViews = async () => {
+        if (!itemId || hasIncremented.current) return;
+        hasIncremented.current = true;
 
-      const query = new AV.Query('Views');
-      query.equalTo('itemId', itemId);
-      
-      try {
-        const counter = await query.first();
-
-        // 3. 在执行+1逻辑前，检查“哨兵”
-        if (increment && !hasIncremented.current) {
-          // 标记为“已执行”，防止后续的重渲染再次触发
-          hasIncremented.current = true; 
-          
+        const query = new AV.Query('Views');
+        query.equalTo('itemId', itemId);
+        try {
+          const counter = await query.first();
           let savedCounter;
           if (counter) {
             counter.increment('views', 1);
@@ -38,32 +32,21 @@ const ViewCounter = ({ itemId, increment = false }) => {
             savedCounter = await newCounter.save();
           }
           setViews(savedCounter.get('views'));
-
-        } else {
-          // 只读逻辑或已经加过1的情况
-          if (counter) {
-            setViews(counter.get('views') || 0);
-          } else {
-            setViews(0);
-          }
+        } catch (error) {
+          console.error('Failed to process views:', error);
         }
-      } catch (error) {
-        console.error('Failed to process views:', error);
-        setViews(0);
-      }
-    };
-
-    processViews();
-  }, [itemId, increment]);
+      };
+      processViews();
+    } else {
+      // For list view, just update the state if the prop changes
+      setViews(initialViews);
+    }
+  }, [itemId, increment, initialViews]);
 
   return (
-    <Tag icon={<EyeOutlined />} bordered={false}
-    style={{
-      backgroundColor: '#fff',
-      color: 'rgba(0,0,0,0.45)',
-    }}
-    >
-      {views}
+    <Tag icon={<EyeOutlined />} bordered={false} style={{ backgroundColor: '#fff', color: 'rgba(0,0,0,0.45)' }}>
+      {/* Show initialViews directly unless updated by the effect */}
+      {increment ? views : initialViews}
     </Tag>
   );
 };
