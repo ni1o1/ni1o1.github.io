@@ -82,10 +82,10 @@ export default function ResearchPage() {
 
     const textContent = (
       <Col xs={24} sm={24} md={24} lg={item.textlength} style={{ paddingRight: '10px' }}>
-        <a href={item.src} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }} className="research-title-link">
-          <Title level={5} style={{ marginBottom: '4px', fontSize: '16px' }}>
+        <a href={item.src} target="_blank"  style={{
+         textDecoration: 'none', fontWeight: 'bold'
+          , marginBottom: '4px', fontSize: '16px' }}>
             {i18n.language === 'zh' ? item.title_zh : item.title_en}
-          </Title>
         </a>
         <Paragraph style={{ textAlign: 'justify', marginBottom: '8px', fontSize: '13px' }} ellipsis={{ rows: 3, expandable: true, symbol: t('更多') }}>
           {i18n.language === 'zh' ? item.description : item.description_en}
