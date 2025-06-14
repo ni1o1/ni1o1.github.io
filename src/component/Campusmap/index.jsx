@@ -10,7 +10,7 @@ import {PolygonLayer} from '@deck.gl/layers';
 import axios from 'axios';
 import { ScenegraphLayer } from 'deck.gl';
 
-const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibmkxbzEiLCJhIjoiY2t3ZDgzMmR5NDF4czJ1cm84Z3NqOGt3OSJ9.yOYP6pxDzXzhbHfyk3uORg';
+const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
 export default function Introduction() {
     const { t, i18n } = useTranslation();

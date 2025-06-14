@@ -7,7 +7,6 @@ import { List, Form, Input, Button, message, Typography, Divider } from 'antd';
 import { Comment } from '@ant-design/compatible';
 
 const { TextArea } = Input;
-const { Title } = Typography;
 
 // 评论表单组件
 const CommentEditor = ({ onSubmit, submitting }) => {

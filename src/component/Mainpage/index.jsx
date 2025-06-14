@@ -1,14 +1,7 @@
-import React from 'react'
-import { Layout, Button, Divider, Avatar, Row, Col, List, Card, Typography, Tabs } from 'antd';
+import React, { Suspense } from 'react'
+import { Layout, Button, Divider, Avatar, Row, Col, List, Card, Typography, Tabs, Spin } from 'antd';
 import { PageHeader } from '@ant-design/pro-components';
 import { AntDesignOutlined, TranslationOutlined, GoogleOutlined, MailOutlined, GithubOutlined, YoutubeOutlined } from '@ant-design/icons';
-import Introduction from '@/pages/Introduction';
-import Publication from '@/pages/Publication';
-import Projects from '@/pages/Projects';
-import Research from '@/pages/Research';
-import Group from '@/pages/Group';
-import News from '@/pages/News';
-import NewsDetail from '@/pages/News/NewsDetail';
 import Heading from '@/component/Heading';
 import SEOHead from '@/component/SEOHead';
 import { Route, Routes, useNavigate, useLocation } from 'react-router-dom'
@@ -16,6 +9,15 @@ import './github-markdown-light.css';
 //import 'antd/dist/antd.css';
 import { useTranslation } from 'react-i18next';
 import './index.css';
+
+// 使用 React.lazy() 实现页面组件的懒加载
+const Introduction = React.lazy(() => import('@/pages/Introduction'));
+const Publication = React.lazy(() => import('@/pages/Publication'));
+const Projects = React.lazy(() => import('@/pages/Projects'));
+const Research = React.lazy(() => import('@/pages/Research'));
+const Group = React.lazy(() => import('@/pages/Group'));
+const News = React.lazy(() => import('@/pages/News'));
+const NewsDetail = React.lazy(() => import('@/pages/News/NewsDetail'));
 
 const { Title, Paragraph, Text, Link } = Typography;
 const { Header, Footer, Sider, Content } = Layout;
@@ -111,16 +113,27 @@ export default function Mainpage() {
                 { label: t("团队"), key: 'group' }
               ]}
             />
-            <Routes>
-              <Route path="/" element={<Introduction />} />
-              <Route path="/intro" element={<Introduction />} />
-              <Route path="/news" element={<News />} />
-              <Route path="/research" element={<Research />} />
-              <Route path="/publication" element={<Publication />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/group" element={<Group />} />
-              <Route path="/news/:filename" element={<NewsDetail />} />
-            </Routes>
+            <Suspense fallback={
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                minHeight: '400px' 
+              }}>
+                <Spin size="large" tip={t('加载中...')} />
+              </div>
+            }>
+              <Routes>
+                <Route path="/" element={<Introduction />} />
+                <Route path="/intro" element={<Introduction />} />
+                <Route path="/news" element={<News />} />
+                <Route path="/research" element={<Research />} />
+                <Route path="/publication" element={<Publication />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/group" element={<Group />} />
+                <Route path="/news/:filename" element={<NewsDetail />} />
+              </Routes>
+            </Suspense>
           </Card>
         </div>
       </div>
