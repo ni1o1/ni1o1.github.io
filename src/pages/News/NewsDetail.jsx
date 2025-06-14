@@ -5,12 +5,10 @@ import ReactMarkdown from 'react-markdown';
 import { Space, Button, Skeleton, Divider } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import AV from 'leancloud-storage';
 import { useTranslation } from 'react-i18next';
 import ViewCounter from '../../ViewCounter';
 import LikeDislike from '../../LikeDislike';
-
 export default function NewsDetail() {
   const navigate = useNavigate();
   const { filename } = useParams();
@@ -26,15 +24,36 @@ export default function NewsDetail() {
 
   // Effect to fetch the markdown content of the article
   useEffect(() => {
-    // This effect remains unchanged
-    axios.get(`posts/${filename}_${i18n.language}`) // Assuming a default language or get from i18n
-      .then(res => {
-        setContent(res.data || '');
-      })
-      .catch(err => {
+    const loadPostContent = async () => {
+      try {
+        // Determine the language directory
+        const langDir = i18n.language === 'zh' ? 'zh' : 'en';
+        
+        // Import the specific markdown file
+        const postModules = import.meta.glob('/public/posts/**/*.md', { as: 'raw' });
+        const postPath = `/public/posts/${langDir}/${filename}.md`;
+        
+        if (postModules[postPath]) {
+          const content = await postModules[postPath]();
+          
+          // Remove the YAML front matter from content for display
+          const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
+          const contentWithoutFrontMatter = content.replace(frontMatterRegex, '');
+          
+          setContent(contentWithoutFrontMatter);
+        } else {
+          console.error(`Post not found: ${postPath}`);
+          setContent("# Article Not Found");
+        }
+      } catch (err) {
         console.error("Failed to load post content:", err);
         setContent("# Article Not Found");
-      });
+      }
+    };
+    
+    if (filename) {
+      loadPostContent();
+    }
   }, [filename, i18n.language]);
 
   // Effect to fetch the initial Like/Dislike stats for this article

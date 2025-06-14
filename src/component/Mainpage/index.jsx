@@ -10,7 +10,8 @@ import Group from '@/pages/Group';
 import News from '@/pages/News';
 import NewsDetail from '@/pages/News/NewsDetail';
 import Heading from '@/component/Heading';
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom'
+import SEOHead from '@/component/SEOHead';
+import { Route, Routes, useNavigate, useLocation } from 'react-router-dom'
 import './github-markdown-light.css';
 //import 'antd/dist/antd.css';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +22,17 @@ const { Header, Footer, Sider, Content } = Layout;
 
 export default function Mainpage() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  
+  // 根据当前路径确定活跃的tab
+  const getActiveKey = () => {
+    const path = location.pathname.replace('/', '') || 'intro';
+    // 处理news详情页的情况
+    if (path.startsWith('news/')) {
+      return 'news';
+    }
+    return path;
+  };
 
   const content = (
     <>
@@ -47,17 +59,18 @@ export default function Mainpage() {
   const navigate = useNavigate();
 
   return (
-
-    <div style={{
-      'backgroundColor': bgc,
-      minHeight: '100vh',
-      width: '100vw',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'flex-start',
-      margin: 0,
-      padding: 0
-    }}>
+    <>
+      <SEOHead />
+      <div style={{
+        'backgroundColor': bgc,
+        minHeight: '100vh',
+        width: '100vw',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        margin: 0,
+        padding: 0
+      }}>
       <div style={{ display: 'flex', flex: 1, margin: 0 }}>
         <div style={{ width: '250px', maxWidth: '250px', display: 'flex', flexDirection: 'column', padding: 0 }}>
           <Card variant="borderless" style={{ 'backgroundColor': bgc, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
@@ -81,9 +94,9 @@ export default function Mainpage() {
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0 }}>
           <Card variant="borderless" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-            <Tabs defaultActiveKey="intro" size={'large'}
+            <Tabs activeKey={getActiveKey()} size={'large'}
               tabBarExtraContent={
-                <Button type='primary' onClick={() => { i18n.changeLanguage(i18n.language == 'en' ? 'zh' : 'en') }}
+                <Button type='text' onClick={() => { i18n.changeLanguage(i18n.language == 'en' ? 'zh' : 'en') }}
                 >{i18n.language == 'en' ? '中文' : 'English'}</Button>
               }
               onTabClick={(key) => {
@@ -124,7 +137,7 @@ export default function Mainpage() {
         </Col>
       </Row>
 
-    </div>
-
+      </div>
+    </>
   )
 }

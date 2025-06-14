@@ -4,35 +4,64 @@ import React, { useState, useEffect } from 'react'; // 1. 确保导入 useEffect
 import { Typography, Col, Row, List, Tag, Select, Card } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AV from 'leancloud-storage'; // 2. 导入 AV
-import rawResearchData from './researchData.json';
 import LikeDislike from '../../LikeDislike';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
 
-const researchData = rawResearchData.map((item, index) => ({
-  ...item,
-  textlength: 13,
-  position: 'left'
-}));
-
-const keywordCounts = rawResearchData.flatMap(item => item.keywords).reduce((acc, keyword) => {
-  acc[keyword] = (acc[keyword] || 0) + 1;
-  return acc;
-}, {});
-
-const allKeywords = [...new Set(rawResearchData.flatMap(item => item.keywords))]
-  .sort((a, b) => keywordCounts[b] - keywordCounts[a]);
-
 export default function ResearchPage() {
   const { t, i18n } = useTranslation();
   const [selectedKeywords, setSelectedKeywords] = useState([]);
-  const [filteredResearch, setFilteredResearch] = useState(researchData);
+  const [researchData, setResearchData] = useState([]);
+  const [filteredResearch, setFilteredResearch] = useState([]);
+  const [allKeywords, setAllKeywords] = useState([]);
+  const [keywordCounts, setKeywordCounts] = useState({});
+  const [loading, setLoading] = useState(true);
   
-  // 3. 添加新 state 来存储批量获取的数据
+  // 添加新 state 来存储批量获取的数据
   const [ratingsMap, setRatingsMap] = useState(new Map());
 
-  // 4. 新增 useEffect 用于批量获取所有成果的点赞数据
+  // 加载研究数据
+  useEffect(() => {
+    const fetchResearchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/research/index.json');
+        const data = await response.json();
+        
+        // 添加显示属性
+        const processedData = data.map((item, index) => ({
+          ...item,
+          textlength: 13,
+          position: 'left'
+        }));
+        
+        setResearchData(processedData);
+        setFilteredResearch(processedData);
+        
+        // 计算关键词统计
+        const counts = data.flatMap(item => item.keywords).reduce((acc, keyword) => {
+          acc[keyword] = (acc[keyword] || 0) + 1;
+          return acc;
+        }, {});
+        setKeywordCounts(counts);
+        
+        // 生成排序后的关键词列表
+        const keywords = [...new Set(data.flatMap(item => item.keywords))]
+          .sort((a, b) => counts[b] - counts[a]);
+        setAllKeywords(keywords);
+        
+      } catch (error) {
+        console.error('Failed to load research data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchResearchData();
+  }, []);
+  
+  // 批量获取所有成果的点赞数据
   useEffect(() => {
     const itemIds = researchData.map(item => item.id);
     if (itemIds.length === 0) return;
@@ -40,11 +69,10 @@ export default function ResearchPage() {
     const fetchAllRatings = async () => {
       try {
         const query = new AV.Query('Ratings');
-        query.containedIn('itemId', itemIds); // 使用 containedIn 一次性查询所有
-        query.limit(1000); // 如果成果超过100个，需要设置 limit
+        query.containedIn('itemId', itemIds);
+        query.limit(1000);
         const results = await query.find();
         
-        // 将结果转换为一个 Map，方便快速查找
         const newRatingsMap = new Map(results.map(item => [item.get('itemId'), {
           likes: item.get('likes') || 0,
           dislikes: item.get('dislikes') || 0,
@@ -58,7 +86,7 @@ export default function ResearchPage() {
     };
     
     fetchAllRatings();
-  }, []); // 空依赖数组意味着这个 effect 只在组件首次加载时运行一次
+  }, [researchData]);
 
   useEffect(() => {
     if (selectedKeywords.length > 0) {
@@ -149,11 +177,11 @@ export default function ResearchPage() {
       <List
         grid={{ gutter: 24, xs: 1, sm: 1, md: 1, lg: 1, xl: 1, xxl: 1 }}
         dataSource={filteredResearch}
+        loading={loading}
         renderItem={item => (
           <List.Item key={item.id} style={{padding: '0px 0'}}>
               <Card 
                 style={{ width: '100%', marginBottom: '12px', borderRadius: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)'}}
-                bodyStyle={{ padding: '12px' }}
               >
                 {renderItemContent(item)}
               </Card>

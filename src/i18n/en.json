@@ -48,6 +48,10 @@
     "建筑一体化光伏潜力":"Building Integrated Photovoltaic Potential",
     "3D建筑足迹":"3D Building Footprint",
     "地理信息科学":"Geographic Information Science",
+    "期刊与会议论文":"Journal Papers",
+    "会议论文":"Conference Papers",
+    "专著":"Books",
+    "章节":"Book Chapters",
     "高速公路排放":"Highway Emissions",
     "收费政策":"Toll Policy",
     "自下而上排放估算":"Bottom-up Emission Estimation",
@@ -65,5 +69,6 @@
     "北京大学深圳研究生院":"Peking University Shenzhen",
     "城市规划与设计学院":"School of Urban Planning & Design",
     "深度学习":"Deep Learning",
-    "你觉得这项研究怎么样？":"How do you feel about this research?"
+    "你觉得这项研究怎么样？":"How do you feel about this research?",
+    "更多":"More"
 }

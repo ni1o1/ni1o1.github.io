@@ -4,3 +4,44 @@ body {
   padding: 0;
   box-sizing: border-box;
 }
+
+/* 覆盖 Ant Design 组件的字体 */
+.ant-typography,
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-table,
+.ant-menu,
+.ant-card,
+.ant-form,
+.ant-modal,
+.ant-drawer,
+.ant-notification,
+.ant-message,
+.ant-popover,
+.ant-tooltip,
+.ant-dropdown,
+.ant-pagination,
+.ant-breadcrumb,
+.ant-steps,
+.ant-tabs,
+.ant-collapse,
+.ant-tree,
+.ant-list,
+.ant-descriptions,
+.ant-result,
+.ant-empty,
+.ant-spin,
+.ant-skeleton,
+.ant-divider,
+.ant-anchor,
+.ant-back-top,
+.ant-affix {
+  font-family: -apple-system,'Optima',BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji" !important;
+}
+
+/* 更通用的覆盖方式 */
+.ant-app,
+[class*="ant-"] {
+  font-family: -apple-system,'Optima',BlinkMacSystemFont,"Segoe UI","Noto Sans",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji" !important;
+}

@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { List, Tag, Space } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import AV from 'leancloud-storage';
 import ViewCounter from '../../ViewCounter';
@@ -21,14 +20,26 @@ export default function News() {
     ratings: new Map(),
   });
 
-  // Effect to fetch the list of news articles
+  // Effect to fetch the list of news articles from pre-built index
   useEffect(() => {
-    axios.get('posts/allposts.json').then(res => {
-      const files = res.data;
-      const visibleNews = files.posts.filter(f => f.show).sort((a, b) => new Date(b.date) - new Date(a.date));
-      setNews(visibleNews);
-    });
+    const loadPosts = async () => {
+      try {
+        const response = await fetch('/posts/index.json');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const posts = await response.json();
+        setNews(posts);
+      } catch (error) {
+        console.error('Failed to load posts index:', error);
+        // Fallback: set empty array to prevent infinite loading
+        setNews([]);
+      }
+    };
+    
+    loadPosts();
   }, []);
+
 
   // Effect to batch fetch stats AFTER news has been loaded
   useEffect(() => {
@@ -77,7 +88,7 @@ export default function News() {
         return (
           <List.Item key={item.filename}  style={{ marginBottom: '16px', padding: '16px', border: '1px solid #f0f0f0', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)' }}>
             <List.Item.Meta
-              title={<a onClick={() => navigate(`/news/${item.filename}`)}>{i18n.language === 'zh' ? item.title : item.title_en}</a>}
+              title={<a onClick={() => navigate(`/news/${item.filename}`)}>{i18n.language === 'zh' ? item.title_zh : item.title_en}</a>}
               description={
                 <Space>
                   <span>{item.date}</span>
@@ -97,7 +108,7 @@ export default function News() {
                 </Space>
               }
             />
-             {i18n.language == 'zh' ? item.brief : item.brief_en}
+             {i18n.language == 'zh' ? item.brief_zh : item.brief_en}
           </List.Item>
         );
       }}
