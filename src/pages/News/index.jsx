@@ -24,7 +24,7 @@ export default function News() {
   useEffect(() => {
     const loadPosts = async () => {
       try {
-        const response = await fetch('/posts-data/index.json');
+        const response = await fetch('/posts/index.json');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

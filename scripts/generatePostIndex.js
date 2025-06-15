@@ -8,7 +8,7 @@ const __dirname = path.dirname(__filename);
 
 const generateIndex = () => {
   const projectRoot = path.resolve(__dirname, '..');
-  const postsDir = path.join(projectRoot, 'public', 'posts-data');
+  const postsDir = path.join(projectRoot, 'public', 'posts');
   const zhDir = path.join(postsDir, 'zh');
   const enDir = path.join(postsDir, 'en');
   

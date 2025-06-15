@@ -65,8 +65,8 @@ function parseMarkdownMetadata(content) {
 
 // 主函数
 function generateResearchIndex() {
-  const researchDir = path.join(__dirname, '../public/research-data');
-  const outputPath = path.join(__dirname, '../public/research-data/index.json');
+  const researchDir = path.join(__dirname, '../public/research');
+  const outputPath = path.join(__dirname, '../public/research/index.json');
   
   // 确保research目录存在
   if (!fs.existsSync(researchDir)) {

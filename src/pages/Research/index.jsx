@@ -26,7 +26,7 @@ export default function ResearchPage() {
     const fetchResearchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/research-data/index.json');
+        const response = await fetch('/research/index.json');
         const data = await response.json();
         
         // 添加显示属性

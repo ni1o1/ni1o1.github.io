@@ -30,8 +30,8 @@ export default function NewsDetail() {
         const langDir = i18n.language === 'zh' ? 'zh' : 'en';
         
         // Import the specific markdown file
-        const postModules = import.meta.glob('/public/posts-data/**/*.md', { as: 'raw' });
-  const postPath = `/public/posts-data/${langDir}/${filename}.md`;
+        const postModules = import.meta.glob('/public/posts/**/*.md', { as: 'raw' });
+        const postPath = `/public/posts/${langDir}/${filename}.md`;
         
         if (postModules[postPath]) {
           const content = await postModules[postPath]();
