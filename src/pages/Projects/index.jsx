@@ -63,6 +63,10 @@ export default function Visualization() {
         <Divider />
       <Title level={4}>{t("开源可视化项目")}</Title>
       <Row gutter={[10, 10]}>
+      {Visualcard("https://ni1o1.github.io/SolarRealScene/",
+          "images/SolarRealScene.png",
+          "Solar Real Scene",
+          "A Solar Insolation Real-Time Visualization System")}
         {Visualcard("https://github.com/ni1o1/GeoJSONViewer",
           "images/GeoJSONviewer.png",
           "GeoJSON Viewer",
