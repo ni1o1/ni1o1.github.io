@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "npm run generate-posts && npm run generate-research && vite",
-    "build": "npm run generate-posts && npm run generate-research && npm run generate-sitemap && vite build && rm -rf docs && mv dist docs",
+    "build": "npm run generate-posts && npm run generate-research && vite build && rm -rf docs && mv dist docs",
     "generate-posts": "node scripts/generatePostIndex.js",
     "generate-research": "node scripts/generateResearchIndex.js",
     "generate-sitemap": "node scripts/generateSitemap.js",
