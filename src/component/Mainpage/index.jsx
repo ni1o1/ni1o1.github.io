@@ -74,7 +74,7 @@ export default function Mainpage() {
         padding: 0
       }}>
       <div style={{ display: 'flex', flex: 1, margin: 0 }}>
-        <div style={{ width: '250px', maxWidth: '250px', display: 'flex', flexDirection: 'column', padding: 0 }}>
+        <div style={{ width: '200px', maxWidth: '250px', display: 'flex', flexDirection: 'column', padding: 0 }}>
           <Card variant="borderless" style={{ 'backgroundColor': bgc, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
             <Sider theme='light' width='100%' style={{ height: '100%', background: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
               <PageHeader
@@ -110,7 +110,7 @@ export default function Mainpage() {
                 { label: t("研究"), key: 'research' },
                 { label: t("论著"), key: 'publication' },
                 { label: t("开源"), key: 'projects' },
-                { label: t("团队"), key: 'group' }
+               // { label: t("团队"), key: 'group' }
               ]}
             />
             <Suspense fallback={

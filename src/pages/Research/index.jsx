@@ -1,12 +1,12 @@
-// ResearchPage.jsx (Refactored for Batch Fetching)
+// ResearchPage.jsx (Refactored for Compact Layout)
 
-import React, { useState, useEffect } from 'react'; // 1. 确保导入 useEffect 和 useState
-import { Typography, Col, Row, List, Tag, Select, Card } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Typography, Row, Col, List, Tag, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
-import AV from 'leancloud-storage'; // 2. 导入 AV
+import AV from 'leancloud-storage';
 import LikeDislike from '../../LikeDislike';
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 const { Option } = Select;
 
 export default function ResearchPage() {
@@ -29,15 +29,8 @@ export default function ResearchPage() {
         const response = await fetch('/research/index.json');
         const data = await response.json();
         
-        // 添加显示属性
-        const processedData = data.map((item, index) => ({
-          ...item,
-          textlength: 13,
-          position: 'left'
-        }));
-        
-        setResearchData(processedData);
-        setFilteredResearch(processedData);
+        setResearchData(data);
+        setFilteredResearch(data);
         
         // 计算关键词统计
         const counts = data.flatMap(item => item.keywords).reduce((acc, keyword) => {
@@ -104,59 +97,9 @@ export default function ResearchPage() {
     setSelectedKeywords(values);
   };
 
-  const renderItemContent = (item) => {
-    // 5. 从 state Map 中为当前项查找点赞数据
-    const ratingData = ratingsMap.get(item.id) || { likes: 0, dislikes: 0, objectId: null };
-
-    const textContent = (
-      <Col xs={24} sm={24} md={24} lg={item.textlength} style={{ paddingRight: '10px' }}>
-        <a href={item.src} target="_blank"  style={{
-         textDecoration: 'none', fontWeight: 'bold'
-          , marginBottom: '4px', fontSize: '16px' }}>
-            {i18n.language === 'zh' ? item.title_zh : item.title_en}
-        </a>
-        <Paragraph style={{ textAlign: 'justify', marginBottom: '8px', fontSize: '13px' }} ellipsis={{ rows: 3, expandable: true, symbol: t('更多') }}>
-          {i18n.language === 'zh' ? item.description : item.description_en}
-        </Paragraph>
-        <div>
-          {item.keywords && item.keywords.map((tag) => (
-            <Tag key={tag} color="blue" style={{ marginBottom: '4px', fontSize: '12px', padding: '0px 4px' }}>
-              {t(tag)} 
-            </Tag>
-          ))}
-          {/* 6. 将获取到的数据作为 props 传入 LikeDislike 组件 */}
-          <LikeDislike 
-            itemId={item.id} 
-            initialLikes={ratingData.likes}
-            initialDislikes={ratingData.dislikes}
-            objectId={ratingData.objectId}
-          />
-        </div>
-      </Col>
-    );
-
-    const imageContent = (
-      <Col xs={24} sm={24} md={24} lg={24 - item.textlength}>
-        <img 
-          alt={i18n.language === 'zh' ? item.title_zh : item.title_en} 
-          src={item.imgpath} 
-          style={{ objectFit: 'cover', width: '100%', height: '180px', borderRadius: '4px' }} 
-        />
-      </Col>
-    );
-
-    if (item.position === 'right') {
-      return <Row gutter={[20, 20]} align="middle">{imageContent}{textContent}</Row>;
-    } 
-    return <Row gutter={[20, 20]} align="middle">{textContent}{imageContent}</Row>; 
-  };
-
   return (
     <Typography style={{ padding: '10px 20px' }}>
-      <Row gutter={[16,16]} align="middle" style={{ marginBottom: '15px' }}>
-        <Col xs={24} sm={24} md={8} lg={6} xl={5}>
-          <Title level={3} style={{ margin: 0, fontSize: '20px' }}>{t('代表性成果')}</Title>
-        </Col>
+      {/*<Row gutter={[16,16]} align="middle" style={{ marginBottom: '15px' }}>
         <Col xs={24} sm={24} md={16} lg={18} xl={19}>
           <Select
             mode="multiple"
@@ -172,25 +115,99 @@ export default function ResearchPage() {
             ))}
           </Select>
         </Col>
-      </Row>
+      </Row>*/}
 
       <List
-        grid={{ gutter: 24, xs: 1, sm: 1, md: 1, lg: 1, xl: 1, xxl: 1 }}
+        itemLayout="vertical"
+        size="small"
         dataSource={filteredResearch}
         loading={loading}
-        renderItem={item => (
-          <List.Item key={item.id} style={{padding: '0px 0'}}>
-              <Card 
-                style={{ width: '100%', marginBottom: '12px', borderRadius: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)'}}
-              >
-                {renderItemContent(item)}
-              </Card>
-          </List.Item>
-        )}
         pagination={{
-          position: 'both',
-          pageSize: 5,
+        
+          pageSize: 100,
           showSizeChanger: false,
+        }}
+        renderItem={item => {
+          const ratingData = ratingsMap.get(item.id) || { likes: 0, dislikes: 0, objectId: null };
+          
+          return (
+            <List.Item 
+              key={item.id} 
+              style={{ 
+                padding: '8px 0', 
+                borderBottom: '1px solid #f0f0f0',
+                margin: 0
+              }}
+            >
+              <Row gutter={[16, 8]} align="top">
+                <Col xs={24} sm={24} md={16} lg={18}>
+                  <a 
+                    href={item.src} 
+                    target="_blank" 
+                    style={{
+                    color: '#1890ff',
+                    margin: 12 ,
+        fontSize: '17px',
+        margin: 0,
+        lineHeight: 1.5,
+      }}>
+                  
+                    {i18n.language === 'zh' ? item.title_zh : item.title_en}
+                  </a>
+                  <div style={{ 
+                    fontSize: '13px', 
+                    color: '#555', 
+                    lineHeight: 1.4,
+                    marginBottom: '6px',
+                    maxHeight: '42px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical'
+                  }}>
+                    {i18n.language === 'zh' ? item.description : item.description_en}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {item.keywords && item.keywords.map((tag) => (
+                      <Tag 
+                        key={tag} 
+                        color="blue" 
+                        style={{ 
+                          margin: 0, 
+                          fontSize: '11px', 
+                          padding: '0 6px',
+                          height: '20px',
+                          lineHeight: '20px'
+                        }}
+                      >
+                        {t(tag)} 
+                      </Tag>
+                    ))}
+                    <LikeDislike 
+                      itemId={item.id} 
+                      initialLikes={ratingData.likes}
+                      initialDislikes={ratingData.dislikes}
+                      objectId={ratingData.objectId}
+                    />
+                  </div>
+                </Col>
+                <Col xs={24} sm={24} md={8} lg={6}>
+                  <img 
+                    alt={i18n.language === 'zh' ? item.title_zh : item.title_en} 
+                    src={item.imgpath} 
+                    style={{ 
+                      objectFit: 'cover', 
+                      width: '100%', 
+                      height: '120px', 
+                      borderRadius: '4px',
+                      marginTop: '4px'
+                    }} 
+                  />
+                </Col>
+              </Row>
+            </List.Item>
+          );
         }}
       />
     </Typography>

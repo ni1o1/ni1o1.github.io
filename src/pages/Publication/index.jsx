@@ -35,7 +35,12 @@ export default function Publication() {
   }, [i18n.language]); // Re-run when language changes
 
   return (
-    <div className='markdown-body'>
+    <div className='markdown-body' 
+        style={{ margin: 12 ,
+        fontSize: '13px',
+        margin: 0,
+        lineHeight: 1.5,
+      }}>
       <Skeleton loading={markdown === ''} active title>
         <ReactMarkdown children={markdown} />
       </Skeleton>

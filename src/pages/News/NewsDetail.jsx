@@ -81,7 +81,11 @@ export default function NewsDetail() {
   return (
     <>
       <Skeleton loading={!content} active paragraph={{ rows: 10 }}>
-        <div className='markdown-body' style={{ padding: '24px' }}>
+        <div className='markdown-body' style={{ margin: 12 ,
+        fontSize: '17px',
+        margin: 0,
+        lineHeight: 1.5,
+      }}>
           <Space align="center" style={{ marginBottom: '16px' }}>
             <Button
               size='large'

@@ -21,7 +21,11 @@ const height = 500;
 
   return (
 
-    <div className='markdown-body'>
+    <div className='markdown-body' style={{ margin: 12 ,
+        fontSize: '17px',
+        margin: 0,
+        lineHeight: 1.5,
+      }}>
       <Skeleton loading={markdown == ''} active title>
         <ReactMarkdown children={markdown} />
         {/* <div style={{  height,margin:50 }}>

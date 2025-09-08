@@ -54,7 +54,12 @@ export default function Visualization() {
     </Col>
   }
   return (
-    <div style={{ margin: 12 }}>
+    <div style={{ margin: 12 ,
+        fontSize: '13px',
+        margin: 0,
+        lineHeight: 1.2,
+        display: 'block'
+      }}>
       <Title level={4}>{t("Python库")}</Title>
       <Row gutter={[10, 10]}>
         {viscard("https://github.com/ni1o1/transbigdata", "images/logo-wordmark-dark-small.png", "TransBigData", "Processing, analyzing, and visualizing spatiotemporal transportation data")}
@@ -63,6 +68,10 @@ export default function Visualization() {
       <Divider />
       <Title level={4}>{t("开源工具")}</Title>
       <Row gutter={[10, 10]}>
+        {Visualcard("https://github.com/ni1o1/GLB_label_viewer/",
+          "images/3Dlabelviewer.jpg",
+          "GLB Label Viewer",
+          "Visualize Labeled GLB files")}
         {Visualcard("https://ni1o1.github.io/3DTilesViewer/",
           "images/3DTilesViewer.png",
           "3DTiles Viewer",

@@ -17,7 +17,12 @@ export default function Introduction() {
 
   return (
 
-      <div className='markdown-body'>
+      <div className='markdown-body' style={{
+        fontSize: '17px',
+        margin: 0,
+        lineHeight: 1.5,
+        display: 'block'
+      }}>
         <Skeleton loading={markdown==''} active title>
         <ReactMarkdown children={markdown} />
         </Skeleton>
