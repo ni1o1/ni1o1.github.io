@@ -1,107 +1,99 @@
-// src/CommentSection.jsx
 import React, { useState, useEffect } from 'react';
 import AV from 'leancloud-storage';
-// 从 'antd' 中移除 Comment
-import { List, Form, Input, Button, message, Typography, Divider } from 'antd'; 
-// 从 '@ant-design/compatible' 中单独导入 Comment
-import { Comment } from '@ant-design/compatible';
 
-const { TextArea } = Input;
-
-// 评论表单组件
-const CommentEditor = ({ onSubmit, submitting }) => {
-  const [form] = Form.useForm();
-  return (
-    <Form form={form} onFinish={(values) => onSubmit(values, form)}>
-      <Form.Item name="nickname" rules={[{ required: true, message: '请输入你的昵称!' }]}>
-        <Input placeholder="昵称" />
-      </Form.Item>
-      <Form.Item name="content" rules={[{ required: true, message: '请输入评论内容!' }]}>
-        <TextArea rows={4} placeholder="说点什么..." />
-      </Form.Item>
-      <Form.Item>
-        <Button htmlType="submit" loading={submitting} type="primary">
-          发表评论
-        </Button>
-      </Form.Item>
-    </Form>
-  );
-};
-
-// 评论区主组件
 const CommentSection = ({ itemId }) => {
   const [comments, setComments] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [nickname, setNickname] = useState('');
+  const [content, setContent] = useState('');
 
-  // 使用 useEffect 从 LeanCloud 加载评论
   useEffect(() => {
     if (!itemId) return;
     setLoading(true);
-
     const query = new AV.Query('Comments');
-    query.equalTo('itemId', itemId); // 查询与当前文章 ID 匹配的评论
-    query.descending('createdAt'); // 按创建时间降序排列（新的在前）
-    
+    query.equalTo('itemId', itemId);
+    query.descending('createdAt');
     query.find().then((results) => {
       setComments(results);
       setLoading(false);
     }).catch(error => {
-      message.error('评论加载失败，请刷新页面重试');
       console.error('Error fetching comments:', error);
       setLoading(false);
     });
-
   }, [itemId]);
 
-  // 处理评论提交的函数
-  const handleSubmit = (values, form) => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!nickname.trim() || !content.trim()) return;
     setSubmitting(true);
 
-    const Comment = AV.Object.extend('Comments');
-    const newComment = new Comment();
-    newComment.set('nickname', values.nickname);
-    newComment.set('content', values.content);
-    newComment.set('itemId', itemId); // 关联到当前文章
+    const CommentObj = AV.Object.extend('Comments');
+    const newComment = new CommentObj();
+    newComment.set('nickname', nickname);
+    newComment.set('content', content);
+    newComment.set('itemId', itemId);
 
     newComment.save().then((savedComment) => {
-      message.success('评论成功!');
       setSubmitting(false);
-      // 将新评论添加到列表最前面，实现即时刷新
       setComments([savedComment, ...comments]);
-      form.resetFields(); // 清空表单
+      setNickname('');
+      setContent('');
     }).catch(error => {
-      message.error('评论失败，请重试');
       console.error('Error saving comment:', error);
       setSubmitting(false);
     });
   };
 
   return (
-    <div style={{ marginTop: '40px' }}>
-      <Divider orientation="left">评论区</Divider>
-
-      {/* 评论列表 */}
-      <List
-        className="comment-list"
-        header={`${comments.length} 条评论`}
-        itemLayout="horizontal"
-        dataSource={comments}
-        loading={loading}
-        renderItem={item => (
-          <li>
-            <Comment
-              author={<a>{item.get('nickname')}</a>}
-              content={<p>{item.get('content')}</p>}
-              datetime={<span>{item.createdAt.toLocaleString()}</span>}
-            />
-          </li>
+    <div className="mt-10">
+      <div className="border-t border-gray-200 pt-6">
+        <h3 className="text-sm font-medium text-gray-700 mb-4">
+          {comments.length} 条评论
+        </h3>
+        {loading ? (
+          <div className="animate-pulse space-y-3">
+            <div className="h-12 bg-gray-100 rounded"></div>
+            <div className="h-12 bg-gray-100 rounded"></div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {comments.map((item, idx) => (
+              <div key={idx} className="text-sm">
+                <span className="font-medium text-slate-700">{item.get('nickname')}</span>
+                <span className="text-xs text-gray-400 ml-2">{item.createdAt.toLocaleString()}</span>
+                <p className="text-gray-600 mt-1">{item.get('content')}</p>
+              </div>
+            ))}
+          </div>
         )}
-      />
-      <Divider/>
-            {/* 评论提交表单 */}
-            <CommentEditor onSubmit={handleSubmit} submitting={submitting} />
+      </div>
 
+      <form onSubmit={handleSubmit} className="mt-6 space-y-3">
+        <input
+          type="text"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          placeholder="昵称"
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
+        />
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder="说点什么..."
+          rows={4}
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-slate-400"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="px-4 py-2 bg-slate-800 text-white text-sm rounded hover:bg-slate-700 disabled:opacity-50 cursor-pointer border-none"
+        >
+          {submitting ? '提交中...' : '发表评论'}
+        </button>
+      </form>
     </div>
   );
 };

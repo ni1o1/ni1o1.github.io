@@ -1,48 +1,30 @@
-// NewsDetail.js (Refactored)
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Space, Button, Skeleton, Divider } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
 import AV from 'leancloud-storage';
 import { useTranslation } from 'react-i18next';
 import ViewCounter from '../../ViewCounter';
 import LikeDislike from '../../LikeDislike';
+
 export default function NewsDetail() {
   const navigate = useNavigate();
   const { filename } = useParams();
   const [content, setContent] = useState('');
-
-  // State to hold the fetched stats for this single article
   const [ratingData, setRatingData] = useState({ likes: 0, dislikes: 0, objectId: null });
-  // We don't need state for views here because the ViewCounter's increment logic handles its own fetching
-
-
   const { t, i18n } = useTranslation();
 
-
-  // Effect to fetch the markdown content of the article
   useEffect(() => {
     const loadPostContent = async () => {
       try {
-        // Determine the language directory
         const langDir = i18n.language === 'zh' ? 'zh' : 'en';
-        
-        // Import the specific markdown file
         const postModules = import.meta.glob('/public/posts/**/*.md', { as: 'raw' });
         const postPath = `/public/posts/${langDir}/${filename}.md`;
-        
+
         if (postModules[postPath]) {
-          const content = await postModules[postPath]();
-          
-          // Remove the YAML front matter from content for display
+          const raw = await postModules[postPath]();
           const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n?/;
-          const contentWithoutFrontMatter = content.replace(frontMatterRegex, '');
-          
-          setContent(contentWithoutFrontMatter);
+          setContent(raw.replace(frontMatterRegex, ''));
         } else {
-          console.error(`Post not found: ${postPath}`);
           setContent("# Article Not Found");
         }
       } catch (err) {
@@ -50,19 +32,13 @@ export default function NewsDetail() {
         setContent("# Article Not Found");
       }
     };
-    
-    if (filename) {
-      loadPostContent();
-    }
+    if (filename) loadPostContent();
   }, [filename, i18n.language]);
 
-  // Effect to fetch the initial Like/Dislike stats for this article
   useEffect(() => {
     if (!filename) return;
-
     const ratingQuery = new AV.Query('Ratings');
     ratingQuery.equalTo('itemId', filename);
-
     ratingQuery.first().then(result => {
       if (result) {
         setRatingData({
@@ -71,59 +47,58 @@ export default function NewsDetail() {
           objectId: result.id,
         });
       }
-      // If no result, the initial state of {0, 0, null} is correct
-    }).catch(error => {
-      console.error("Failed to fetch rating data:", error);
-    });
-
-  }, [filename]); // This runs once when the component mounts with a filename
+    }).catch(console.error);
+  }, [filename]);
 
   return (
-    <>
-      <Skeleton loading={!content} active paragraph={{ rows: 10 }}>
-        <div className='markdown-body' style={{ margin: 12 ,
-        fontSize: '17px',
-        margin: 0,
-        lineHeight: 1.5,
-      }}>
-          <Space align="center" style={{ marginBottom: '16px' }}>
-            <Button
-              size='large'
-              shape="circle"
-              type='text'
-              onClick={() => navigate('/news')}
-            >
-              <ArrowLeftOutlined />
-            </Button>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
+      {/* Top bar */}
+      <div className="flex items-center gap-4 mb-6">
+        <button
+          onClick={() => navigate('/news')}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-black bg-transparent border-none cursor-pointer"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          {i18n.language === 'zh' ? '返回' : 'Back'}
+        </button>
+        <ViewCounter itemId={filename} increment={true} />
+        <LikeDislike
+          itemId={filename}
+          initialLikes={ratingData.likes}
+          initialDislikes={ratingData.dislikes}
+          objectId={ratingData.objectId}
+        />
+      </div>
 
-            {/* ViewCounter's logic for incrementing is self-contained and works correctly.
-              No initial prop is needed as it will fetch and set its own state.
-            */}
-            <ViewCounter itemId={filename} increment={true} />
+      {/* Content */}
+      {content ? (
+        <article className="prose prose-slate max-w-none">
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </article>
+      ) : (
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      )}
 
-            {/* Pass the fetched initial data to LikeDislike. 
-              This ensures it displays the correct counts on load.
-            */}
-            <LikeDislike
-              itemId={filename}
-              initialLikes={ratingData.likes}
-              initialDislikes={ratingData.dislikes}
-              objectId={ratingData.objectId}
-            />
-          </Space>
-          <ReactMarkdown children={content} />
-          <Divider>
-            <Space>
-            {t("你觉得这项研究怎么样？")}<LikeDislike
+      {/* Bottom rating */}
+      {content && (
+        <div className="mt-10 pt-6 border-t border-gray-200 flex items-center justify-center gap-3">
+          <span className="text-sm text-gray-500">{t("你觉得这项研究怎么样？")}</span>
+          <LikeDislike
             itemId={filename}
             initialLikes={ratingData.likes}
             initialDislikes={ratingData.dislikes}
             objectId={ratingData.objectId}
-          /></Space>
-          </Divider>
-
+          />
         </div>
-      </Skeleton>
-    </>
+      )}
+    </div>
   );
 }

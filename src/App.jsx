@@ -1,15 +1,11 @@
 import React from 'react';
-import Mainpage from './component/Mainpage';
-import './App.css'; // Import your CSS file
-
-import { HashRouter } from 'react-router-dom'
-
+import { HashRouter } from 'react-router-dom';
+import Layout from './components/Layout';
 
 export default function App() {
-      return (
-            <HashRouter>
-                  <Mainpage />
-            </HashRouter>
-
-      );
+  return (
+    <HashRouter>
+      <Layout />
+    </HashRouter>
+  );
 }

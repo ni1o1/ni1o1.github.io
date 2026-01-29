@@ -1,13 +1,7 @@
-// ResearchPage.jsx (Refactored for Compact Layout)
-
 import React, { useState, useEffect } from 'react';
-import { Typography, Row, Col, List, Tag, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import AV from 'leancloud-storage';
 import LikeDislike from '../../LikeDislike';
-
-const { Title } = Typography;
-const { Option } = Select;
 
 export default function ResearchPage() {
   const { t, i18n } = useTranslation();
@@ -17,199 +11,151 @@ export default function ResearchPage() {
   const [allKeywords, setAllKeywords] = useState([]);
   const [keywordCounts, setKeywordCounts] = useState({});
   const [loading, setLoading] = useState(true);
-  
-  // 添加新 state 来存储批量获取的数据
   const [ratingsMap, setRatingsMap] = useState(new Map());
 
-  // 加载研究数据
   useEffect(() => {
     const fetchResearchData = async () => {
       try {
         setLoading(true);
         const response = await fetch('/research/index.json');
         const data = await response.json();
-        
         setResearchData(data);
         setFilteredResearch(data);
-        
-        // 计算关键词统计
+
         const counts = data.flatMap(item => item.keywords).reduce((acc, keyword) => {
           acc[keyword] = (acc[keyword] || 0) + 1;
           return acc;
         }, {});
         setKeywordCounts(counts);
-        
-        // 生成排序后的关键词列表
         const keywords = [...new Set(data.flatMap(item => item.keywords))]
           .sort((a, b) => counts[b] - counts[a]);
         setAllKeywords(keywords);
-        
       } catch (error) {
         console.error('Failed to load research data:', error);
       } finally {
         setLoading(false);
       }
     };
-    
     fetchResearchData();
   }, []);
-  
-  // 批量获取所有成果的点赞数据
+
   useEffect(() => {
     const itemIds = researchData.map(item => item.id);
     if (itemIds.length === 0) return;
-
     const fetchAllRatings = async () => {
       try {
         const query = new AV.Query('Ratings');
         query.containedIn('itemId', itemIds);
         query.limit(1000);
         const results = await query.find();
-        
         const newRatingsMap = new Map(results.map(item => [item.get('itemId'), {
           likes: item.get('likes') || 0,
           dislikes: item.get('dislikes') || 0,
           objectId: item.id
         }]));
-        
         setRatingsMap(newRatingsMap);
       } catch (error) {
         console.error("Failed to batch fetch ratings:", error);
       }
     };
-    
     fetchAllRatings();
   }, [researchData]);
 
   useEffect(() => {
     if (selectedKeywords.length > 0) {
       setFilteredResearch(
-        researchData.filter(item => 
+        researchData.filter(item =>
           selectedKeywords.some(keyword => item.keywords.includes(keyword))
         )
       );
     } else {
       setFilteredResearch(researchData);
     }
-  }, [selectedKeywords]);
+  }, [selectedKeywords, researchData]);
 
-  const handleKeywordChange = (values) => {
-    setSelectedKeywords(values);
+  const toggleKeyword = (kw) => {
+    setSelectedKeywords(prev =>
+      prev.includes(kw) ? prev.filter(k => k !== kw) : [...prev, kw]
+    );
   };
 
   return (
-    <Typography style={{ padding: '10px 20px' }}>
-      {/*<Row gutter={[16,16]} align="middle" style={{ marginBottom: '15px' }}>
-        <Col xs={24} sm={24} md={16} lg={18} xl={19}>
-          <Select
-            mode="multiple"
-            placeholder={t('关键词筛选')}
-            onChange={handleKeywordChange}
-            allowClear
-            style={{ width: '50%' }}
-          >
-            {allKeywords.map(keyword => (
-              <Option key={keyword} value={keyword}>
-                {t(keyword)} <span style={{fontSize: '12px', color: '#999'}}>({keywordCounts[keyword]}{t(' 篇')})</span>
-              </Option>
-            ))}
-          </Select>
-        </Col>
-      </Row>*/}
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-2xl font-bold text-slate-800 mb-6">{t('研究')}</h1>
 
-      <List
-        itemLayout="vertical"
-        size="small"
-        dataSource={filteredResearch}
-        loading={loading}
-        pagination={{
-        
-          pageSize: 100,
-          showSizeChanger: false,
-        }}
-        renderItem={item => {
-          const ratingData = ratingsMap.get(item.id) || { likes: 0, dislikes: 0, objectId: null };
-          
-          return (
-            <List.Item 
-              key={item.id} 
-              style={{ 
-                padding: '8px 0', 
-                borderBottom: '1px solid #f0f0f0',
-                margin: 0
-              }}
-            >
-              <Row gutter={[16, 8]} align="top">
-                <Col xs={24} sm={24} md={16} lg={18}>
-                  <a 
-                    href={item.src} 
-                    target="_blank" 
-                    style={{
-                    color: '#1890ff',
-                    margin: 12 ,
-        fontSize: '17px',
-        margin: 0,
-        lineHeight: 1.5,
-      }}>
-                  
-                    {i18n.language === 'zh' ? item.title_zh : item.title_en}
-                  </a>
-                  <div style={{ 
-                    fontSize: '13px', 
-                    color: '#555', 
-                    lineHeight: 1.4,
-                    marginBottom: '6px',
-                    maxHeight: '42px',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical'
-                  }}>
-                    {i18n.language === 'zh' ? item.description : item.description_en}
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    {item.keywords && item.keywords.map((tag) => (
-                      <Tag 
-                        key={tag} 
-                        color="blue" 
-                        style={{ 
-                          margin: 0, 
-                          fontSize: '11px', 
-                          padding: '0 6px',
-                          height: '20px',
-                          lineHeight: '20px'
-                        }}
-                      >
-                        {t(tag)} 
-                      </Tag>
-                    ))}
-                    <LikeDislike 
-                      itemId={item.id} 
-                      initialLikes={ratingData.likes}
-                      initialDislikes={ratingData.dislikes}
-                      objectId={ratingData.objectId}
-                    />
-                  </div>
-                </Col>
-                <Col xs={24} sm={24} md={8} lg={6}>
-                  <img 
-                    alt={i18n.language === 'zh' ? item.title_zh : item.title_en} 
-                    src={item.imgpath} 
-                    style={{ 
-                      objectFit: 'cover', 
-                      width: '100%', 
-                      height: '120px', 
-                      borderRadius: '4px',
-                      marginTop: '4px'
-                    }} 
+      {/* Keyword filter */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {allKeywords.map((kw) => (
+          <button
+            key={kw}
+            onClick={() => toggleKeyword(kw)}
+            className={`text-xs px-3 py-1 rounded-full border cursor-pointer transition-colors ${
+              selectedKeywords.includes(kw)
+                ? 'bg-slate-800 text-white border-slate-800'
+                : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+            }`}
+          >
+            {t(kw)} ({keywordCounts[kw]})
+          </button>
+        ))}
+      </div>
+
+      {/* Research grid */}
+      {loading ? (
+        <div className="animate-pulse space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-32 bg-gray-200 rounded"></div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {filteredResearch.map((item) => {
+            const ratingData = ratingsMap.get(item.id) || { likes: 0, dislikes: 0, objectId: null };
+            return (
+              <a
+                key={item.id}
+                href={item.src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow no-underline"
+              >
+                <div className="aspect-video overflow-hidden bg-gray-100">
+                  <img
+                    src={item.imgpath}
+                    alt={i18n.language === 'zh' ? item.title_zh : item.title_en}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                </Col>
-              </Row>
-            </List.Item>
-          );
-        }}
-      />
-    </Typography>
+                </div>
+                <div className="p-4">
+                  <h3 className="text-sm font-medium text-slate-800 line-clamp-2 mb-1">
+                    {i18n.language === 'zh' ? item.title_zh : item.title_en}
+                  </h3>
+                  <p className="text-xs text-gray-500 line-clamp-2 mb-2">
+                    {i18n.language === 'zh' ? item.description : item.description_en}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-1">
+                      {item.keywords?.map((tag) => (
+                        <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                          {t(tag)}
+                        </span>
+                      ))}
+                    </div>
+                    <div onClick={(e) => e.preventDefault()}>
+                      <LikeDislike
+                        itemId={item.id}
+                        initialLikes={ratingData.likes}
+                        initialDislikes={ratingData.dislikes}
+                        objectId={ratingData.objectId}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

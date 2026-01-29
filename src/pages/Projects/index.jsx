@@ -1,199 +1,94 @@
-import React from 'react'
-import { Card, Row, Col, Typography, Divider } from 'antd';
-
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const { Meta } = Card;
-const { Title, Paragraph } = Typography;
+const categories = [
+  { key: 'python_packages', labelZh: 'Python库', labelEn: 'Python Packages' },
+  { key: 'tools', labelZh: '开源工具', labelEn: 'Open Source Tools' },
+  { key: 'visualization', labelZh: '可视化项目', labelEn: 'Visualization Projects' },
+  { key: 'echarts', labelZh: 'ECharts Demo', labelEn: 'ECharts Demo' },
+];
 
-
-export default function Visualization() {
+export default function Projects() {
   const { t, i18n } = useTranslation();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  function Visualcard(src, imgpath, title, description) {
-    return <Col span={8} xs={24} sm={24} md={24} lg={12} xl={8} xxl={6}>
-      <a href={src}>
-        <Card
-          hoverable
-          variant="outlined"
-          size='small'
-          cover={<img alt="transbigdata" src={imgpath} style={{ objectFit: 'cover' }} height='150' />}
-          type='inner'
-        >
-          <Meta title={title} description={description} style={{ 'height': '80px' }} />
-        </Card>
-      </a>
-    </Col>
-  }
-  function Visualcard2(src, imgpath, title, description) {
-    return <Col span={8} xs={24} sm={24} md={12} lg={12} xl={8} xxl={6}>
-      <a href={src}>
-        <Card
-          hoverable
-          variant="outlined"
-          size='small'
-          cover={<img alt="transbigdata" src={imgpath} style={{ objectFit: 'cover' }} height='150' />}
-        >
-          {/* <Meta title={title} description={description} /> */}
-        </Card>
-      </a>
-    </Col>
-  }
-  function viscard(herf, src, title, description) {
-    return <Col span={8} xs={24} sm={24} md={24} lg={12} xl={12} xxl={12}>
-      <a href={herf}>
-        <Card
-          hoverable
-          size='small'
-          cover={<img alt="transbigdata" src={src} style={{ objectFit: 'contain' }} height='150' />}
+  useEffect(() => {
+    fetch('/projects/projects.json')
+      .then(r => r.json())
+      .then(data => { setProjects(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
-        >
-          <Meta title={title} description={description} style={{ 'height': '100px' }} />
-        </Card>
-      </a>
-    </Col>
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        <div className="animate-pulse space-y-6">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-40 bg-gray-200 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
   }
+
   return (
-    <div style={{ margin: 12 ,
-        fontSize: '13px',
-        margin: 0,
-        lineHeight: 1.2,
-        display: 'block'
-      }}>
-      <Title level={4}>{t("Python库")}</Title>
-      <Row gutter={[10, 10]}>
-        {viscard("https://github.com/ni1o1/transbigdata", "images/logo-wordmark-dark-small.png", "TransBigData", "Processing, analyzing, and visualizing spatiotemporal transportation data")}
-        {viscard("https://github.com/ni1o1/pybdshadow", "images/pybdshadow.png", "pybdshadow", "Estimate building shadows from building footprints")}
-      </Row>
-      <Divider />
-      <Title level={4}>{t("开源工具")}</Title>
-      <Row gutter={[10, 10]}>
-        {Visualcard("https://github.com/ni1o1/GLB_label_viewer/",
-          "images/3Dlabelviewer.jpg",
-          "GLB Label Viewer",
-          "Visualize Labeled GLB files")}
-        {Visualcard("https://ni1o1.github.io/3DTilesViewer/",
-          "images/3DTilesViewer.png",
-          "3DTiles Viewer",
-          "Visualize 3DTiles files")}
-        {Visualcard("https://github.com/ni1o1/GeoJSONViewer",
-          "images/GeoJSONviewer.png",
-          "GeoJSON Viewer",
-          "Visualize and edit GeoJSON files")}
-        {Visualcard("https://github.com/ni1o1/ODview",
-          "images/ODview.png",
-          "OD View",
-          "Based on FlowMap.gl")}
-        {Visualcard("https://github.com/ni1o1/amapreachcircle",
-          "images/reachcricle.png",
-          "Reach Circle",
-          "Export reach circles for bus, walking, cycling, and driving from selected map points")}
-        {Visualcard("https://github.com/ni1o1/TrajView",
-          "images/trajview.png",
-          "Trajectory Visualization System",
-          "Import data and dynamically visualize trajectories")}</Row>
-      <Title level={4}>{t("开源可视化项目")}</Title>
-      <Row gutter={[10, 10]}>
-        {Visualcard("https://ni1o1.github.io/SolarRealScene/",
-          "images/SolarRealScene.png",
-          "Solar Real Scene",
-          "A Solar Insolation Real-Time Visualization System")}
-        {Visualcard("https://github.com/ni1o1/SmartEV/",
-          "images/SmartEV.png",
-          "Smart Battery Cloud Platform",
-          "")}
-        {Visualcard("https://github.com/ni1o1/nikebus",
-          "images/nikebus.png",
-          "SUSTech Shuttle Bus Real-Time Location",
-          "")}
-        {Visualcard("https://github.com/ni1o1/UrbanAgglomerationAccessbility",
-          "images/UrbanAgglomerationAccessbility.png",
-          "Urban Agglomeration Accessibility Analysis System",
-          "Accessibility of transportation infrastructure construction")}
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+      <h1 className="text-2xl font-bold text-slate-800 mb-8">{t('开源')}</h1>
 
-        {Visualcard("https://github.com/ni1o1/FloodVisualization",
-          "images/flood.png",
-          "Urban Flood Disaster Analysis System",
-          "i3S")}
+      {categories.map((cat) => {
+        const items = projects.filter(p => p.category === cat.key);
+        if (items.length === 0) return null;
 
-        {Visualcard("https://ni1o1.github.io/activityspace_shanghai/",
-          "images/activityshanghai.png",
-          "Resident Activity Space Visualization System",
-          "Visualize various indicators of resident activities")}
+        return (
+          <section key={cat.key} className="mb-10">
+            <h2 className="text-lg font-semibold text-slate-700 mb-4">
+              {i18n.language === 'zh' ? cat.labelZh : cat.labelEn}
+            </h2>
+            <div className={`grid gap-4 ${
+              cat.key === 'python_packages'
+                ? 'grid-cols-1 sm:grid-cols-2'
+                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+            }`}>
+              {items.map((project) => (
+                <a
+                  key={project.id}
+                  href={project.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow no-underline"
+                >
+                  <div className="aspect-video overflow-hidden bg-gray-100">
+                    <img
+                      src={project.image}
+                      alt={i18n.language === 'zh' ? project.title_zh : project.title_en}
+                      className={`w-full h-full group-hover:scale-105 transition-transform duration-300 ${
+                        cat.key === 'python_packages' ? 'object-contain p-4' : 'object-cover'
+                      }`}
+                    />
+                  </div>
+                  <div className="p-3">
+                    <h3 className="text-sm font-medium text-slate-800">
+                      {i18n.language === 'zh' ? project.title_zh : project.title_en}
+                    </h3>
+                    {(i18n.language === 'zh' ? project.description_zh : project.description_en) && (
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                        {i18n.language === 'zh' ? project.description_zh : project.description_en}
+                      </p>
+                    )}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        );
+      })}
 
-        {Visualcard("https://github.com/ni1o1/crossing_signal_calculater",
-          "images/crossing_signal_calculater.png",
-          "Intersection Signal Timing Parameter Calculator",
-          "Calculate signal timing parameters for intersections and draw timing diagrams")}
-        {Visualcard("https://github.com/ni1o1/advtise-demo",
-          "images/advtise-demo.png",
-          "Building 3D Shadow Calculation",
-          "Visible area of advertisements considering building obstructions")}
-        {Visualcard("https://ni1o1.github.io/xiamenmetro/",
-          "images/xiamenmetro.png",
-          "Xiamen Metro Comprehensive Evaluation System",
-          "Visualize various indicators of metro stations")}
-        {Visualcard("https://ni1o1.github.io/roadspeedcorr/",
-          "images/roadspeedcorr.png",
-          "Shanghai Road Network Speed Correlation",
-          "Click on the road network to display road speed correlations")}
-      </Row>
-      <Divider />
-      <Title level={4}>ECharts demo</Title>
-
-      <Row gutter={[10, 10]}>
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/xiamenhouseprice/",
-          "images/厦门二手房价可视化.png",
-          "Xiamen Second-Hand House Price Visualization",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/busOD/",
-          "images/公交线路OD彩虹图.png",
-          "Bus Line OD Rainbow Chart",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/busline/",
-          "images/厦门公交线路.png",
-          "Xiamen Bus Line 2D Map",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/3dbus/",
-          "images/厦门公交线路3D.png",
-          "Xiamen Bus Line 3D",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/heatmap/",
-          "images/厦门人口热力图.png",
-          "Xiamen Population Heatmap",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/3dbuildings/",
-          "images/厦门三维城市.png",
-          "Xiamen 3D City",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/activity3D/",
-          "images/上海居民活动分布3D柱状图.png",
-          "Shanghai Resident Activity Distribution 3D Bar Chart",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/intercitytrip/",
-          "images/上海南京出行轨迹.png",
-          "Shanghai-Nanjing Travel Trajectory",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/weibo/",
-          "images/微博转发关系.png",
-          "Weibo Repost Relationship",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/2dod/",
-          "images/长三角OD不带百度地图.png",
-          "Yangtze River Delta OD without Baidu Map",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/oddata/",
-          "images/长三角OD带百度地图.png",
-          "Yangtze River Delta OD with Baidu Map",
-          "")}
-        {Visualcard2("https://ni1o1.github.io/echartsexamples/interactiveOD/",
-          "images/交互OD.png",
-          "Yangtze River Delta Interactive OD Relationship Diagram",
-          "")}
-      </Row>
-      <Paragraph>
-        <a href='https://github.com/ni1o1/echartsexamples' target='_blank'>Source code</a>
-      </Paragraph>
+      <p className="text-sm text-gray-500 mt-4">
+        <a href="https://github.com/ni1o1/echartsexamples" target="_blank" rel="noopener noreferrer" className="hover:text-black no-underline text-gray-500">
+          ECharts source code →
+        </a>
+      </p>
     </div>
-  )
+  );
 }
