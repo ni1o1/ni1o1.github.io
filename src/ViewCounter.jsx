@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import AV from 'leancloud-storage';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 const ViewCounter = ({ itemId, increment = false, views: initialViews = 0 }) => {
   const [views, setViews] = useState(initialViews);
@@ -10,22 +11,15 @@ const ViewCounter = ({ itemId, increment = false, views: initialViews = 0 }) => 
       const processViews = async () => {
         if (!itemId || hasIncremented.current) return;
         hasIncremented.current = true;
-        const query = new AV.Query('Views');
-        query.equalTo('itemId', itemId);
+
         try {
-          const counter = await query.first();
-          let savedCounter;
-          if (counter) {
-            counter.increment('views', 1);
-            savedCounter = await counter.save(null, { fetchWhenState: true });
-          } else {
-            const Views = AV.Object.extend('Views');
-            const newCounter = new Views();
-            newCounter.set('itemId', itemId);
-            newCounter.set('views', 1);
-            savedCounter = await newCounter.save();
-          }
-          setViews(savedCounter.get('views'));
+          const response = await fetch(`${API_BASE}/api/views`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemId })
+          });
+          const data = await response.json();
+          setViews(data.count);
         } catch (error) {
           console.error('Failed to process views:', error);
         }

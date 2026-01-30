@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import AV from 'leancloud-storage';
 import { useTranslation } from 'react-i18next';
 import ViewCounter from '../../ViewCounter';
 import LikeDislike from '../../LikeDislike';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export default function NewsDetail() {
   const navigate = useNavigate();
   const { filename } = useParams();
   const [content, setContent] = useState('');
-  const [ratingData, setRatingData] = useState({ likes: 0, objectId: null });
+  const [ratingData, setRatingData] = useState({ likes: 0 });
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
@@ -37,16 +38,16 @@ export default function NewsDetail() {
 
   useEffect(() => {
     if (!filename) return;
-    const ratingQuery = new AV.Query('Ratings');
-    ratingQuery.equalTo('itemId', filename);
-    ratingQuery.first().then(result => {
-      if (result) {
-        setRatingData({
-          likes: result.get('likes') || 0,
-          objectId: result.id,
-        });
+    const fetchRating = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/ratings?itemId=${encodeURIComponent(filename)}`);
+        const data = await response.json();
+        setRatingData({ likes: data.likes || 0 });
+      } catch (error) {
+        console.error("Failed to fetch rating:", error);
       }
-    }).catch(console.error);
+    };
+    fetchRating();
   }, [filename]);
 
   return (
@@ -66,7 +67,6 @@ export default function NewsDetail() {
         <LikeDislike
           itemId={filename}
           initialLikes={ratingData.likes}
-                    objectId={ratingData.objectId}
         />
       </div>
 
@@ -92,7 +92,6 @@ export default function NewsDetail() {
           <LikeDislike
             itemId={filename}
             initialLikes={ratingData.likes}
-                        objectId={ratingData.objectId}
           />
         </div>
       )}

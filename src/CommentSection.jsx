@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import AV from 'leancloud-storage';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 const CommentSection = ({ itemId }) => {
   const [comments, setComments] = useState([]);
@@ -11,38 +12,39 @@ const CommentSection = ({ itemId }) => {
   useEffect(() => {
     if (!itemId) return;
     setLoading(true);
-    const query = new AV.Query('Comments');
-    query.equalTo('itemId', itemId);
-    query.descending('createdAt');
-    query.find().then((results) => {
-      setComments(results);
-      setLoading(false);
-    }).catch(error => {
-      console.error('Error fetching comments:', error);
-      setLoading(false);
-    });
+
+    fetch(`${API_BASE}/api/comments?itemId=${encodeURIComponent(itemId)}`)
+      .then(res => res.json())
+      .then(data => {
+        setComments(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching comments:', error);
+        setLoading(false);
+      });
   }, [itemId]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!nickname.trim() || !content.trim()) return;
     setSubmitting(true);
 
-    const CommentObj = AV.Object.extend('Comments');
-    const newComment = new CommentObj();
-    newComment.set('nickname', nickname);
-    newComment.set('content', content);
-    newComment.set('itemId', itemId);
-
-    newComment.save().then((savedComment) => {
-      setSubmitting(false);
+    try {
+      const response = await fetch(`${API_BASE}/api/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, nickname, content })
+      });
+      const savedComment = await response.json();
       setComments([savedComment, ...comments]);
       setNickname('');
       setContent('');
-    }).catch(error => {
+    } catch (error) {
       console.error('Error saving comment:', error);
+    } finally {
       setSubmitting(false);
-    });
+    }
   };
 
   return (
@@ -58,11 +60,13 @@ const CommentSection = ({ itemId }) => {
           </div>
         ) : (
           <div className="space-y-4">
-            {comments.map((item, idx) => (
-              <div key={idx} className="text-sm">
-                <span className="font-medium text-slate-700">{item.get('nickname')}</span>
-                <span className="text-xs text-gray-400 ml-2">{item.createdAt.toLocaleString()}</span>
-                <p className="text-gray-600 mt-1">{item.get('content')}</p>
+            {comments.map((item) => (
+              <div key={item.id} className="text-sm">
+                <span className="font-medium text-slate-700">{item.nickname}</span>
+                <span className="text-xs text-gray-400 ml-2">
+                  {new Date(item.createdAt).toLocaleString()}
+                </span>
+                <p className="text-gray-600 mt-1">{item.content}</p>
               </div>
             ))}
           </div>

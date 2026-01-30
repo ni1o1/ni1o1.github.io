@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import AV from 'leancloud-storage';
 import ViewCounter from '../../ViewCounter';
 import LikeDislike from '../../LikeDislike';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export default function News() {
   const navigate = useNavigate();
@@ -26,17 +27,24 @@ export default function News() {
 
     const fetchStats = async () => {
       try {
-        const viewQuery = new AV.Query('Views');
-        viewQuery.containedIn('itemId', itemIds);
-        const viewResults = await viewQuery.find();
-        const newViewsMap = new Map(viewResults.map(item => [item.get('itemId'), item.get('views')]));
+        // Batch fetch views
+        const viewsResponse = await fetch(`${API_BASE}/api/views`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemIds })
+        });
+        const viewsData = await viewsResponse.json();
+        const newViewsMap = new Map(Object.entries(viewsData));
 
-        const ratingQuery = new AV.Query('Ratings');
-        ratingQuery.containedIn('itemId', itemIds);
-        const ratingResults = await ratingQuery.find();
-        const newRatingsMap = new Map(ratingResults.map(item => [item.get('itemId'), {
-          likes: item.get('likes') || 0,
-          objectId: item.id
+        // Batch fetch ratings
+        const ratingsResponse = await fetch(`${API_BASE}/api/ratings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemIds })
+        });
+        const ratingsData = await ratingsResponse.json();
+        const newRatingsMap = new Map(Object.entries(ratingsData).map(([key, val]) => [key, {
+          likes: val.likes || 0
         }]));
 
         setStatsMap({ views: newViewsMap, ratings: newRatingsMap });
@@ -67,7 +75,6 @@ export default function News() {
                   <LikeDislike
                     itemId={item.filename}
                     initialLikes={ratings.likes}
-                    objectId={ratings.objectId}
                   />
                 </div>
               </div>

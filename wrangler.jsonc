@@ -10,5 +10,15 @@
       "pattern": "yuq.smallworldai.com",
       "custom_domain": true
     }
+  ],
+  // D1 数据库绑定 - 需要先在 Cloudflare 控制台创建数据库
+  // 运行: wrangler d1 create blog-stats
+  // 然后将返回的 database_id 填入下方
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "blog-stats",
+      "database_id": "99269e5b-8512-4f1d-beb4-5a08b57313db"
+    }
   ]
 }

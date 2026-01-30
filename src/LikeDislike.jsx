@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import AV from 'leancloud-storage';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 const LOCAL_STORAGE_KEY = 'research_ratings';
 
-const LikeDislike = ({ itemId, initialLikes = 0, objectId }) => {
+const LikeDislike = ({ itemId, initialLikes = 0 }) => {
   const [likes, setLikes] = useState(initialLikes);
   const [userAction, setUserAction] = useState(null);
-  const [lcObjectId, setLcObjectId] = useState(objectId);
 
   useEffect(() => {
     setLikes(initialLikes);
-    setLcObjectId(objectId);
     const userRatings = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '{}');
     if (userRatings[itemId]) {
       setUserAction(userRatings[itemId]);
     }
-  }, [initialLikes, objectId, itemId]);
+  }, [initialLikes, itemId]);
 
   const updateUserRatingLocally = (action) => {
     const userRatings = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || '{}');
@@ -30,18 +28,14 @@ const LikeDislike = ({ itemId, initialLikes = 0, objectId }) => {
     setLikes(likes + 1);
     updateUserRatingLocally('liked');
 
-    if (lcObjectId) {
-      const ratingToUpdate = AV.Object.createWithoutData('Ratings', lcObjectId);
-      ratingToUpdate.increment('likes', 1);
-      ratingToUpdate.save().catch(console.error);
-    } else {
-      const Ratings = AV.Object.extend('Ratings');
-      const newRating = new Ratings();
-      newRating.set('itemId', itemId);
-      newRating.set('likes', likes + 1);
-      newRating.save().then((savedObj) => {
-        setLcObjectId(savedObj.id);
-      }).catch(console.error);
+    try {
+      await fetch(`${API_BASE}/api/ratings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, action: 'like' })
+      });
+    } catch (error) {
+      console.error('Failed to like:', error);
     }
   };
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import AV from 'leancloud-storage';
 import LikeDislike from '../../LikeDislike';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export default function ResearchPage() {
   const { t, i18n } = useTranslation();
@@ -42,15 +43,17 @@ export default function ResearchPage() {
   useEffect(() => {
     const itemIds = researchData.map(item => item.id);
     if (itemIds.length === 0) return;
+
     const fetchAllRatings = async () => {
       try {
-        const query = new AV.Query('Ratings');
-        query.containedIn('itemId', itemIds);
-        query.limit(1000);
-        const results = await query.find();
-        const newRatingsMap = new Map(results.map(item => [item.get('itemId'), {
-          likes: item.get('likes') || 0,
-          objectId: item.id
+        const response = await fetch(`${API_BASE}/api/ratings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemIds })
+        });
+        const data = await response.json();
+        const newRatingsMap = new Map(Object.entries(data).map(([key, val]) => [key, {
+          likes: val.likes || 0
         }]));
         setRatingsMap(newRatingsMap);
       } catch (error) {
@@ -109,7 +112,7 @@ export default function ResearchPage() {
       ) : (
         <div className="space-y-8">
           {filteredResearch.map((item) => {
-            const ratingData = ratingsMap.get(item.id) || { likes: 0, objectId: null };
+            const ratingData = ratingsMap.get(item.id) || { likes: 0 };
             return (
               <div key={item.id} className="flex flex-col sm:flex-row gap-6">
                 <a
@@ -152,7 +155,6 @@ export default function ResearchPage() {
                       <LikeDislike
                         itemId={item.id}
                         initialLikes={ratingData.likes}
-                        objectId={ratingData.objectId}
                       />
                     </div>
                   </div>
