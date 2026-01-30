@@ -1,21 +1,5 @@
 [
   {
-    "filename": "research_018",
-    "title_zh": "中国城市电动汽车超快充电扭曲了受管制的价格信号并加剧了电网稳定性风险",
-    "title_en": "China's urban EV ultra-fast charging distorts regulated price signals and elevates risk to grid stability",
-    "description": "我们通过分析中国多个城市的电动汽车充电数据，发现超快充电的高功率需求与现行分时电价政策存在时间错配，用户充电行为未能有效响应价格信号，导致负荷高峰时段的电网压力加剧，这为优化充电基础设施规划和电价政策提供了科学依据。",
-    "description_en": "By analyzing EV charging data from multiple Chinese cities, we found that the high power demand of ultra-fast charging is temporally misaligned with current time-of-use pricing policies, and user charging behavior fails to effectively respond to price signals, exacerbating grid pressure during peak load periods, which provides scientific basis for optimizing charging infrastructure planning and pricing policies.",
-    "imgpath": "images/nc_cover.png",
-    "src": "https://doi.org/10.1038/s41467-025-63199-3",
-    "keywords": [
-      "电动汽车",
-      "交通能源",
-      "电网稳定性"
-    ],
-    "id": "Research_018",
-    "show": true
-  },
-  {
     "filename": "research_017",
     "title_zh": "时空特征编码的屋顶光伏潜力评估深度学习方法",
     "title_en": "Spatiotemporal Feature Encoded Deep Learning Method for Rooftop PV Potential Assessment",

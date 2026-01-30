@@ -1,20 +1,5 @@
 [
   {
-    "filename": "nc2025ev",
-    "title_zh": "论文发表 | Nature Communications | 中国城市电动汽车超快充电扭曲了受管制的价格信号并加剧了电网稳定性风险",
-    "title_en": "Paper Published | Nature Communications | China's urban EV ultra-fast charging distorts regulated price signals and elevates risk to grid stability",
-    "brief_zh": "本研究揭示了中国城市电动汽车超快充电对电力价格信号的扭曲效应及其对电网稳定性带来的风险。",
-    "brief_en": "This study reveals how ultra-fast charging of electric vehicles in Chinese cities distorts electricity price signals and poses risks to grid stability.",
-    "date": "2025-01-30",
-    "tags": [
-      "电动汽车",
-      "充电站",
-      "电网稳定性",
-      "能源政策"
-    ],
-    "show": true
-  },
-  {
     "filename": "apen126171",
     "title_zh": "论文发表 | Applied Energy | 时空特征编码的屋顶光伏潜力评估深度学习方法",
     "title_en": "Article Publication | APEN | Spatiotemporal Feature Encoded Deep Learning Method for Rooftop PV Potential Assessment",
@@ -74,6 +59,21 @@
       "光伏潜力",
       "城市环境",
       "地理信息系统"
+    ],
+    "show": true
+  },
+  {
+    "filename": "nc2025ev",
+    "title_zh": "论文发表 | Nature Communications | 中国城市电动汽车超快充电扭曲了受管制的价格信号并加剧了电网稳定性风险",
+    "title_en": "Paper Published | Nature Communications | China's urban EV ultra-fast charging distorts regulated price signals and elevates risk to grid stability",
+    "brief_zh": "本研究揭示了中国城市电动汽车超快充电对电力价格信号的扭曲效应及其对电网稳定性带来的风险。",
+    "brief_en": "This study reveals how ultra-fast charging of electric vehicles in Chinese cities distorts electricity price signals and poses risks to grid stability.",
+    "date": "2025-01-30",
+    "tags": [
+      "电动汽车",
+      "充电站",
+      "电网稳定性",
+      "能源政策"
     ],
     "show": true
   },

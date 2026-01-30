@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://ni1o1.github.io/sitemap.xml
+
+# Disallow crawling of development files
+Disallow: /src/
+Disallow: /*.json$
+Disallow: /node_modules/
+Disallow: /dist/
+Disallow: /.git/
+
+# Allow crawling of important pages
+Allow: /intro
+Allow: /research
+Allow: /publication
+Allow: /projects
+Allow: /news
+Allow: /group

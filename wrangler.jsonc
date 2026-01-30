@@ -2,7 +2,8 @@
   "name": "yuq", // Cloudflare 上的项目名
   "compatibility_date": "2026-01-16",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
   },
   "routes": [
     {
