@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "license": "MIT",
+  "packageManager": "npm@10.9.2",
   "scripts": {
     "dev": "npm run generate-posts && npm run generate-research && vite",
     "build": "npm run generate-posts && npm run generate-research && vite build",
