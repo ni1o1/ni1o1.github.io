@@ -1,8 +1,10 @@
 {
   "name": "yuq", // Cloudflare 上的项目名
+  "main": "src/worker.js",
   "compatibility_date": "2026-01-16",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
   "routes": [
