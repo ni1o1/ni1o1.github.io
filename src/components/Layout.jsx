@@ -10,6 +10,7 @@ const NewsDetail = React.lazy(() => import('../pages/News/NewsDetail'));
 const Research = React.lazy(() => import('../pages/Research'));
 const Publication = React.lazy(() => import('../pages/Publication'));
 const Projects = React.lazy(() => import('../pages/Projects'));
+const Team = React.lazy(() => import('../pages/Team'));
 
 export default function Layout() {
   return (
@@ -37,6 +38,7 @@ export default function Layout() {
             <Route path="/research" element={<Research />} />
             <Route path="/publication" element={<Publication />} />
             <Route path="/projects" element={<Projects />} />
+            <Route path="/team" element={<Team />} />
           </Routes>
         </Suspense>
       </main>

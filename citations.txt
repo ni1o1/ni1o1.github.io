@@ -1,0 +1,857 @@
+@techreport{yu2018unveiling,
+  title={Unveiling Urban Commuting Structure from Mobile Phone Data: A Case Study in Shanghai, China},
+  author={Yu, Qing and Li, Weifeng and Duan, Zhengyu and Yang, Dongyuan},
+  year={2018}
+}
+
+@incollection{yu2018activity,
+  title={Activity Space Investigations for Nonresidents Using Mobile Phone Data},
+  author={Yu, Qing and Li, Wei-Feng and Duan, Zheng-Yu and Yang, Dong-Yuan},
+  booktitle={CICTP 2017: Transportation Reform and Change—Equity, Inclusiveness, Sharing, and Innovation},
+  pages={142--151},
+  year={2018},
+  publisher={American Society of Civil Engineers Reston, VA}
+}
+
+@article{余庆2017基于多源数据的公交客流规模关联分析,
+  title={基于多源数据的公交客流规模关联分析},
+  author={余庆 and 雷曾翔 and 李玮峰 and 杨东援},
+  journal={综合运输},
+  volume={39},
+  number={6},
+  pages={58--63},
+  year={2017}
+}
+
+@article{李俊2017基于,
+  title={基于 POI 数据的配送企业网络布局},
+  author={李俊 and 杨东援 and 余庆},
+  journal={2017 年中国城市交通规划年会论文集},
+  year={2017}
+}
+
+@article{李玮峰2016基于多源数据的居民活动区域特征分析,
+  title={基于多源数据的居民活动区域特征分析},
+  author={李玮峰 and 程小云 and 余庆 and 杨东援},
+  journal={规划 60 年: 成就与挑战——2016 中国城市规划年会论文集 (04 城市规划新技术应用)},
+  year={2016}
+}
+
+@inproceedings{wang2018analysis,
+  title={Analysis of Chinese Typical Urban Public Transport Network Types and Influencing Factors},
+  author={Wang, Yu and Chen, Chuan and Yu, Qing},
+  booktitle={18th COTA International Conference of Transportation Professionals},
+  pages={913--924},
+  year={2018},
+  organization={American Society of Civil Engineers Reston, VA}
+}
+
+@article{李俊2018城市生活性物流设施网络实证研究,
+  title={城市生活性物流设施网络实证研究},
+  author={李俊 and 余庆 and 杨东援},
+  journal={综合运输},
+  volume={40},
+  number={4},
+  pages={84--91},
+  year={2018}
+}
+
+@article{yu2020mobile,
+  title={Mobile phone data in urban bicycle-sharing: Market-oriented sub-area division and spatial analysis on emission reduction potentials},
+  author={Yu, Qing and Zhang, Haoran and Li, Weifeng and Sui, Yi and Song, Xuan and Yang, Dongyuan and Shibasaki, Ryosuke and Jiang, Wenxiao},
+  journal={Journal of Cleaner Production},
+  volume={254},
+  pages={119974},
+  year={2020},
+  publisher={Elsevier}
+}
+
+@article{yu2020mobile,
+  title={Mobile phone GPS data in urban customized bus: Dynamic line design and emission reduction potentials analysis},
+  author={Yu, Qing and Zhang, Haoran and Li, Weifeng and Song, Xuan and Yang, Dongyuan and Shibasaki, Ryosuke},
+  journal={Journal of Cleaner Production},
+  volume={272},
+  pages={122471},
+  year={2020},
+  publisher={Elsevier}
+}
+
+@article{yu2020mobile,
+  title={Mobile phone data in urban customized bus: A network-based hierarchical location selection method with an application to system layout design in the urban agglomeration},
+  author={Yu, Qing and Li, Weifeng and Zhang, Haoran and Yang, Dongyuan},
+  journal={Sustainability},
+  volume={12},
+  number={15},
+  pages={6203},
+  year={2020},
+  publisher={MDPI}
+}
+
+@article{jiang2021gps,
+  title={GPS data in urban online ride-hailing: The technical potential analysis of demand prediction model},
+  author={Jiang, Wenxiao and Zhang, Haoran and Long, Yin and Chen, Jinyu and Sui, Yi and Song, Xuan and Shibasaki, Ryosuke and Yu, Qing},
+  journal={Journal of Cleaner Production},
+  volume={279},
+  pages={123706},
+  year={2021},
+  publisher={Elsevier}
+}
+
+@article{yu2020mobile,
+  title={Mobile phone data in urban commuting: A network community detection-based framework to unveil the spatial structure of commuting demand},
+  author={Yu, Qing and Li, Weifeng and Yang, Dongyuan and Zhang, Haoran},
+  journal={Journal of Advanced Transportation},
+  volume={2020},
+  number={1},
+  pages={8835981},
+  year={2020},
+  publisher={Hindawi}
+}
+
+@article{wang2020gps,
+  title={GPS Data in Urban Online Car-Hailing: Simulation on Optimization and Prediction in Reducing Void Cruising Distance},
+  author={Wang, Yuxuan and Chen, Jinyu and Xu, Ning and Li, Wenjing and Yu, Qing and Song, Xuan},
+  journal={Mathematical Problems in Engineering},
+  volume={2020},
+  number={1},
+  pages={6890601},
+  year={2020},
+  publisher={Hindawi}
+}
+
+@article{yu2020policy,
+  title={Policy zoning for efficient land utilization based on spatio-temporal integration between the bicycle-sharing service and the metro transit},
+  author={Yu, Qing and Li, Weifeng and Yang, Dongyuan and Xie, Yingkun},
+  journal={Sustainability},
+  volume={13},
+  number={1},
+  pages={141},
+  year={2020},
+  publisher={MDPI}
+}
+
+@article{zhang20211,
+  title={1.6 Million transactions replicate distributed PV market slowdown by COVID-19 lockdown},
+  author={Zhang, Haoran and Yan, Jinyue and Yu, Qing and Obersteiner, Michael and Li, Wenjing and Chen, Jinyu and Zhang, Qiong and Jiang, Mingkun and Wallin, Fredrik and Song, Xuan and others},
+  journal={Applied Energy},
+  volume={283},
+  pages={116341},
+  year={2021},
+  publisher={Elsevier}
+}
+
+@article{yang2021adaptability,
+  title={An Adaptability Analysis of the Space-Vehicle Traffic State Estimation Model for Sparsely Distributed Observation Environment},
+  author={Yang, Han and Yu, Qing},
+  journal={Mathematical Problems in Engineering},
+  volume={2021},
+  number={1},
+  pages={6692068},
+  year={2021},
+  publisher={Hindawi}
+}
+
+@article{bi2021gis,
+  title={GIS aided sustainable urban road management with a unifying queueing and neural network model},
+  author={Bi, Huibo and Shang, Wen-Long and Chen, Yanyan and Wang, Kezhi and Yu, Qing and Sui, Yi},
+  journal={Applied Energy},
+  volume={291},
+  pages={116818},
+  year={2021},
+  publisher={Elsevier}
+}
+
+@article{yu2021partitioning,
+  title={Partitioning urban road network based on travel speed correlation},
+  author={Yu, Qing and Li, Weifeng and Yang, Dongyuan and Zhang, Haoran},
+  journal={International journal of transportation science and technology},
+  volume={10},
+  number={2},
+  pages={97--109},
+  year={2021},
+  publisher={Elsevier}
+}
+
+@article{song2021analysis,
+  title={Analysis of Individual’s Activity Space Based on the Cellular Signaling Data},
+  author={Song, Shaofei and Li, Weifeng and Yu, Qing and Yang, Dongyuan},
+  journal={Mathematical Problems in Engineering},
+  volume={2021},
+  number={1},
+  pages={6690295},
+  year={2021},
+  publisher={Hindawi}
+}
+
+@article{li2022taxi,
+  title={Taxi global positioning system data in urban road network: A methodology to identify key road clusters based on travel speed--traffic volume correlation},
+  author={Li, Yi and Li, Weifeng and Yu, Qing and Yang, Han},
+  journal={Transportation Research Record},
+  volume={2676},
+  number={1},
+  pages={487--498},
+  year={2022},
+  publisher={SAGE Publications Sage CA: Los Angeles, CA}
+}
+
+@article{wu2021modeling,
+  title={Modeling the Impacts of Driver Income Distributions on Online Ride-Hailing Services},
+  author={Wu, Yuru and Li, Weifeng and Yu, Qing and Chen, Jinyu},
+  journal={Mathematical Problems in Engineering},
+  volume={2021},
+  number={1},
+  pages={3055337},
+  year={2021},
+  publisher={Hindawi}
+}
+
+@incollection{yu2022data,
+  title={Data-driven estimation for urban travel shareability},
+  author={Yu, Qing and Li, Weifeng and Yang, Dongyuan},
+  booktitle={Big Data and Mobility as a Service},
+  pages={177--202},
+  year={2022},
+  publisher={Elsevier}
+}
+
+@article{li2021understanding,
+  title={Understanding the effects of fare discount schemes to metro transit ridership based on structural change analysis},
+  author={Li, Zhe and Li, Weifeng and Yu, Qing},
+  journal={Mathematical Problems in Engineering},
+  volume={2021},
+  number={1},
+  pages={9579325},
+  year={2021},
+  publisher={Hindawi}
+}
+
+@article{li2021using,
+  title={Using POI data to identify the demand for pedestrian crossing facilities at mid-block},
+  author={Li, Weifeng and He, Jiawei and Yu, Qing and Chang, Yujiao and Liu, Peng},
+  journal={Sustainability},
+  volume={13},
+  number={23},
+  pages={13256},
+  year={2021},
+  publisher={MDPI}
+}
+
+@article{yu2022transbigdata,
+  title={TransBigData: A Python package for transportation spatio-temporal big data processing, analysis and visualization},
+  author={Yu, Qing and Yuan, Jian},
+  journal={Journal of Open Source Software},
+  volume={7},
+  number={71},
+  pages={4021},
+  year={2022}
+}
+
+@article{chen2022roadmap,
+  title={Roadmap to hydrogen society of Tokyo: Locating priority of hydrogen facilities based on multiple big data fusion},
+  author={Chen, Jinyu and Zhang, Qiong and Xu, Ning and Li, Wenjing and Yao, Yuhao and Li, Peiran and Yu, Qing and Wen, Chuang and Song, Xuan and Shibasaki, Ryosuke and others},
+  journal={Applied Energy},
+  volume={313},
+  pages={118688},
+  year={2022},
+  publisher={Elsevier}
+}
+
+@article{yu2022gps,
+  title={GPS data in taxi-sharing system: Analysis of potential demand and assessment of fuel consumption based on routing probability model},
+  author={Yu, Qing and Li, Weifeng and Zhang, Haoran and Chen, Jinyu},
+  journal={Applied Energy},
+  volume={314},
+  pages={118923},
+  year={2022},
+  publisher={Elsevier}
+}
+
+@article{hui2022hotspots,
+  title={Hotspots identification and classification of dockless bicycle sharing service under electric fence circumstances},
+  author={Hui, Ying and Xie, Yingkun and Yu, Qing and Liu, Xiaolei and Wang, Xinyuan},
+  journal={Journal of Advanced Transportation},
+  volume={2022},
+  number={1},
+  pages={5218254},
+  year={2022},
+  publisher={Hindawi}
+}
+
+@article{wu2022analysis,
+  title={Analysis of the Relationship between Dockless Bicycle-Sharing and the Metro: Connection, Competition, and Complementation},
+  author={Wu, Yuru and Li, Weifeng and Yu, Qing and Li, Jian},
+  journal={Journal of Advanced Transportation},
+  volume={2022},
+  number={1},
+  pages={5664004},
+  year={2022},
+  publisher={Hindawi}
+}
+
+@article{yu2022gps,
+  title={GPS data in urban bicycle-sharing: Dynamic electric fence planning with assessment of resource-saving and potential energy consumption increasement},
+  author={Yu, Qing and Xie, Yingkun and Li, Weifeng and Zhang, Haoran and Liu, Xiaolei and Shang, Wen-Long and Chen, Jinyu and Yang, Dongyuan and Yan, Jinyue},
+  journal={Applied Energy},
+  volume={322},
+  pages={119533},
+  year={2022},
+  publisher={Elsevier}
+}
+
+@article{duan2022analyzing,
+  title={Analyzing detour behavior of metro passengers based on mobile phone data},
+  author={Duan, Zhengyu and Liu, Xiaolei and Yu, Qing and Li, Yi},
+  journal={Transportation Planning and Technology},
+  volume={45},
+  number={3},
+  pages={289--309},
+  year={2022},
+  publisher={Routledge}
+}
+
+@article{sun2022reducing,
+  title={Reducing external container trucks’ turnaround time in ports: A data-driven approach under truck appointment systems},
+  author={Sun, Shichao and Zheng, Yong and Dong, Yao and Li, Na and Jin, Zhihong and Yu, Qing},
+  journal={Computers \& Industrial Engineering},
+  volume={174},
+  pages={108787},
+  year={2022},
+  publisher={Pergamon}
+}
+
+@incollection{yu2023web,
+  title={Web-based spatio-temporal data visualization technology for urban digital twin},
+  author={Yu, Qing and Shang, Wen-Long and Chen, Jinyu and Zhang, Haoran},
+  booktitle={Handbook of Mobility Data Mining},
+  pages={185--201},
+  year={2023},
+  publisher={Elsevier}
+}
+
+@incollection{chen2023benchmark,
+  title={Benchmark of travel mode detection with smartphone GPS trajectories},
+  author={Chen, Jinyu and Li, Wenjing and Yu, Qing and Shibasaki, Ryosuke and Zhang, Haoran},
+  booktitle={Handbook of Mobility Data Mining},
+  pages={117--137},
+  year={2023},
+  publisher={Elsevier}
+}
+
+@article{liang2023mobility,
+  title={Mobility data in bike-sharing systems},
+  author={Liang, Youyi and Yuan, Meng and Li, Zhuochao and Zhou, Hao and Zhang, Haoran and Yu, Qing and Liang, Yongtu},
+  journal={Handbook of Mobility Data Mining},
+  pages={1--22},
+  year={2023},
+  publisher={Elsevier}
+}
+
+@incollection{chen2023improvement,
+  title={Improvement of an online ride-hailing system based on empirical GPS data},
+  author={Chen, Jinyu and Li, Wenjing and Yu, Qing and Shibasaki, Ryosuke and Zhang, Haoran},
+  booktitle={Handbook of Mobility Data Mining},
+  pages={23--61},
+  year={2023},
+  publisher={Elsevier}
+}
+
+@article{yuan2023traffic,
+  title={Traffic Information Mining Based on Queue Profile Geometry at Signalized Intersections},
+  author={Yuan, Jian and An, Kun and Ma, Wanjing and Yu, Qing},
+  journal={Spatial Knowledge \& Information},
+  year={2023}
+}
+
+@article{fenganalysis,
+  title={Analysis of the Potential of Battery Swapping, Transporting, and Sharing for Electric Taxi Fleets Based on Agent-Based Model},
+  author={Feng, Defan and Yu, Qing and Zhang, Haoran and Chen, Zhiheng and Song, Xuan}
+}
+
+@incollection{liang2023mobile,
+  title={Mobile Big Data in Bicycle-sharing System},
+  author={Liang, Youyi and Yuan, Meng and Li, Zhuochao and Zhou, Hao and Zhang, Haoran and Yu, Qing and Liang, Yongtu},
+  booktitle={Handbook of Mobility Data Mining, Volume 3-1st Edition: Mobility Data-Driven Applications},
+  year={2023},
+  publisher={Elsevier}
+}
+
+@incollection{luo2023intra,
+  title={Intra-City Transit Accessibility Analysis for High-Frequency, Single-Day Visitors Based on Mobile Phone Data},
+  author={Luo, Songwen and Duan, Zhengyu and Yu, Qing},
+  booktitle={CICTP 2023},
+  pages={2400--2409},
+  year={2023}
+}
+
+@article{gong2023development,
+  title={Development of Augmented Reality Visualization Prototype System for Immersive Display of Building Carbon Emissions Using Urban 3D Models},
+  author={Gong, Wenjie and Li, Ge and Chen, Qi and Yu, Qing and Guo, Zhiling and Zhang, Haoran},
+  journal={Energy Proceedings},
+  volume={32},
+  year={2023}
+}
+
+@incollection{xie2023walking,
+  title={Walking Experience Evaluation Using Multiple Survey Methods: A Case Study of Shanghai},
+  author={Xie, Yingkun and Hui, Ying and Wang, Yujiao and Yu, Qing},
+  booktitle={CICTP 2023},
+  pages={2432--2441},
+  year={2023}
+}
+
+@article{wanggrid,
+  title={Grid-based Optimal Co-Planning of Urban Distribution Network and Electric Vehicle Charging Stations: A Case Study in Shanghai},
+  author={Wang, Zhen and Yu, Qing and Shen, Xinwei and Sun, Hongbin}
+}
+
+@article{shang2023spatio,
+  title={Spatio-temporal analysis of carbon footprints for urban public transport systems based on smart card data},
+  author={Shang, Wen-Long and Chen, Yishui and Yu, Qing and Song, Xuewang and Chen, Yanyan and Ma, Xiaolei and Chen, Xiqun and Tan, Zhijia and Huang, Jianling and Ochieng, Washington},
+  journal={Applied Energy},
+  volume={352},
+  pages={121859},
+  year={2023},
+  publisher={Elsevier}
+}
+
+@article{yu2024potential,
+  title={Potential and flexibility analysis of electric taxi fleets V2G system based on trajectory data and agent-based modeling},
+  author={Yu, Qing and Wang, Zhen and Song, Yancun and Shen, Xinwei and Zhang, Haoran},
+  journal={Applied Energy},
+  volume={355},
+  pages={122323},
+  year={2024},
+  publisher={Elsevier}
+}
+
+@article{shang2024congestion,
+  title={Congestion and pollutant emission analysis of urban road networks based on floating vehicle data},
+  author={Shang, Wen-Long and Song, Xuewang and Chen, Yishui and Yang, Xin and Liang, Liyun and Deveci, Muhammet and Cao, Mengqiu and Xiang, Qiannian and Yu, Qing},
+  journal={Urban Climate},
+  volume={53},
+  pages={101794},
+  year={2024},
+  publisher={Elsevier}
+}
+
+@article{shen2024enhancing,
+  title={Enhancing carbon efficiency in shared micro-mobility systems: An agent-based fleet size and layout assessment approach},
+  author={Shen, Yonggang and Song, Yancun and Yu, Qing and Luo, Kang and Shi, Ziyi and Chen, Xiqun Michael},
+  journal={Journal of Cleaner Production},
+  volume={443},
+  pages={141209},
+  year={2024},
+  publisher={Elsevier}
+}
+
+@article{zhang2024environmental,
+  title={Environmental impacts of ridesplitting considering modal substitution and associations with built environment},
+  author={Zhang, Zhe and Gao, Kun and He, Hong-Di and Cui, Shaohua and Hu, Liyang and Yu, Qing and Peng, Zhong-Ren},
+  journal={Transportation Research Part D: Transport and Environment},
+  volume={130},
+  pages={104160},
+  year={2024},
+  publisher={Elsevier}
+}
+
+@article{zhao2024shaping,
+  title={Shaping urban form for solar energy self-sufficiency city},
+  author={Zhao, Pengjun and Jin, Yanxiu and Zhang, Haoran and Liu, Zhaoru and Yu, Qing and Liu, Zhengying and Guo, Zhiling and Yan, Da and Shibasaki, Ryosuke and Yan, Jinyue},
+  year={2024}
+}
+
+@article{jiao2025joint,
+  title={Joint optimization of metro travel reservation and compartment capacity allocation for an overcrowded metro line},
+  author={Jiao, Qianhui and Yu, Qing and Chen, Xuewu and Cheng, Long},
+  journal={Transportation Letters},
+  volume={17},
+  number={2},
+  pages={281--294},
+  year={2025},
+  publisher={Taylor \& Francis}
+}
+
+@article{song2024self,
+  title={Self-loop analysis based on dockless bike-sharing system via bike mobility chain: empirical evidence from Shanghai},
+  author={Song, Yancun and Zhang, Li and Luo, Kang and Wang, Chenyan and Yu, Chengcheng and Shen, Yonggang and Yu, Qing},
+  journal={Transportation},
+  pages={1--25},
+  year={2024},
+  publisher={Springer}
+}
+
+@article{li2024high,
+  title={High-resolution spatiotemporal inference of urban road traffic emissions using taxi GPS and multi-source urban features data: a case study in Chengdu, China},
+  author={Li, Jiaxing and Jiang, Chaozhe and Han, Ke and Yu, Qing and Zhang, Haoran},
+  journal={Urban Informatics},
+  volume={3},
+  number={1},
+  pages={17},
+  year={2024},
+  publisher={Springer}
+}
+
+@misc{余庆2022交通时空大数据分析,
+  title={交通时空大数据分析、挖掘与可视化（Python版）},
+  author={余庆 and 李玮峰},
+  year={2022},
+  publisher={清华大学出版社}
+}
+
+@misc{余庆2024交通时空大数据详解,
+  title={交通时空大数据详解：车辆轨迹数据分析、挖掘与可视化（Python版）},
+  author={余庆 and 袁见 and 宋轩},
+  year={2024},
+  publisher={清华大学出版社}
+}
+
+@article{yao2024gis,
+  title={A GIS-Based Framework for Synthesizing City-Scale Long-Term Individual-Level Spatial--Temporal Mobility},
+  author={Yao, Yao and Jiang, Yinghong and Yu, Qing and Yuan, Jian and Li, Jiaxing and Xu, Jian and Liu, Siyuan and Zhang, Haoran},
+  journal={ISPRS International Journal of Geo-Information},
+  volume={13},
+  number={7},
+  pages={261},
+  year={2024},
+  publisher={MDPI}
+}
+
+@article{yu2024advmob,
+  title={AdvMOB: Interactive visual analytic system of billboard advertising exposure analysis based on urban digital twin technique},
+  author={Yu, Qing and Feng, Defan and Li, Ge and Chen, Qi and Zhang, Haoran},
+  journal={Advanced Engineering Informatics},
+  volume={62},
+  pages={102829},
+  year={2024},
+  publisher={Elsevier}
+}
+
+@article{zhang2025carbon,
+  title={Carbon emission reduction benefits of ride-hailing vehicle electrification considering energy structure},
+  author={Zhang, Zhe and Yu, Qing and Gao, Kun and He, Hong-Di and Liu, Yang and Huang, Haichao},
+  journal={Applied Energy},
+  volume={377},
+  pages={124548},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{shi2025real,
+  title={Real-time gas explosion prediction at urban scale by GIS and graph neural network},
+  author={Shi, Jihao and Li, Junjie and Zhang, Haoran and Xie, Bin and Xie, Zonghao and Yu, Qing and Yan, Jinyue},
+  journal={Applied Energy},
+  volume={377},
+  pages={124614},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{luo2024dynamic,
+  title={A dynamic electric fence planning framework for dockless bike-sharing systems based on inventory prediction},
+  author={Luo, Kang and Song, Yancun and Shi, Ziyi and Yu, Qing and Wang, Guanqi and Shen, Yonggang},
+  journal={Computers \& Industrial Engineering},
+  volume={198},
+  pages={110619},
+  year={2024},
+  publisher={Pergamon}
+}
+
+@article{jiao2024evaluating,
+  title={Evaluating Urban Rail Travel Reservation Strategy: A Dynamic Passenger Flow Simulation Approach},
+  author={Jiao, Qianhui and Yu, Qing and Chen, Xuewu and Cheng, Long and Ngoduy, Dong},
+  journal={Transportmetrica B: Transport Dynamics},
+  year={2024}
+}
+
+@inproceedings{zhang2025modeling,
+  title={Modeling and Evaluating Carbon Emission Reductions of Vehicle Electrification for urban Ride-Hailing service},
+  author={Zhang, Zhe and Yu, Qing and Gao, Kun and He, Hong-Di},
+  booktitle={Transportation Research Board Annual Meeting},
+  year={2025}
+}
+
+@inproceedings{jiao2025agent,
+  title={Agent-Based Simulation for Passenger Flow Visualization and Control Strategies Analysis in Rail Transit},
+  author={Jiao, Qianhui and Chen, Xuewu and Cheng, Long and Yu, Qing},
+  booktitle={Transportation Research Board Annual Meeting},
+  year={2025}
+}
+
+@article{jiao2025carbon,
+  title={Carbon emission reduction effects of heterogeneous car travelers under green travel incentive strategies},
+  author={Jiao, Qianhui and Wang, Jinghui and Cheng, Long and Chen, Xuewu and Yu, Qing},
+  journal={Applied Energy},
+  volume={379},
+  pages={124826},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@phdthesis{yu2025modeling,
+  title={Modeling electric vehicle behavior: Insights from long-term charging and energy consumption patterns through empirical trajectory data},
+  author={Yu, Qing and Li, Jiaxing and Feng, Defan and Liu, Xuanyu and Yuan, Jian and Zhang, Haoran and Wang, Xin},
+  year={2025},
+  school={Applied Energy 380, 125066}
+}
+
+@article{yu2025global,
+  title={Global Estimation of Building-Integrated Facade and Rooftop Photovoltaic Potential by Integrating 3D Building Footprint and Spatio-Temporal Datasets},
+  author={Yu, Qing and Dong, Kechuan and Guo, Zhiling and Li, Jiaxing and Tan, Hongjun and Jin, Yanxiu and Yuan, Jian and Zhang, Haoran and Liu, Junwei and Chen, Qi and others},
+  journal={Nexus},
+  year={2025}
+}
+
+@article{liu2025unraveling,
+  title={Unraveling spatiotemporal dynamics of ridesharing potential: Nonlinear effects of the built environment},
+  author={Liu, Xuanyu and Yu, Qing and Bian, Weihao and Yu, Hao and Zhang, Chonghao and Liu, Xiang and Jiang, Haoran and Luo, Xiao},
+  journal={Transportation Research Part D: Transport and Environment},
+  volume={139},
+  pages={104594},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{dong2025advancing,
+  title={Advancing building facade solar potential assessment through AIoT, GIS, and meteorology synergy},
+  author={Dong, Kechuan and Yu, Qing and Guo, Zhiling and Xu, Jian and Tan, Hongjun and Zhang, Haoran and Yan, Jinyue},
+  journal={Advances in Applied Energy},
+  volume={17},
+  pages={100212},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{li2025residential,
+  title={Do residential areas require shared parking? A case study of Tianjin, China},
+  author={Li, Kun and Xin, Xinai and Hu, Zhiqiang and Zhao, Jiahui and Zhang, Zhe and Yu, Qing},
+  journal={Journal of Transport Geography},
+  year={2025}
+}
+
+@incollection{yao2024predicting,
+  title={Predicting Grid-Level Urban Population Dynamics Based on POI and Road Networks: A Random Forest Approach and SHAP Evaluation},
+  author={Yao, Yao and Jiang, Yinghong and Li, Jiaxing and Xu, Jian and Yu, Qing and Zhang, Haoran},
+  booktitle={CICTP 2024},
+  pages={1509--1519},
+  year={2024}
+}
+
+@article{xie2025reinforcement,
+  title={Reinforcement learning for vehicle-to-grid: A review},
+  author={Xie, Hongbin and Song, Ge and Shi, Zhuoran and Zhang, Jingyuan and Lin, Zhenjia and Yu, Qing and Fu, Hongdi and Song, Xuan and Zhang, Haoran},
+  journal={Advances in Applied Energy},
+  pages={100214},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{yang2025carbon,
+  title={Carbon emission implications of toll discount policies and network expansions in highway},
+  author={Yang, Han and Huang, Churui and Yu, Qing and Li, Jiaxing and Yuan, Maocun and Zhang, Zhe},
+  journal={Transportation Research Part D: Transport and Environment},
+  volume={144},
+  pages={104758},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{yang2025machine,
+  title={Machine learning-based identification and assessment of snow disaster risks using multi-source data: Insights from Fukui prefecture, Japan},
+  author={Yang, Zhenyu and Gokon, Hideomi and Yu, Qing},
+  journal={Progress in Disaster Science},
+  pages={100426},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{jiang2025integrated,
+  title={Integrated charging scheduling and energy management for electrified-autonomous flexible transit with energy storage systems design},
+  author={Jiang, Haoran and Hong, Shaozhi and Wang, Zeling and Yu, Qing},
+  journal={Applied Energy},
+  volume={392},
+  pages={126011},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{zhou2024high,
+  title={A High-Precision Method for Photovoltaic Panel Segmentation Combining Large-Scale Model Prior Knowledge and Multimodal Information},
+  author={Zhou, Lingchengjia and Dong, Kechuan and Tan, Hongjun and Li, Jiaze and Yu, Qing and Guo, Zhiling and Yan, Jinyue},
+  journal={Energy Proceedings},
+  volume={47},
+  year={2024},
+  publisher={Scanditale AB}
+}
+
+@article{xu2025spatiotemporal,
+  title={Spatiotemporal feature encoded deep learning method for rooftop PV potential assessment},
+  author={Xu, Jian and Guo, Zhiling and Yu, Qing and Dong, Kechuan and Tan, Hongjun and Zhang, Haoran and Yan, Jinyue},
+  journal={Applied Energy},
+  volume={394},
+  pages={126171},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{zhang2025reinforcement,
+  title={Reinforcement Learning for Charging Infrastructure Planning and Scheduling Problems in Battery Electric Bus System: A Literature Review},
+  author={Zhang, Zhe and Yuan, Meng and Li, Bo-Wen and Liu, Yang and Gao, Kun and Cui, Shaohua and Yu, Qing},
+  journal={Energy 360},
+  pages={100032},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{zhong2025micro,
+  title={Micro-mobility behavior resilience analysis in extreme weather events based on a knowledge-informed machine learning approach},
+  author={Zhong, Liangjian and Gan, Zuoxian and Yu, Qing and Li, Linchao},
+  journal={Reliability Engineering \& System Safety},
+  pages={111285},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{yu2025china,
+  title={China's Urban EV Ultra-Fast Charging Distorts Regulated Price Signals and Elevates Risk to Grid Stability},
+  author={Yu, Qing and Zhao, Pengjun and Li, Jiaxing and Wang, Han and Yan, Jie and Zhang, Haoran},
+  journal={Nature Communications},
+  year={2025}
+}
+
+@article{hui5389553optimizing,
+  title={Optimizing Dispatch of Bicycle Sharing with Inner Circulation Area for Carbon Reduction},
+  author={Hui, Ying and Wang, Pingye and Liu, Yuliang and Yu, Qing},
+  journal={Available at SSRN 5389553}
+}
+
+@article{shen2024enhancing,
+  title={Enhancing carbon efficiency in shared micro-mobility systems: An agent-based fleet size and layout assessment approach (Vol 443, 141209, 2024)},
+  author={Shen, Yonggang and Song, Yancun and Yu, Qing and Luo, Kang and Shi, Ziyi and Chen, Xiqun},
+  journal={JOURNAL OF CLEANER PRODUCTION},
+  volume={446},
+  year={2024},
+  publisher={ELSEVIER SCI LTD 125 London Wall, London, ENGLAND}
+}
+
+@article{wenjie2023development,
+  title={Development of Augmented Reality Visualization Prototype System for Immersive Display of Building Carbon Emissions Using Urban 3D Models},
+  author={Wenjie, Wenjie and Gong, Wenjie and Li, Ge and Chen, Qi and Yu, Qing and Guo, Zhiling and Zhang, Haoran},
+  journal={(No Title)},
+  year={2023},
+  publisher={Applied Energy Innovation Institute (AEii)}
+}
+
+@article{shen2024corrigendum,
+  title={Corrigendum to “Enhancing carbon efficiency in shared micro-mobility systems: An agent-based fleet size and layout assessment approach”[J. Clean. Prod. 443 (2024) 141209]},
+  author={Shen, Yonggang and Song, Yancun and Yu, Qing and Luo, Kang and Shi, Ziyi and Chen, Xiqun Michael},
+  journal={Journal of Cleaner Production},
+  volume={446},
+  pages={141328},
+  year={2024},
+  publisher={Elsevier}
+}
+
+@article{zhang5107054uncovering,
+  title={Uncovering the Urban Geospatial Features’ Impact on Electric Vehicle Charging Patterns},
+  author={Zhang, Junxiang and Du, Ying and Chen, Yuntian and Yu, Qing and Zhang, Haoran and Yan, Jinyue},
+  journal={Available at SSRN 5107054}
+}
+
+@incollection{hui2024coupling,
+  title={Coupling Characteristics of the Spatial Distribution between Bike-Sharing Trips and Points of Interest},
+  author={Hui, Ying and Liu, Yuliang and Yu, Qing},
+  booktitle={CICTP 2024},
+  pages={2821--2830},
+  year={2024}
+}
+
+@article{zhongfactors,
+  title={What Factors Affect the Micro-Mobility Behavior Resilience in Extreme Weather Events? A Case Study in Shenzhen},
+  author={Zhong, Liangjian and Gan, Zuoxian and Yu, Qing and Li, Linchao},
+  journal={A Case Study in Shenzhen}
+}
+
+@article{wang2024multiscale,
+  title={Multiscale spatiotemporal heterogeneity analysis of bike-sharing system's self-loop phenomenon: Evidence from Shanghai},
+  author={Wang, Yichen and Yu, Qing and Song, Yancun},
+  journal={arXiv preprint arXiv:2411.17555},
+  year={2024}
+}
+
+@article{jiang2026integrating,
+  title={Integrating Virtual Reality-based eye-tracking with urban digital twin for unveiling pedestrian visual attention in wayfinding tasks},
+  author={Jiang, Yinghong and Yao, Yao and Yu, Qing and Jiang, Ziwei and Liu, Xuanyu and Li, Jiaxing and Zhang, Haoran},
+  journal={Travel Behaviour and Society},
+  volume={42},
+  pages={101120},
+  year={2026},
+  publisher={Elsevier}
+}
+
+@article{yu2025agent,
+  title={Agent-based modeling of network-wide metro operations for control strategy evaluation},
+  author={Yu, Qing and Jiao, Qianhui and Zhang, Haoran and Liu, Xiaolei and Li, Jiaxing and Yuan, Jian and Chen, Xuewu},
+  journal={Computers \& Industrial Engineering},
+  pages={111448},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{li2025systematic,
+  title={A systematic review of reinforcement learning in Building-Integrated Photovoltaic (BIPV) optimization},
+  author={Li, Jiaqi and Xie, Hongbin and Zhang, Jingyuan and Li, Lianxin and Song, Ge and Fu, Hongdi and Chen, Panxi and Liu, Chenyang and Zhang, Liyu and Shi, Zhuoran and others},
+  journal={Advances in Applied Energy},
+  pages={100239},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{song5114543mining,
+  title={Mining Urban Sustainable Performance: Unlocking the Energy-Saving Potential of Office Buildings Through Smart Control Technologies},
+  author={Song, Xiaoya and Lu, Haiyan and Zhang, Haoran and Li, Jiaxing and Jin, Yanxiu},
+  journal={Available at SSRN 5114543}
+}
+
+@article{li5210376stability,
+  title={Stability of Multiwaves in a Fitzhugh-Nagumo Type Equation with Turning Points},
+  author={Li, Ji and Wang, Ke and Yu, Qing},
+  journal={Available at SSRN 5210376}
+}
+
+@article{li2025spatiotemporal,
+  title={From spatiotemporal charging patterns to localized supply-demand planning for electric vehicle infrastructure},
+  author={Li, Jiaxing and Yu, Qing and Liu, Xuanyu and Zhang, Haoran and Zhang, Zhe},
+  journal={Transportation Research Part D: Transport and Environment},
+  volume={149},
+  pages={105058},
+  year={2025},
+  publisher={Elsevier}
+}
+
+@article{dong2026data,
+  title={Data-driven prediction of fine-grained facade solar irradiance for urban PV potential assessment},
+  author={Dong, Kechuan and Guo, Zhiling and Yu, Qing and Xu, Jian and Yan, Jinyue},
+  journal={Applied Energy},
+  volume={403},
+  pages={127009},
+  year={2026},
+  publisher={Elsevier}
+}
+
+@article{xu2025pdagcn,
+  title={PDAGCN: Attention-Enhanced Dual Graph Network with Progressive Dilated Convolutions for High-Precision Urban Road Mapping},
+  author={Xu, Xuanyu and Yu, Qing and Zhu, Wu and Zhang, Ruixuan and Guo, Zhiling and Dong, Kechuan and Weng, Duojie},
+  journal={IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing},
+  year={2025},
+  publisher={IEEE}
+}
+
+@article{jiang2026two,
+  title={Two-stage optimization approach for dynamic routing and charging scheduling in electrified-autonomous flexible transit},
+  author={Jiang, Haoran and Hong, Shaozhi and Zhang, Kenan and Yuan, Jian and Yu, Qing},
+  journal={Transportation Research Part E: Logistics and Transportation Review},
+  volume={207},
+  pages={104600},
+  year={2026},
+  publisher={Elsevier}
+}

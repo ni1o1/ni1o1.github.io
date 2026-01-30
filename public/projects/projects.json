@@ -37,7 +37,7 @@
     "description_en": "Visualize 3DTiles files",
     "description_zh": "可视化3DTiles文件",
     "url": "https://ni1o1.github.io/3DTilesViewer/",
-    "image": "images/3DTilesViewer.png"
+    "image": "images/3DTilesViewer.jpg"
   },
   {
     "id": "geojson-viewer",
@@ -57,7 +57,7 @@
     "description_en": "Based on FlowMap.gl",
     "description_zh": "基于FlowMap.gl",
     "url": "https://github.com/ni1o1/ODview",
-    "image": "images/ODview.png"
+    "image": "images/ODview.jpg"
   },
   {
     "id": "reach-circle",
@@ -87,7 +87,7 @@
     "description_en": "A Solar Insolation Real-Time Visualization System",
     "description_zh": "太阳辐照实时可视化系统",
     "url": "https://ni1o1.github.io/SolarRealScene/",
-    "image": "images/SolarRealScene.png"
+    "image": "images/SolarRealScene.jpg"
   },
   {
     "id": "smart-ev",
@@ -127,7 +127,7 @@
     "description_en": "i3S",
     "description_zh": "i3S",
     "url": "https://github.com/ni1o1/FloodVisualization",
-    "image": "images/flood.png"
+    "image": "images/flood.jpg"
   },
   {
     "id": "activity-space",
@@ -237,7 +237,7 @@
     "description_en": "",
     "description_zh": "",
     "url": "https://ni1o1.github.io/echartsexamples/3dbuildings/",
-    "image": "images/厦门三维城市.png"
+    "image": "images/厦门三维城市.jpg"
   },
   {
     "id": "echarts-activity-3d",

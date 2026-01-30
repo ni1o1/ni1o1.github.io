@@ -229,7 +229,7 @@ export default function Home() {
 
       {/* Research Highlights */}
       {research.length > 0 && (
-        <section>
+        <section className="mb-12">
           <h2 className="text-xl font-semibold text-slate-800 mb-6">{t('代表性成果')}</h2>
           <div className="space-y-8">
             {research.map((item) => (
@@ -278,6 +278,63 @@ export default function Home() {
           </Link>
         </section>
       )}
+
+      {/* Team & Join Us */}
+      <section>
+        <h2 className="text-xl font-semibold text-slate-800 mb-4">{i18n.language === 'zh' ? '团队' : 'Team'}</h2>
+
+        {/* Team Avatars */}
+        <Link to="/team" className="block mb-6 no-underline group">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'guo-zhiling', name: '郭' },
+              { id: 'yang-zhenyu', name: '杨' },
+              { id: 'zhang-zhe', name: '张' },
+              { id: 'yuan-jian', name: '袁' },
+              { id: 'dong-kechuan', name: '董' },
+              { id: 'xu-jian', name: '徐' },
+              { id: 'liu-xuanyu', name: '刘' },
+              { id: 'jiang-haoran', name: '姜' },
+              { id: 'xu-xuanyu', name: '许' },
+              { id: 'zhao-qijian', name: '赵' },
+              { id: 'li-jiaxing', name: '李' },
+            ].map((member) => (
+              <div
+                key={member.id}
+                className="w-10 h-10 rounded-full overflow-hidden bg-slate-200 flex-shrink-0 group-hover:ring-2 ring-blue-400 transition-all"
+              >
+                <img
+                  src={`/images/team/${member.id}.jpg`}
+                  alt={member.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-slate-200 text-slate-500 text-sm font-medium">${member.name}</div>`;
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mt-2 group-hover:text-blue-600 transition-colors">
+            {i18n.language === 'zh' ? '查看详细 →' : 'View details →'}
+          </p>
+        </Link>
+
+        <p className="text-sm text-gray-600 mb-6">
+          {i18n.language === 'zh'
+            ? '如果你对我们团队感兴趣，欢迎加入！'
+            : 'If you are interested in our team, welcome to join us!'}
+        </p>
+        <a
+          href="mailto:yuq@pku.edu.cn"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700 transition-colors no-underline"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          {i18n.language === 'zh' ? '联系我' : 'Contact Me'}
+        </a>
+      </section>
     </div>
   );
 }

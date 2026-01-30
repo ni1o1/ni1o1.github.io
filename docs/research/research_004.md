@@ -3,7 +3,7 @@ title_zh: "提升共享微出行系统碳效率：一种基于智能体的车队
 title_en: "Enhancing carbon efficiency in shared micro-mobility systems: An agent-based fleet size and layout assessment approach"
 description: "我们创建了一个模型来评估共享单车规模的碳效益，发现在100平方公里的区域内，一支由4500-7500辆自行车组成的车队每周可以减少10,000-11,000公斤的二氧化碳排放，为可持续的SMMS规划提供指导。"
 description_en: "We created a model to evaluate carbon benefits of shared bike scales, finding that a fleet of 4500–7500 bikes in a 100 km2 area can reduce weekly CO2 emissions by 10,000–11,000 kg, guiding sustainable SMMS planning."
-imgpath: "images/research/bsjclp.png"
+imgpath: "images/research/bsjclp.jpg"
 src: "https://www.sciencedirect.com/science/article/pii/S0959652624006565"
 keywords:
   - "共享交通"

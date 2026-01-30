@@ -8,6 +8,7 @@ const navItems = [
   { path: '/research', labelZh: '研究', labelEn: 'Research' },
   { path: '/publication', labelZh: '论著', labelEn: 'Publications' },
   { path: '/projects', labelZh: '开源', labelEn: 'Open Source' },
+  { path: '/team', labelZh: '团队', labelEn: 'Team' },
 ];
 
 export default function NavBar() {
