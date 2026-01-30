@@ -10,7 +10,7 @@ export default function NewsDetail() {
   const navigate = useNavigate();
   const { filename } = useParams();
   const [content, setContent] = useState('');
-  const [ratingData, setRatingData] = useState({ likes: 0, dislikes: 0, objectId: null });
+  const [ratingData, setRatingData] = useState({ likes: 0, objectId: null });
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
@@ -43,7 +43,6 @@ export default function NewsDetail() {
       if (result) {
         setRatingData({
           likes: result.get('likes') || 0,
-          dislikes: result.get('dislikes') || 0,
           objectId: result.id,
         });
       }
@@ -67,8 +66,7 @@ export default function NewsDetail() {
         <LikeDislike
           itemId={filename}
           initialLikes={ratingData.likes}
-          initialDislikes={ratingData.dislikes}
-          objectId={ratingData.objectId}
+                    objectId={ratingData.objectId}
         />
       </div>
 
@@ -94,8 +92,7 @@ export default function NewsDetail() {
           <LikeDislike
             itemId={filename}
             initialLikes={ratingData.likes}
-            initialDislikes={ratingData.dislikes}
-            objectId={ratingData.objectId}
+                        objectId={ratingData.objectId}
           />
         </div>
       )}

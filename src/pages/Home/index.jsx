@@ -8,6 +8,7 @@ export default function Home() {
   const [intro, setIntro] = useState('');
   const [news, setNews] = useState([]);
   const [research, setResearch] = useState([]);
+  const [projects, setProjects] = useState([]);
 
   useEffect(() => {
     import(`../Introduction/content_${i18n.language}.md`)
@@ -19,7 +20,7 @@ export default function Home() {
   useEffect(() => {
     fetch('/posts/index.json')
       .then(r => r.json())
-      .then(posts => setNews(posts.slice(0, 3)))
+      .then(posts => setNews(posts.slice(0, 5)))
       .catch(() => setNews([]));
   }, []);
 
@@ -29,6 +30,36 @@ export default function Home() {
       .then(data => setResearch(data.filter(d => d.show).slice(0, 4)))
       .catch(() => setResearch([]));
   }, []);
+
+  useEffect(() => {
+    fetch('/projects/projects.json')
+      .then(r => r.json())
+      .then(data => {
+        const selectedIds = ['transbigdata', 'solar-real-scene', 'smart-ev', 'urban-accessibility'];
+        const selected = selectedIds.map(id => data.find(p => p.id === id)).filter(Boolean);
+        setProjects(selected);
+      })
+      .catch(() => setProjects([]));
+  }, []);
+
+  const books = [
+    {
+      title_zh: '交通时空大数据分析、挖掘与可视化',
+      title_en: 'Transportation Spatiotemporal Big Data Analysis, Mining and Visualization',
+      description_zh: '本书系统梳理交通时空大数据分析所需的跨学科技能，涵盖Python数据处理、网络爬虫、地理信息、数据可视化等基础知识，并结合出租车GPS、地铁IC卡、共享单车等真实案例，由浅入深地介绍数据挖掘与机器学习方法在交通领域的应用。',
+      description_en: 'A comprehensive guide to transportation spatiotemporal big data analysis, covering Python data processing, web scraping, GIS, and visualization. Features real-world cases including taxi GPS, metro smart card, and bike-sharing data, with in-depth coverage of data mining and machine learning methods.',
+      url: 'http://www.tup.tsinghua.edu.cn/booksCenter/book_09389001.html',
+      image: 'images/book1.jpg'
+    },
+    {
+      title_zh: '交通时空大数据详解：车辆轨迹数据分析、挖掘与可视化（Python版）',
+      title_en: 'Transportation Spatiotemporal Big Data: Vehicle Trajectory Data Analysis, Mining and Visualization (Python)',
+      description_zh: '本书在前作基础上深入聚焦车辆轨迹数据，结合作者开发维护TransBigData开源库的实践经验，系统讲解轨迹数据的预处理、分析挖掘与可视化方法，为交通大数据研究与应用提供专业指导。',
+      description_en: 'Building on the foundation of the first book, this volume focuses specifically on vehicle trajectory data. Drawing from the author\'s experience developing the TransBigData library, it provides systematic guidance on trajectory data preprocessing, analysis, mining, and visualization.',
+      url: 'http://www.tup.tsinghua.edu.cn/bookscenter/book_10231801.html',
+      image: 'images/book2.jpg'
+    }
+  ];
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
@@ -43,10 +74,9 @@ export default function Home() {
           <h1 className="text-2xl font-bold text-slate-800 mb-1">
             {i18n.language === 'zh' ? '余庆' : 'Yu Qing'}
           </h1>
-          <p className="text-gray-600 mb-1">{t('博士后')}</p>
-          <p className="text-sm text-gray-500">{t('北京大学深圳研究生院')}</p>
-          <p className="text-sm text-gray-500">{t('城市规划与设计学院')}</p>
-          <p className="text-sm text-gray-500 mb-3">{t('智慧城市实验室')}</p>
+          <p className="text-gray-600 mb-1">{t('助理教授')}</p>
+          <p className="text-sm text-gray-500">{t('深圳大学')}</p>
+          <p className="text-sm text-gray-500 mb-3">{t('建筑与城市规划学院')}</p>
           <div className="flex items-center gap-3 text-gray-500">
             <a href="mailto:yuq@pku.edu.cn" className="hover:text-black" title="Email">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
@@ -82,47 +112,9 @@ export default function Home() {
         )}
       </section>
 
-      {/* Research Highlights */}
-      {research.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl font-semibold text-slate-800 mb-4">{t('代表性成果')}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {research.map((item) => (
-              <a
-                key={item.id}
-                href={item.src}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow no-underline"
-              >
-                <div className="aspect-video overflow-hidden bg-gray-100">
-                  <img
-                    src={item.imgpath}
-                    alt={i18n.language === 'zh' ? item.title_zh : item.title_en}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-3">
-                  <h3 className="text-sm font-medium text-slate-800 line-clamp-2">
-                    {i18n.language === 'zh' ? item.title_zh : item.title_en}
-                  </h3>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {item.keywords?.slice(0, 3).map((kw) => (
-                      <span key={kw} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
-                        {t(kw)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* Latest News */}
       {news.length > 0 && (
-        <section>
+        <section className="mb-12">
           <h2 className="text-xl font-semibold text-slate-800 mb-4">{t('新闻')}</h2>
           <div className="space-y-3">
             {news.map((item) => (
@@ -141,6 +133,147 @@ export default function Home() {
             ))}
           </div>
           <Link to="/news" className="inline-block mt-4 text-sm text-gray-500 hover:text-black no-underline">
+            {i18n.language === 'zh' ? '查看全部 →' : 'View all →'}
+          </Link>
+        </section>
+      )}
+
+      {/* Books */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold text-slate-800 mb-6">{t('教材')}</h2>
+        <div className="space-y-8">
+          {books.map((book, index) => (
+            <div key={index} className="flex flex-col sm:flex-row gap-6">
+              <a
+                href={book.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0 group"
+              >
+                <div className="w-32 sm:w-36 overflow-hidden">
+                  <img
+                    src={`/${book.image}`}
+                    alt={i18n.language === 'zh' ? book.title_zh : book.title_en}
+                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              </a>
+              <div className="flex-1">
+                <a
+                  href={book.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="no-underline"
+                >
+                  <h3 className="text-base font-medium text-slate-800 hover:text-blue-600 transition-colors mb-2">
+                    {i18n.language === 'zh' ? book.title_zh : book.title_en}
+                  </h3>
+                </a>
+                <p className="text-xs text-gray-500 mb-3">
+                  {i18n.language === 'zh' ? '清华大学出版社' : 'Tsinghua University Press'}
+                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {i18n.language === 'zh' ? book.description_zh : book.description_en}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Open Source Projects */}
+      {projects.length > 0 && (
+        <section className="mb-12">
+          <h2 className="text-xl font-semibold text-slate-800 mb-4">{t('开源')}</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {projects.map((item) => {
+              const isPythonPackage = item.category === 'python_packages';
+              return (
+                <a
+                  key={item.id}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group block no-underline"
+                >
+                  <div className={`aspect-video overflow-hidden rounded-lg flex items-center justify-center ${
+                    isPythonPackage ? 'bg-white' : 'bg-slate-100'
+                  }`}>
+                    <img
+                      src={`/${item.image}`}
+                      alt={i18n.language === 'zh' ? item.title_zh : item.title_en}
+                      className={`group-hover:scale-105 transition-transform duration-300 ${
+                        isPythonPackage
+                          ? 'max-w-[80%] max-h-[60%] object-contain'
+                          : 'w-full h-full object-cover'
+                      }`}
+                    />
+                  </div>
+                  <div className="mt-2">
+                    <h3 className="text-sm font-medium text-slate-800 group-hover:text-blue-600 transition-colors truncate">
+                      {i18n.language === 'zh' ? item.title_zh : item.title_en}
+                    </h3>
+                    <p className="text-xs text-gray-500 truncate mt-0.5">
+                      {i18n.language === 'zh' ? item.description_zh : item.description_en}
+                    </p>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+          <Link to="/projects" className="inline-block mt-4 text-sm text-gray-500 hover:text-black no-underline">
+            {i18n.language === 'zh' ? '查看全部 →' : 'View all →'}
+          </Link>
+        </section>
+      )}
+
+      {/* Research Highlights */}
+      {research.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold text-slate-800 mb-6">{t('代表性成果')}</h2>
+          <div className="space-y-8">
+            {research.map((item) => (
+              <div key={item.id} className="flex flex-col sm:flex-row gap-6">
+                <a
+                  href={item.src}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 group"
+                >
+                  <div className="w-full sm:w-64 aspect-video overflow-hidden">
+                    <img
+                      src={item.imgpath}
+                      alt={i18n.language === 'zh' ? item.title_zh : item.title_en}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                </a>
+                <div className="flex-1">
+                  <a
+                    href={item.src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="no-underline"
+                  >
+                    <h3 className="text-base font-medium text-slate-800 hover:text-blue-600 transition-colors mb-2">
+                      {i18n.language === 'zh' ? item.title_zh : item.title_en}
+                    </h3>
+                  </a>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-3">
+                    {i18n.language === 'zh' ? item.description : item.description_en}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {item.keywords?.slice(0, 3).map((kw) => (
+                      <span key={kw} className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                        {t(kw)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <Link to="/research" className="inline-block mt-6 text-sm text-gray-500 hover:text-black no-underline">
             {i18n.language === 'zh' ? '查看全部 →' : 'View all →'}
           </Link>
         </section>

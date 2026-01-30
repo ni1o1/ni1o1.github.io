@@ -1,5 +1,8 @@
 {
     "余庆":"Yu Qing",
+    "助理教授": "Assistant Professor",
+    "深圳大学": "Shenzhen University",
+    "建筑与城市规划学院": "School of Architecture and Urban Planning",
     "博士后": "Ph. D. /Postdoctor",
     "北京大学城市规划与设计学院":"School of Urban Planning & Design, Peking University Shenzhen",
     "北京大学智慧城市实验室":"Smart City Lab, Peking University Shenzhen",
@@ -51,6 +54,7 @@
     "期刊与会议论文":"Journal Papers",
     "会议论文":"Conference Papers",
     "专著":"Books",
+    "教材":"Textbooks",
     "章节":"Book Chapters",
     "高速公路排放":"Highway Emissions",
     "收费政策":"Toll Policy",

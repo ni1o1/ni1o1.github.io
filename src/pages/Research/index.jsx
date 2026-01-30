@@ -50,7 +50,6 @@ export default function ResearchPage() {
         const results = await query.find();
         const newRatingsMap = new Map(results.map(item => [item.get('itemId'), {
           likes: item.get('likes') || 0,
-          dislikes: item.get('dislikes') || 0,
           objectId: item.id
         }]));
         setRatingsMap(newRatingsMap);
@@ -108,29 +107,37 @@ export default function ResearchPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="space-y-8">
           {filteredResearch.map((item) => {
-            const ratingData = ratingsMap.get(item.id) || { likes: 0, dislikes: 0, objectId: null };
+            const ratingData = ratingsMap.get(item.id) || { likes: 0, objectId: null };
             return (
-              <a
-                key={item.id}
-                href={item.src}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow no-underline"
-              >
-                <div className="aspect-video overflow-hidden bg-gray-100">
-                  <img
-                    src={item.imgpath}
-                    alt={i18n.language === 'zh' ? item.title_zh : item.title_en}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="text-sm font-medium text-slate-800 line-clamp-2 mb-1">
-                    {i18n.language === 'zh' ? item.title_zh : item.title_en}
-                  </h3>
-                  <p className="text-xs text-gray-500 line-clamp-2 mb-2">
+              <div key={item.id} className="flex flex-col sm:flex-row gap-6">
+                <a
+                  href={item.src}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0 group"
+                >
+                  <div className="w-full sm:w-48 aspect-video overflow-hidden">
+                    <img
+                      src={item.imgpath}
+                      alt={i18n.language === 'zh' ? item.title_zh : item.title_en}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                </a>
+                <div className="flex-1">
+                  <a
+                    href={item.src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="no-underline"
+                  >
+                    <h3 className="text-base font-medium text-slate-800 hover:text-blue-600 transition-colors mb-2">
+                      {i18n.language === 'zh' ? item.title_zh : item.title_en}
+                    </h3>
+                  </a>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-3">
                     {i18n.language === 'zh' ? item.description : item.description_en}
                   </p>
                   <div className="flex items-center justify-between">
@@ -145,13 +152,12 @@ export default function ResearchPage() {
                       <LikeDislike
                         itemId={item.id}
                         initialLikes={ratingData.likes}
-                        initialDislikes={ratingData.dislikes}
                         objectId={ratingData.objectId}
                       />
                     </div>
                   </div>
                 </div>
-              </a>
+              </div>
             );
           })}
         </div>

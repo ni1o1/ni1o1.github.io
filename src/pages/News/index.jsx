@@ -36,7 +36,6 @@ export default function News() {
         const ratingResults = await ratingQuery.find();
         const newRatingsMap = new Map(ratingResults.map(item => [item.get('itemId'), {
           likes: item.get('likes') || 0,
-          dislikes: item.get('dislikes') || 0,
           objectId: item.id
         }]));
 
@@ -57,7 +56,7 @@ export default function News() {
       <div className="space-y-6">
         {paginatedNews.map((item) => {
           const views = statsMap.views.get(item.filename) || 0;
-          const ratings = statsMap.ratings.get(item.filename) || { likes: 0, dislikes: 0 };
+          const ratings = statsMap.ratings.get(item.filename) || { likes: 0 };
 
           return (
             <article key={item.filename} className="group">
@@ -68,7 +67,6 @@ export default function News() {
                   <LikeDislike
                     itemId={item.filename}
                     initialLikes={ratings.likes}
-                    initialDislikes={ratings.dislikes}
                     objectId={ratings.objectId}
                   />
                 </div>

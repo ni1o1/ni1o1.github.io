@@ -1,22 +1,9 @@
-####  Introduction
+Dr. Qing Yu is an Assistant Professor at the School of Architecture and Urban Planning, Shenzhen University. He received his Ph.D. from Tongji University and was a joint Ph.D. student at the University of Tokyo. His main research areas include spatiotemporal big data, transportation energy, urban planning, and multi-source urban spatiotemporal data analysis. He has published over 50 SCI papers, including 18 first-author or corresponding-author publications in top-tier Q1 journals such as Nature Communications and Cell's Nexus in the past five years, with over 900 citations. He serves as the Principal Investigator of NSFC Young Scientists Fund and China Postdoctoral Science Foundation General Project, was awarded Shenzhen Outstanding Postdoctoral Researcher, and received National Postdoctoral Program for Innovative Talents (Category C). He has published 2 textbooks with Tsinghua University Press, recognized as the most popular science and technology books by readers.
 
-- I am a postdoctoral researcher at Peking University Shenzhen Graduate School. 
-- My research focuses on: transportation data science, transportation energy and emissions, electric vehicles, public transportation, urban planning & mobility, and agent-based simulation
+## Education & Work Experience
 
-####  Education & Work Experience
-
-- 2023 till now, Postdoctoral Researcher, School of Urban Planning and Design, Peking University Shenzhen Graduate School
-- 2022-2023, Research Associate, Southern University of Science and Technology
-- 2018-2022, PhD, Transportation Engineering, Tongji University
+- 2026-present, Assistant Professor, School of Architecture and Urban Planning, Shenzhen University
+- 2023-2026, Postdoctoral Researcher, School of Urban Planning and Design, Peking University Shenzhen Graduate School
+- 2022-2023, Research Associate, Turing Research Institute, Southern University of Science and Technology
+- 2018-2022, PhD in Transportation Science and Engineering, Tongji University
 - 2019-2020, Joint PhD, Center for Spatial Information Science (CSIS), The University of Tokyo
-- 2015-2018, MS, Transportation Engineering, Tongji University
-- 2011-2015, BS, Transportation Engineering, Guangdong University of Technology
-
-#### Smart City Laboratory of Peking University 
-The Smart City Laboratory of Peking University is affiliated with the School of Urban Planning and Design, aiming to research the three-dimensional monitoring and simulation of urban human-vehicle-machine flow and analyze its impact on the urban environment. It seeks to innovate digital twin technology and artificial intelligence to promote the process of urban carbon neutrality, optimize urban mobility, and enhance the symbiotic value of multidimensional mobility.
-
-
-- Mainpage: [https://www.pkudccl.com/](https://www.pkudccl.com/)
-- Leader: [Prof. Haoran Zhang](https://urban.pkusz.edu.cn/info/1013/3002.htm)
-- Contact us: h.zhang@pku.edu.cn, yuq@pku.edu.cn
-- Address: Room C120, School of Urban Planning and Design, Peking University Shenzhen Graduate School, 2199 Lishui Road, Nanshan District, Shenzhen, Guangdong, China
