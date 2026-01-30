@@ -240,11 +240,11 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="flex-shrink-0 group"
                 >
-                  <div className="w-full sm:w-64 aspect-video overflow-hidden">
+                  <div className="w-full sm:w-64 aspect-video overflow-hidden bg-gray-100 flex items-center justify-center">
                     <img
                       src={item.imgpath}
                       alt={i18n.language === 'zh' ? item.title_zh : item.title_en}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                 </a>
