@@ -218,7 +218,7 @@ export default function TeamPage() {
       {/* Faculty collaborators */}
       <div className="mb-10">
         <h2 className="text-lg font-medium text-slate-700 mb-4">
-          {i18n.language === 'zh' ? '合作教师' : 'Faculty Collaborators'}
+          {i18n.language === 'zh' ? '合作学者' : 'Scholar Collaborators'}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2">
           {facultyMembers.map((member) => (
