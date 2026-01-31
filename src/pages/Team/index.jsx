@@ -18,7 +18,7 @@ const facultyMembers = [
     id: 'yang-zhenyu',
     nameZh: '杨振宇',
     nameEn: 'Zhenyu Yang',
-    titleZh: '助教',
+    titleZh: '助理教授',
     titleEn: 'Assistant Professor',
     affiliationZh: '岛根大学',
     affiliationEn: 'Shimane University',
