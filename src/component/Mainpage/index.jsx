@@ -48,7 +48,7 @@ export default function Mainpage() {
         <Text type="secondary" style={{ fontSize: '0.8em' }}>{t('智慧城市实验室')}</Text>
       </div>
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-        <Link href="mailto:yuq@pku.edu.cn" target="_blank" ><MailOutlined /> </Link>
+        <Link href="mailto:yuq@szu.edu.cn" target="_blank" ><MailOutlined /> </Link>
         <Link href="https://github.com/ni1o1/" target="_blank" ><GithubOutlined /> </Link>
         <Link href="https://www.researchgate.net/profile/Qing_Yu51" target="_blank" ><span className="iconfont icon-researchgate" /></Link>
         <Link href="https://scholar.google.com/citations?user=7m0xcqEAAAAJ&hl=zh-CN" target="_blank" ><GoogleOutlined /></Link>
@@ -139,7 +139,7 @@ export default function Mainpage() {
       </div>
       <Row>
         <Col span={24}>
-          <Footer style={{ backgroundColor: '#ffffff', textAlign: 'center' }}>{t("版权所有")} © 2025 {t("北京大学智慧城市实验室")} | yuq@pku.edu.cn
+          <Footer style={{ backgroundColor: '#ffffff', textAlign: 'center' }}>{t("版权所有")} © 2025 {t("北京大学智慧城市实验室")} | yuq@szu.edu.cn
             <br />
             <img className="headimg" src="heading/heading.png" style={{
               'margin': '10px',

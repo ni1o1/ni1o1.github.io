@@ -54,7 +54,7 @@ Interested candidates should submit the following materials:
 - A detailed **CV** highlighting academic and professional achievements;
 - An **application letter or email** expressing interest in joining the Young Editorial Board and outlining relevant experience.
 
-Please send applications to **yuq@pku.edu.cn** with the subject line:
+Please send applications to **yuq@szu.edu.cn** with the subject line:
 
 > "Energy 360 Young Editorial Board Application + Name + Research Field"
 

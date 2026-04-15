@@ -130,7 +130,7 @@ const studentMembers = [
   },
 ];
 
-const contactEmail = 'yuq@pku.edu.cn';
+const contactEmail = 'yuq@szu.edu.cn';
 
 // Partner labs data
 const partnerLabs = [

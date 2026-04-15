@@ -55,7 +55,7 @@ show: true
 - 详细的 **简历**，突出学术和专业成就；
 - **申请信或邮件**，表达加入青年编委会的意愿，并概述相关经验。
 
-请发送邮件至 **yuq@pku.edu.cn**，标题格式为：
+请发送邮件至 **yuq@szu.edu.cn**，标题格式为：
 
 > "Energy 360 Young Editorial Board Application + 姓名 + 研究领域"
 
