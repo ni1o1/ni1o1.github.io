@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>一块标识，放哪里才会被认真看？</title>
+  <meta name="description" content="VR 眼动 × 城市数字孪生：30 名行人在照片级虚拟校园中寻路，得到标识设计的注意阈值。拖动 3D 设计器，30 秒看懂研究结论。">
+  <meta property="og:title" content="一块标识，放哪里才会被认真看？">
+  <meta property="og:description" content="VR 眼动 × 城市数字孪生：拖动 3D 设计器，30 秒看懂标识设计阈值。">
+  <meta property="og:image" content="assets/hero.webp">
+  <meta property="og:type" content="article">
+  <style>
+    :root {
+      --ink: #122025; --muted: #52666e; --soft: #71848a;
+      --paper: #fbfdfc; --band: #eef6f4; --line: #d7e2df;
+      --teal: #0b8f87; --green: #237a57; --blue: #315fba;
+      --amber: #c2742b; --red: #b74845; --violet: #6d5bb6;
+      --shadow: 0 18px 48px rgba(18,32,37,.12);
+      --sans: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --mono: "SF Mono", Menlo, Consolas, ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin:0; color:var(--ink); background:#f6f8f7; font-family:var(--sans); line-height:1.68; -webkit-font-smoothing:antialiased; }
+    img { max-width:100%; height:auto; display:block; }
+    a { color:var(--teal); text-decoration:none; }
+    p { margin:0 0 14px; color:var(--muted); overflow-wrap:anywhere; }
+    code { font-family:var(--mono); font-size:.92em; background:#e8f2f1; border:1px solid #c8ddda; border-radius:5px; padding:1px 5px; color:#0d5c67; }
+    .wrap { width:min(1180px, calc(100vw - 42px)); margin:0 auto; }
+
+    .nav { position:fixed; z-index:30; top:14px; left:50%; transform:translateX(-50%);
+      display:flex; gap:8px; padding:8px; max-width:calc(100vw - 24px); overflow-x:auto;
+      background:rgba(255,255,255,.86); border:1px solid rgba(215,226,223,.92); border-radius:8px;
+      backdrop-filter:blur(14px); box-shadow:0 8px 28px rgba(18,32,37,.09); scrollbar-width:none; }
+    .nav::-webkit-scrollbar { display:none; }
+    .nav a { display:block; padding:8px 12px; border-radius:6px; font-size:13px; color:#29434a; white-space:nowrap; }
+    .nav a:hover { background:#edf6f5; color:#075e58; }
+    .nav a.current { background:var(--teal); color:#fff; }
+
+    header { min-height:88vh; position:relative; display:grid; align-items:end; overflow:hidden; background:#101b1e; border-bottom:1px solid var(--line); }
+    .heroImage { position:absolute; inset:0;
+      background-image:linear-gradient(90deg, rgba(8,19,22,.92), rgba(8,19,22,.55), rgba(8,19,22,.22)), url("assets/hero.webp");
+      background-size:cover; background-position:center; }
+    #heroCanvas { position:absolute; inset:0; width:100%; height:100%; opacity:.75; }
+    .heroContent { position:relative; z-index:2; padding:120px 0 64px; color:#f5fbfa; }
+    .kicker { font-family:var(--mono); font-size:12px; color:#9ddbd5; margin-bottom:14px; text-transform:uppercase; letter-spacing:.14em; }
+    h1 { margin:0 0 16px; font-size:clamp(30px, 5vw, 58px); line-height:1.16; }
+    h1 span { display:block; }
+    .heroLead { max-width:640px; font-size:16.5px; color:#cfe4e1; }
+    .heroLinks { display:flex; gap:10px; margin:16px 0 6px; flex-wrap:wrap; }
+    .heroLinks a, .heroLinks span.dis { padding:9px 16px; border-radius:8px; border:1px solid rgba(157,219,213,.45); color:#d9f1ee; font-size:13.5px; }
+    .heroLinks a:hover { background:rgba(157,219,213,.16); }
+    .heroLinks span.dis { color:#9ab8b4; border-style:dashed; }
+    .factRow { display:grid; grid-template-columns:repeat(4, 1fr); gap:14px; margin-top:28px; }
+    .fact { background:rgba(13,28,31,.6); border:1px solid rgba(157,219,213,.28); border-radius:10px; padding:13px 16px; backdrop-filter:blur(6px); }
+    .fact b { display:block; font-size:23px; font-family:var(--mono); color:#9ddbd5; }
+    .fact span { font-size:12.5px; color:#b8d3d0; }
+
+    section { padding:88px 0 72px; }
+    section:nth-of-type(even) { background:var(--band); }
+    .eyebrow { font-family:var(--mono); font-size:12.5px; letter-spacing:.12em; color:var(--teal); text-transform:uppercase; margin-bottom:12px; }
+    h2 { margin:0 0 14px; font-size:clamp(23px, 3.1vw, 36px); line-height:1.27; max-width:900px; }
+    h3 { margin:0 0 10px; font-size:17.5px; }
+    .lead { font-size:16px; max-width:860px; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; margin-top:24px; }
+    .grid3 { display:grid; grid-template-columns:repeat(3, 1fr); gap:18px; margin-top:24px; }
+    .panel { background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:20px 22px; box-shadow:var(--shadow); }
+    .source { font-size:12.5px; color:var(--soft); font-family:var(--mono); line-height:1.55; margin-top:10px; }
+    .badge { display:inline-block; font-family:var(--mono); font-size:11px; border-radius:5px; padding:2px 8px; margin-right:6px; vertical-align:2px; }
+    .badge.pub { background:#e3f2ec; color:#1d6b4c; border:1px solid #bfe0d2; }
+    .badge.rev { background:#fdf3e6; color:#9c5f1d; border:1px solid #ecd5b4; }
+
+    .controls { display:flex; gap:12px; flex-wrap:wrap; margin:18px 0 6px; align-items:center; }
+    .seg { display:inline-flex; flex-wrap:wrap; background:#fff; border:1px solid var(--line); border-radius:8px; padding:4px; gap:2px; }
+    .seg button { border:0; background:transparent; padding:8px 14px; border-radius:6px; font-size:13.5px; color:#39535b; cursor:pointer; font-family:var(--sans); transition:background .18s ease, color .18s ease; }
+    .seg button.active { background:var(--teal); color:#fff; }
+    button.plain { border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px 14px; font-size:13.5px; cursor:pointer; color:#39535b; }
+    button.plain:hover { background:#edf6f5; }
+
+    /* ===== 3D 设计器 ===== */
+    .designerBox { background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:18px; box-shadow:var(--shadow); margin-top:24px; }
+    #designCanvas { width:100%; display:block; border-radius:10px; background:linear-gradient(#eef6f6, #f7fbfa 30%); cursor:grab; touch-action:none; }
+    #designCanvas:active { cursor:grabbing; }
+    .verdictBig { display:flex; align-items:center; gap:14px; margin-top:16px; border-radius:10px; padding:14px 18px; font-size:16px; line-height:1.5; border:1.5px solid; }
+    .verdictBig .mark { font-size:30px; line-height:1; }
+    .verdictBig.ok { background:#e7f4ee; border-color:#9fd4bb; color:#175c41; }
+    .verdictBig.no { background:#faeeed; border-color:#e0aeac; color:#8f3936; }
+    .geoLine { font-family:var(--mono); font-size:12.5px; color:var(--soft); margin-top:10px; }
+    .geoLine b { font-weight:600; }
+    .geoLine .ok { color:var(--green); }
+    .geoLine .no { color:var(--red); }
+    .designControls { display:grid; grid-template-columns:1fr 1fr; gap:14px 24px; margin-top:16px; }
+    .ctlBlock label { display:block; font-size:13px; color:#39535b; margin-bottom:6px; }
+    .sliderRow { display:grid; grid-template-columns:1fr 76px; gap:10px; align-items:center; }
+    .sliderRow output { font-family:var(--mono); font-size:13px; color:var(--ink); text-align:right; }
+    input[type=range] { width:100%; accent-color:var(--teal); }
+    details.fine { margin-top:18px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+    details.fine summary { cursor:pointer; padding:12px 16px; font-size:14px; color:#39535b; }
+    details.fine .inner { padding:0 16px 16px; }
+    details.fine table { min-width:0; }
+
+    /* ===== 方法管线 ===== */
+    .pipeline { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; margin:24px 0; }
+    .pipeline .step { text-align:left; border:1px solid var(--line); background:#fff; border-radius:10px; padding:12px 14px; cursor:pointer; font-family:var(--sans); transition:transform .18s ease, border-color .18s ease; }
+    .pipeline .step b { display:block; font-size:13.5px; color:var(--ink); }
+    .pipeline .step.active { border-color:var(--teal); box-shadow:0 0 0 2px rgba(11,143,135,.18); transform:translateY(-2px); }
+    .formula { font-family:var(--mono); font-size:13.5px; background:#0f2226; color:#9ddbd5; border-radius:8px; padding:12px 16px; margin-top:12px; overflow-x:auto; white-space:pre-wrap; }
+
+    /* ===== 图库 ===== */
+    .gallery { display:grid; grid-template-columns:1.55fr 1fr; gap:20px; margin-top:24px; }
+    .figureStage img { border:1px solid var(--line); border-radius:10px; background:#fff; cursor:zoom-in; padding:8px; }
+    .figureList { display:flex; flex-direction:column; gap:8px; }
+    .figButton { text-align:left; border:1px solid var(--line); background:#fff; border-radius:10px; padding:11px 14px; cursor:pointer; font-family:var(--sans); }
+    .figButton strong { display:block; font-size:13.5px; }
+    .figButton span { font-size:12px; color:var(--soft); line-height:1.45; }
+    .figButton.active { border-color:var(--teal); box-shadow:0 0 0 2px rgba(11,143,135,.18); }
+    dialog.lightbox { border:0; padding:0; background:transparent; max-width:96vw; max-height:96vh; }
+    dialog.lightbox::backdrop { background:rgba(8,19,22,.85); }
+    dialog.lightbox img { max-width:94vw; max-height:90vh; width:auto; border-radius:8px; cursor:zoom-out; background:#fff; padding:10px; }
+
+    /* ===== 指标图 ===== */
+    .chartBox { background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:var(--shadow); position:relative; }
+    canvas.chart { width:100%; height:auto; display:block; }
+    .tooltip { position:absolute; pointer-events:none; background:#0f2226; color:#e7f5f3; font-size:12.5px; font-family:var(--mono); padding:6px 10px; border-radius:6px; transform:translate(-50%, -130%); white-space:nowrap; opacity:0; transition:opacity .12s ease; z-index:5; }
+    .legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:12px; font-size:13px; color:var(--muted); }
+    .key { display:inline-flex; align-items:center; gap:6px; }
+    .swatch { width:12px; height:12px; border-radius:3px; display:inline-block; }
+    .bigFacts { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; margin-top:24px; }
+    .bigFact { background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow); }
+    .bigFact b { display:block; font-family:var(--mono); font-size:26px; color:var(--teal); }
+    .bigFact span { font-size:13px; color:var(--muted); }
+
+    .pathList { display:grid; gap:10px; margin-top:20px; }
+    .pathItem { display:flex; gap:14px; align-items:baseline; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:11px 16px; flex-wrap:wrap; }
+    .pathItem strong { font-size:13.5px; min-width:130px; }
+    .pathItem small { color:var(--soft); font-size:12px; }
+
+    footer { padding:36px 0 56px; border-top:1px solid var(--line); }
+    footer p { font-size:13px; color:var(--soft); }
+
+    .reveal { opacity:0; transform:translateY(18px); transition:opacity .65s ease, transform .65s ease; }
+    .reveal.in { opacity:1; transform:none; }
+
+    @media (max-width: 980px) {
+      .grid2, .grid3, .gallery, .factRow, .designControls, .bigFacts { grid-template-columns:1fr; }
+      .pipeline { grid-template-columns:1fr 1fr; }
+      header { min-height:72vh; }
+    }
+    @media (max-width: 620px) {
+      section { padding:60px 0 50px; }
+      .heroContent { padding:106px 0 44px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+      .reveal { opacity:1; transform:none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="章节导航">
+    <a href="#designer">设计器</a><a href="#story">来龙去脉</a><a href="#evidence">证据</a><a href="#papers">论文</a>
+  </nav>
+
+  <header id="top">
+    <div class="heroImage" aria-hidden="true"></div>
+    <canvas id="heroCanvas" aria-hidden="true"></canvas>
+    <div class="wrap heroContent">
+      <div class="kicker">VR eye-tracking × urban digital twin</div>
+      <h1><span>一块标识，</span><span>放哪里才会被认真看？</span></h1>
+      <p class="heroLead">我们用无人机把真实校园搬进 VR，跟踪 30 名行人寻路时的每一次注视，找到了答案——往下拖一个 3D 标识试试。</p>
+      <div class="heroLinks">
+        <a href="https://doi.org/10.1016/j.tbs.2025.101120" target="_blank" rel="noopener">📄 论文（TBS，已发表）</a>
+        <span class="dis">🛠 开源管线论文（在审）</span>
+      </div>
+      <div class="factRow" aria-label="核心事实">
+        <div class="fact"><b>30 人</b><span>VR 寻路实验被试</span></div>
+        <div class="fact"><b>15,294</b><span>注视事件，逐一语义标注</span></div>
+        <div class="fact"><b>30.6 m</b><span>寻路时认真看标识的距离上限</span></div>
+        <div class="fact"><b>20.8 s</b><span>全部数据的分析耗时（开源管线）</span></div>
+      </div>
+    </div>
+  </header>
+
+  <section id="designer">
+    <div class="wrap">
+      <div class="eyebrow reveal">01 / 标识设计器</div>
+      <h2 class="reveal">拖一拖，看这块标识会不会被认真看</h2>
+      <p class="lead reveal">直接把标识<strong>拖到想放的位置</strong>，拖牌前的小箭头转朝向。地上的浅青色区域 = 放这里会被认真看——规则来自论文的眼动数据。</p>
+      <div class="designerBox reveal">
+        <canvas id="designCanvas" aria-label="三维标识布设示意：行人、标识与注意区"></canvas>
+        <div class="verdictBig ok" id="verdictBig"><span class="mark">✓</span><span id="verdictText"></span></div>
+        <div class="geoLine" id="geoLine"></div>
+        <div class="designControls">
+          <div class="ctlBlock">
+            <label>标识类型</label>
+            <span class="seg" id="typeSeg">
+              <button data-type="D">地贴</button>
+              <button class="active" data-type="P">立牌</button>
+              <button data-type="L">悬挂牌</button>
+            </span>
+          </div>
+          <div class="ctlBlock">
+            <label>行人在做什么</label>
+            <span class="seg" id="taskSeg">
+              <button class="active" data-task="wayfinding">赶路找地方</button>
+              <button data-task="free">随便逛逛</button>
+            </span>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="plain" id="walkBtn">▶ 让行人走一遍</button>
+        </div>
+        <details class="fine">
+          <summary>这些判定规则是怎么来的？</summary>
+          <div class="inner">
+            <p style="font-size:13.5px;">论文用 XGBoost 预测每次注视是「认真看」还是「扫一眼」，再用 SHAP 找出几何因素的注意阈值：</p>
+            <div class="tableWrap" style="margin:8px 0; overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead><tr>
+                  <th style="text-align:left; padding:6px 10px; color:var(--soft);">条件</th>
+                  <th style="text-align:left; padding:6px 10px; color:var(--soft);">距离</th>
+                  <th style="text-align:left; padding:6px 10px; color:var(--soft);">朝向偏角</th>
+                  <th style="text-align:left; padding:6px 10px; color:var(--soft);">视线俯仰</th>
+                </tr></thead>
+                <tbody>
+                  <tr><td style="padding:6px 10px;">赶路找地方</td><td style="padding:6px 10px;" class="mono">&lt; 30.6 m（3–10 m 最佳）</td><td style="padding:6px 10px;">&lt; 45.9°</td><td style="padding:6px 10px;">&lt; 4.2°</td></tr>
+                  <tr><td style="padding:6px 10px;">随便逛逛</td><td style="padding:6px 10px;">&lt; 68.4 m</td><td style="padding:6px 10px;">&lt; 56.5°</td><td style="padding:6px 10px;">&lt; 2.0°</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p style="font-size:13px;">设计器的简化假设：行人眼高 1.6 m，沿街心行走；距离、视角、俯仰全部由摆放位置和标识类型自动算出；牌面单面可读（看到背面判不可读）；未计入标识尺寸的次要效应。两个可以自己验证的论文发现：把<strong>悬挂牌</strong>拖近——太近要抬头，没人抬头看；选<strong>地贴</strong>——牌面朝天，几何上永远进不了"认真看"区，论文中它注意最少，只适合辅助信息。</p>
+            <img src="assets/tbs_fig10_thresholds.webp" alt="SHAP 值随距离、朝向、俯仰变化的非线性曲线及阈值标注" width="1576" height="930" loading="lazy" style="border:1px solid var(--line); border-radius:8px;">
+            <p class="source">论文一 Fig.10：上排赶路、下排闲逛。曲线过零点即上表阈值。</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="story">
+    <div class="wrap">
+      <div class="eyebrow reveal">02 / 来龙去脉</div>
+      <h2 class="reveal">真实街头控不住变量，实验室又不够真——所以把街区搬进 VR</h2>
+      <p class="lead reveal">无人机航拍重建照片级校园，行人戴 VR 头显在里面寻路，每一次注视都被记录并自动标注语义。点击五个步骤看数据怎么流动。</p>
+      <div class="pipeline reveal" id="pipeline"></div>
+      <div class="grid2">
+        <div class="reveal">
+          <h3 id="stepTitle"></h3>
+          <p id="stepBody"></p>
+          <div class="formula" id="stepFormula"></div>
+        </div>
+        <div class="panel reveal">
+          <img src="assets/tbs_fig1_framework.webp" alt="研究框架：环境构建、VR 实验、数据处理、视觉建模、行为分析" width="2308" height="918" loading="lazy">
+          <p class="source"><span class="badge pub">已发表</span>行为研究（TBS 2026）＋<span class="badge rev">在审</span>开源分析管线，共用这套平台与 30 人数据。</p>
+        </div>
+      </div>
+      <div class="panel reveal" style="margin-top:18px;">
+        <video controls playsinline preload="metadata" poster="assets/demo_poster.jpg" width="1280" height="720" style="width:100%; height:auto; border-radius:8px; display:block; background:#101b1e;" aria-label="VR 眼动实验演示视频">
+          <source src="assets/demo.mp4" type="video/mp4">
+          您的浏览器不支持视频播放。
+        </video>
+        <p class="source">90 秒看完整个实验：戴上眼动 VR 头显 → 在照片级虚拟校园中寻路 → 注视数据回放（绿色为注视点、蓝线为移动轨迹）。</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="evidence">
+    <div class="wrap">
+      <div class="eyebrow reveal">03 / 证据</div>
+      <h2 class="reveal">标识多，找路快——但代价是眼睛更忙</h2>
+      <div class="bigFacts reveal">
+        <div class="bigFact"><b>9/10 vs 7/10</b><span>高信息环境下寻路完成率更高，用时和绕路也更少。</span></div>
+        <div class="bigFact"><b>×3.9</b><span>但注视事件从 49 次/人涨到 189 次/人——信息越多，眼睛越忙。</span></div>
+        <div class="bigFact"><b>2.7% → 7.7%</b><span>有寻路任务时，看标识的时间占比涨到近 3 倍。</span></div>
+      </div>
+      <div class="gallery reveal">
+        <div class="figureStage">
+          <img id="galleryImage" src="assets/pipe_fig1_platform.webp" alt="所选论文图" width="2348" height="714">
+          <h3 id="galleryTitle"></h3>
+          <p id="galleryCaption"></p>
+        </div>
+        <div class="figureList" id="figureList"></div>
+      </div>
+      <h3 class="reveal" style="margin-top:34px;">任务一换，行为就变：九项指标自己切着看</h3>
+      <div class="controls reveal">
+        <span class="seg" id="metricSeg"></span>
+      </div>
+      <div class="chartBox reveal">
+        <canvas id="metricChart" class="chart" aria-label="九项行为指标按任务条件对比"></canvas>
+        <div class="tooltip" id="metricTip"></div>
+        <div class="legend" id="metricLegend"></div>
+        <p id="metricExplain" style="margin:10px 0 0; font-size:13.5px;"></p>
+      </div>
+      <p class="source reveal" style="margin-top:10px;">数据：在审论文 Table 1（均值 ± 标准差，每组 10 人）。</p>
+    </div>
+  </section>
+
+  <section id="papers">
+    <div class="wrap">
+      <div class="eyebrow reveal">04 / 论文与引用</div>
+      <h2 class="reveal">深入阅读：论文、数据与引用</h2>
+      <div class="pathList reveal">
+        <div class="pathItem"><strong>论文一（已发表）</strong><a href="https://doi.org/10.1016/j.tbs.2025.101120" target="_blank" rel="noopener">Travel Behaviour and Society 42 (2026) 101120</a><small>行为发现与设计阈值</small></div>
+        <div class="pathItem"><strong>论文二（在审）</strong><small>开源 3D 语义注视分析管线，Python 全套 + 脱敏数据随文发布，链接待录用后公开</small></div>
+      </div>
+      <details class="fine reveal" style="margin-top:18px;">
+        <summary>引用本研究（BibTeX）</summary>
+        <div class="inner"><div class="formula">@article{jiang2026integrating,
+  title   = {Integrating Virtual Reality-based eye-tracking with urban digital twin
+             for unveiling pedestrian visual attention in wayfinding tasks},
+  author  = {Jiang, Yinghong and Yao, Yao and Yu, Qing and Jiang, Ziwei and
+             Liu, Xuanyu and Li, Jiaxing and Zhang, Haoran},
+  journal = {Travel Behaviour and Society},
+  volume  = {42},
+  pages   = {101120},
+  year    = {2026},
+  doi     = {10.1016/j.tbs.2025.101120}
+}</div></div>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>Jiang, Yao, Yu (通讯, yuq@pku.edu.cn), Jiang, Liu, Li, Zhang · 上海城建设计研究总院 / 清华 / 北大深研院 / 同济 / 上大 / 深大</p>
+    </div>
+  </footer>
+
+  <dialog class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt="放大图"></dialog>
+
+  <script>
+    "use strict";
+    /* ============ 数据：论文公开数值（作者侧溯源记录在项目目录 evidence_map.json，不部署） ============ */
+    const THRESH = {
+      wayfinding: {dist:30.6, inc:45.9, pitch:4.2, peak:[3,10]},
+      free:       {dist:68.4, inc:56.5, pitch:2.0, peak:null}
+    };
+    const SIGN_TYPES = {
+      D: {name:"地贴", w:1.0, h:1.8, centerH:0.02, pole:"none"},
+      P: {name:"立牌", w:1.5, h:2.0, centerH:1.3, pole:"legs"},
+      L: {name:"悬挂牌", w:0.75, h:1.0, centerH:2.5, pole:"arm"}
+    };
+    const EYE_H = 1.6;
+    const BUILDINGS = [   // 仅放街道远侧，避免遮挡视线
+      {x:4,len:13,z:-15,depth:3,h:7},{x:22,len:10,z:-14.5,depth:3,h:4.5},{x:38,len:15,z:-15,depth:3,h:8},
+      {x:58,len:11,z:-14.5,depth:3,h:5.5},{x:74,len:9,z:-15,depth:3,h:6.5},{x:88,len:13,z:-14.5,depth:3,h:4}
+    ];
+
+    const STEP_TEXT = [
+      ["1. 实景三维建模", "无人机倾斜摄影重建真实校园，保留真实几何与纹理。", "倾斜摄影 → photogrammetric mesh"],
+      ["2. VR 寻路实验", "30 人戴 PICO 4 Pro 头显分三组：随便逛 / 标识多 / 标识少，连续记录头姿与眼动。", "head pose ⊕ gaze ⊕ 轨迹 @ 时间戳"],
+      ["3. 重建注视点", "多射线视觉锥模拟中央凹到余光的衰减，对校准误差更稳健。", "EGP = Σ wᵢ·rayᵢ，wᵢ 随离心率递减"],
+      ["4. 自动语义标注", "每个注视在 337 万点人工标注点云上查最近邻：在看建筑、树，还是标识？", "label = KNN(EGP, 点云)，30 人共 20.8 s"],
+      ["5. 解释 → 设计阈值", "机器学习预测「认真看 / 扫一眼」，SHAP 拆出距离、朝向、俯仰的阈值——就是上面设计器的规则。", "SHAP: φ(距离, 朝向, 俯仰) → P(认真看)"]
+    ];
+
+    const FIGURES = [
+      {title:"虚拟环境有多真", src:"assets/pipe_fig1_platform.webp", w:2348, h:714,
+       caption:"实景三维模型 · 真实街景 · VR 第一人称对比。"},
+      {title:"实验怎么设计", src:"assets/tbs_fig6_experiment.webp", w:1700, h:1334,
+       caption:"三条寻路路线；地贴 / 立牌 / 悬挂三类标识，多标识组 65 块、少标识组 31 块。"},
+      {title:"标识多，路线直", src:"assets/tbs_fig7_performance.webp", w:1655, h:1165,
+       caption:"红点 = 认真看，蓝点 = 扫一眼。标识多的组路线更直、完成率更高。"},
+      {title:"任务画出的注视地图", src:"assets/pipe_fig5_semantic_map.webp", w:1403, h:801,
+       caption:"随便逛时注视发散在绿化，赶路时收束到路线和标识上。"},
+      {title:"30 人的注视时间线", src:"assets/pipe_fig8_timelines.webp", w:1331, h:1253,
+       caption:"每行一个人、每个色块一次注视。同组内个体差异肉眼可见。"}
+    ];
+
+    const T1_CONDITIONS = [
+      {name:"随便逛逛", color:"#315fba"},
+      {name:"赶路 · 标识多", color:"#0b8f87"},
+      {name:"赶路 · 标识少", color:"#c2742b"}
+    ];
+    const T1_METRICS = [
+      {label:"移动距离", unit:"m", fmt:0, mean:[1347.4,1214.7,1296.3], sd:[444.5,314.0,233.4], explain:"没有目标就一直逛——自由探索走得最远。"},
+      {label:"移动速度", unit:"m/s", fmt:2, mean:[4.49,4.05,4.32], sd:[1.48,1.05,0.78], explain:"读标识要减速：标识多的组走得最慢。"},
+      {label:"探索面积", unit:"m²", fmt:0, mean:[96115,59918,88232], sd:[54220,24061,34077], explain:"清晰的标识把人收束在路线上：标识多时覆盖面积最小。"},
+      {label:"暂停时长", unit:"s", fmt:1, mean:[74.10,101.5,88.30], sd:[39.77,42.92,37.36], explain:"站定看牌、做决策——寻路任务暂停更久。"},
+      {label:"注视时长", unit:"ms", fmt:1, mean:[178.9,178.9,175.1], sd:[18.79,15.03,16.94], explain:"三组几乎不变，都在文献正常区间——底层眼动机制稳定，数据可信。"},
+      {label:"扫视幅度", unit:"m", fmt:2, mean:[10.10,10.60,12.38], sd:[2.41,2.73,2.35], explain:"标识被减掉后，视线被迫大范围搜索——标识少的组扫视最大。"},
+      {label:"注视离散度", unit:"m", fmt:1, mean:[224.1,209.6,237.3], sd:[95.84,53.49,39.14], explain:"标识少时注视点最分散，和更宽的搜索一致。"},
+      {label:"注视距离", unit:"m", fmt:2, mean:[24.68,25.34,24.69], sd:[4.48,5.50,3.54], explain:"看多远的东西三组接近；但走得越快、看得越远（ρ=0.28）。"},
+      {label:"远近切换", unit:"m", fmt:2, mean:[17.33,19.20,17.46], sd:[4.93,3.65,2.62], explain:"标识多时一会儿看远处悬挂牌、一会儿看近处地贴，切换最剧烈。"}
+    ];
+
+    /* ============ 工具 ============ */
+    const $ = s => document.querySelector(s);
+    const $all = s => Array.from(document.querySelectorAll(s));
+    const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+    function ctx2d(canvas, cssH) {
+      const cssW = canvas.clientWidth || canvas.parentElement.clientWidth - 36;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.style.height = cssH + "px";
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return {ctx, w: cssW, h: cssH};
+    }
+    function fmtTick(v, range) {
+      if (range < 0.5) return v.toFixed(3);
+      if (range < 5) return v.toFixed(2);
+      if (range < 100) return v.toFixed(1);
+      return Math.round(v).toLocaleString("en-US");
+    }
+    function setupSeg(sel, onChange) {
+      $all(sel + " button").forEach(b => b.addEventListener("click", () => {
+        $all(sel + " button").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        onChange(b.dataset);
+      }));
+    }
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }), {threshold:.12});
+    $all(".reveal").forEach(el => io.observe(el));
+    (function scrollspy() {
+      const links = $all(".nav a");
+      const map = new Map(links.map(a => [a.getAttribute("href").slice(1), a]));
+      const spy = new IntersectionObserver(es => es.forEach(e => {
+        const a = map.get(e.target.id);
+        if (a && e.isIntersecting) { links.forEach(x => x.classList.remove("current")); a.classList.add("current"); }
+      }), {rootMargin:"-40% 0px -55% 0px"});
+      map.forEach((_, id) => { const s = document.getElementById(id); if (s) spy.observe(s); });
+    })();
+    (function lightbox() {
+      const dlg = $("#lightbox"), img = $("#lightboxImg");
+      document.addEventListener("click", e => {
+        const t = e.target;
+        if (t.matches(".figureStage img, details img")) { img.src = t.src; img.alt = t.alt; dlg.showModal(); }
+        else if (dlg.open && (t === dlg || t === img)) dlg.close();
+      });
+    })();
+
+    /* hero 视线弧线动画（不可见即暂停） */
+    (function () {
+      const c = $("#heroCanvas");
+      if (!c || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const ctx = c.getContext("2d");
+      let visible = true, raf = 0;
+      function size() { const d = devicePixelRatio || 1; c.width = c.clientWidth * d; c.height = c.clientHeight * d; }
+      size(); addEventListener("resize", size);
+      const arcs = Array.from({length:24}, (_, i) => ({
+        x0:Math.random(), y0:Math.random(), x1:Math.random(), y1:Math.random(),
+        phase:Math.random()*Math.PI*2, speed:.004+Math.random()*.006,
+        color: i%3===0 ? "#9ddbd5" : i%3===1 ? "#f0c282" : "#9cb8f1"
+      }));
+      function draw() {
+        if (!visible) return;
+        const w=c.width, h=c.height, d=devicePixelRatio||1;
+        ctx.clearRect(0,0,w,h); ctx.lineCap="round";
+        arcs.forEach(a => {
+          a.phase += a.speed;
+          const x0=a.x0*w, y0=a.y0*h, x1=a.x1*w, y1=a.y1*h;
+          const mx=(x0+x1)/2 + Math.sin(a.phase)*80*d, my=(y0+y1)/2 - (80+Math.cos(a.phase)*45)*d;
+          ctx.beginPath(); ctx.moveTo(x0,y0); ctx.quadraticCurveTo(mx,my,x1,y1);
+          ctx.strokeStyle=a.color; ctx.globalAlpha=.12+.1*Math.sin(a.phase);
+          ctx.lineWidth=(1.2+Math.sin(a.phase)*.6)*d; ctx.stroke();
+          const t=(Math.sin(a.phase)+1)/2;
+          const px=(1-t)*(1-t)*x0+2*(1-t)*t*mx+t*t*x1, py=(1-t)*(1-t)*y0+2*(1-t)*t*my+t*t*y1;
+          ctx.globalAlpha=.45; ctx.fillStyle=a.color; ctx.beginPath(); ctx.arc(px,py,2.4*d,0,Math.PI*2); ctx.fill();
+        });
+        ctx.globalAlpha=1; raf = requestAnimationFrame(draw);
+      }
+      new IntersectionObserver(es => { visible = es[0].isIntersecting && !document.hidden; if (visible) { cancelAnimationFrame(raf); draw(); } }).observe(c);
+      document.addEventListener("visibilitychange", () => { visible = !document.hidden; if (visible) { cancelAnimationFrame(raf); draw(); } });
+      draw();
+    })();
+
+    /* ============ 3D 标识设计器（直接摆放） ============ */
+    const D = {type:"P", task:"wayfinding", sx:12, sz:-3, phi:Math.PI, ped:0, az:2.62, el:0.20, walking:false, touched:false};
+    // 世界坐标：x = 沿街, y = 上, z = 横向
+    function camGeom(w, h) {
+      const T = {x:20, y:1.2, z:0};   // 固定目标点：拖动标识时画面不漂移
+      const R = 40;
+      const C = {x:T.x + R*Math.cos(D.el)*Math.cos(D.az), y:T.y + R*Math.sin(D.el), z:T.z + R*Math.cos(D.el)*Math.sin(D.az)};
+      let f = {x:T.x-C.x, y:T.y-C.y, z:T.z-C.z};
+      const fl = Math.hypot(f.x,f.y,f.z); f = {x:f.x/fl, y:f.y/fl, z:f.z/fl};
+      let r = {x:-f.z, y:0, z:f.x};
+      const rl = Math.hypot(r.x,r.y,r.z); r = {x:r.x/rl, y:r.y/rl, z:r.z/rl};
+      const u = {x:r.y*f.z-r.z*f.y, y:r.z*f.x-r.x*f.z, z:r.x*f.y-r.y*f.x};
+      const focal = h*1.6;
+      const P = p => {
+        const d = {x:p.x-C.x, y:p.y-C.y, z:p.z-C.z};
+        const zc = d.x*f.x + d.y*f.y + d.z*f.z;
+        if (zc < 0.5) return null;
+        const xc = d.x*r.x + d.y*r.y + d.z*r.z;
+        const yc = d.x*u.x + d.y*u.y + d.z*u.z;
+        return {x: w/2 + xc*focal/zc, y: h*0.47 - yc*focal/zc, zc};
+      };
+      const toGround = (px, py) => {            // 屏幕点 → 地面交点
+        const xc = (px - w/2)/focal, yc = (h*0.47 - py)/focal;
+        const dir = {x: f.x + r.x*xc + u.x*yc, y: f.y + r.y*xc + u.y*yc, z: f.z + r.z*xc + u.z*yc};
+        if (dir.y >= -1e-4) return null;
+        const t = -C.y/dir.y;
+        return {x: C.x + dir.x*t, z: C.z + dir.z*t};
+      };
+      return {P, toGround, C};
+    }
+    function poly(ctx, P, pts, fill, stroke, lw) {
+      const proj = pts.map(P);
+      if (proj.some(p => !p)) return;
+      ctx.beginPath();
+      proj.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw||1; ctx.stroke(); }
+    }
+    function line3(ctx, P, a, b, color, lw, dash) {
+      const pa = P(a), pb = P(b);
+      if (!pa || !pb) return;
+      ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.setLineDash(dash||[]);
+      ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    function signNormal() {
+      return D.type === "D" ? {x:0,y:1,z:0} : {x:Math.cos(D.phi), y:0, z:Math.sin(D.phi)};
+    }
+    // 把标识放在 (sx,sz)、行人在 pedX 时的几何与判定
+    function evalAt(sx, sz, pedX) {
+      const s = SIGN_TYPES[D.type], t = THRESH[D.task];
+      const L = {x:sx-pedX, y:s.centerH-EYE_H, z:sz};
+      const dist = Math.max(0.6, Math.hypot(L.x, L.y, L.z));
+      const n = signNormal();
+      const cosI = (-L.x*n.x - L.y*n.y - L.z*n.z) / dist;   // 牌面指向行人为正
+      const inc = Math.acos(clamp(cosI, -1, 1)) * 180/Math.PI;
+      const pitch = Math.asin(Math.abs(L.y)/dist) * 180/Math.PI;
+      const v = {dist: dist <= t.dist, inc: inc <= t.inc, pitch: pitch <= t.pitch, back: cosI <= 0};
+      v.all = v.dist && v.inc && v.pitch;
+      v.peak = !!(t.peak && dist >= t.peak[0] && dist <= t.peak[1]);
+      return {dist, inc, pitch, v, t, s};
+    }
+    function drawDesigner() {
+      const c = $("#designCanvas");
+      const cssW = c.clientWidth || 900;
+      const {ctx, w, h} = ctx2d(c, Math.max(330, Math.min(430, cssW*0.36)));
+      const {P, toGround} = camGeom(w, h);
+      D._geom = {P, toGround, w, h};
+      ctx.clearRect(0,0,w,h);
+      // 地面
+      poly(ctx, P, [{x:-8,y:0,z:-19},{x:112,y:0,z:-19},{x:112,y:0,z:11},{x:-8,y:0,z:11}], "#f1f7f5");
+      // 街区体块（远侧）
+      BUILDINGS.forEach(b => {
+        const x0=b.x, x1=b.x+b.len, z0=b.z, z1=b.z+b.depth, hB=b.h;
+        poly(ctx, P, [{x:x0,y:0,z:z1},{x:x1,y:0,z:z1},{x:x1,y:hB,z:z1},{x:x0,y:hB,z:z1}], "#dde9e5");
+        poly(ctx, P, [{x:x0,y:0,z:z0},{x:x0,y:0,z:z1},{x:x0,y:hB,z:z1},{x:x0,y:hB,z:z0}], "#d3e0dc");
+        poly(ctx, P, [{x:x0,y:hB,z:z0},{x:x1,y:hB,z:z0},{x:x1,y:hB,z:z1},{x:x0,y:hB,z:z1}], "#e8f1ee");
+      });
+      // 街沿 + 网格
+      line3(ctx, P, {x:-8,y:0,z:-9}, {x:112,y:0,z:-9}, "#c4d5d0", 1.6);
+      line3(ctx, P, {x:-8,y:0,z:9}, {x:112,y:0,z:9}, "#c4d5d0", 1.6);
+      for (let x=0; x<=100; x+=10) line3(ctx, P, {x,y:0,z:-8}, {x,y:0,z:8}, "#e0ebe8", 1);
+      for (let z=-8; z<=8; z+=4) line3(ctx, P, {x:-4,y:0,z}, {x:104,y:0,z}, "#e7f0ed", 1);
+      // “放这里会被认真看”区域（按当前类型/朝向/任务逐格计算）
+      const step = 2;
+      for (let gx=1; gx<99; gx+=step) for (let gz=-7; gz<7; gz+=step) {
+        const e = evalAt(gx+step/2, gz+step/2, D.ped);
+        if (e.v.all) poly(ctx, P, [{x:gx,y:0.01,z:gz},{x:gx+step,y:0.01,z:gz},{x:gx+step,y:0.01,z:gz+step},{x:gx,y:0.01,z:gz+step}], "rgba(11,143,135,.16)");
+      }
+      // 距离刻度
+      ctx.fillStyle = "#8aa09b"; ctx.font = "11px " + getComputedStyle(document.body).getPropertyValue("--mono");
+      [0,25,50,75,100].forEach(x => { const p = P({x,y:0,z:9.7}); if (p) ctx.fillText(x+" m", p.x-10, p.y+12); });
+      // 当前判定
+      const e = evalAt(D.sx, D.sz, D.ped);
+      const s = e.s, okAll = e.v.all;
+      const fillC = okAll ? "rgba(11,143,135,.92)" : "rgba(183,72,69,.88)";
+      const th = D.phi, cx = D.sx, cz = D.sz, cy = s.centerH;
+      // 标识
+      if (D.type === "D") {
+        const ux = s.h/2, uz = s.w/2;   // 地贴：长边沿街向
+        poly(ctx, P, [{x:cx-ux,y:0.03,z:cz-uz},{x:cx+ux,y:0.03,z:cz-uz},{x:cx+ux,y:0.03,z:cz+uz},{x:cx-ux,y:0.03,z:cz+uz}], fillC, "#163238", 1.1);
+      } else {
+        const ux = -Math.sin(th)*s.w/2, uz = Math.cos(th)*s.w/2;   // 牌面横向 ⟂ 法线
+        if (s.pole === "legs") {
+          line3(ctx, P, {x:cx-ux*0.8, y:cy-s.h/2, z:cz-uz*0.8}, {x:cx-ux*0.8, y:0, z:cz-uz*0.8}, "#5b6f6b", 2);
+          line3(ctx, P, {x:cx+ux*0.8, y:cy-s.h/2, z:cz+uz*0.8}, {x:cx+ux*0.8, y:0, z:cz+uz*0.8}, "#5b6f6b", 2);
+        } else {
+          line3(ctx, P, {x:cx, y:0, z:cz+3}, {x:cx, y:cy+s.h/2+0.5, z:cz+3}, "#5b6f6b", 2.4);
+          line3(ctx, P, {x:cx, y:cy+s.h/2+0.5, z:cz+3}, {x:cx, y:cy+s.h/2, z:cz}, "#5b6f6b", 2.2);
+        }
+        poly(ctx, P, [
+          {x:cx-ux, y:cy+s.h/2, z:cz-uz}, {x:cx+ux, y:cy+s.h/2, z:cz+uz},
+          {x:cx+ux, y:cy-s.h/2, z:cz+uz}, {x:cx-ux, y:cy-s.h/2, z:cz-uz}
+        ], fillC, "#163238", 1.2);
+      }
+      const sc = P({x:cx, y:Math.max(cy, 0.4), z:cz});
+      D._handlePx = null;
+      if (D.type !== "D") {
+        // 朝向箭头把手（地面）；与标识投影重叠时隐藏，拖动优先
+        const n = signNormal();
+        const hp = {x:cx+n.x*2.4, y:0.02, z:cz+n.z*2.4};
+        const php = P(hp);
+        if (php && sc && Math.hypot(php.x-sc.x, php.y-sc.y) > 30) {
+          line3(ctx, P, {x:cx,y:0.02,z:cz}, hp, "#39535b", 1.6, [4,3]);
+          D._handlePx = php;
+          ctx.fillStyle = "#fff"; ctx.strokeStyle = "#39535b"; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.arc(php.x, php.y, 9, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = "#39535b"; ctx.font = "11px sans-serif"; ctx.textAlign = "center";
+          ctx.fillText("↻", php.x, php.y+3.5); ctx.textAlign = "left";
+        }
+      }
+      const scTop = P({x:cx, y:Math.max(cy + s.h/2, 0.8), z:cz});
+      if (sc) {
+        D._signPx = sc;
+        D._signHalfH = scTop ? Math.abs(sc.y - scTop.y) : 20;
+        if (D.type !== "D") { ctx.fillStyle="#fff"; ctx.font="700 12px sans-serif"; ctx.textAlign="center"; ctx.fillText("标识", sc.x, sc.y+4); ctx.textAlign="left"; }
+      }
+      // 行人
+      const px = D.ped;
+      const headC = P({x:px,y:1.66,z:0}), headE = P({x:px,y:1.78,z:0});
+      line3(ctx, P, {x:px,y:0,z:0.16}, {x:px,y:0.78,z:0.02}, "#122025", 2.6);
+      line3(ctx, P, {x:px,y:0,z:-0.16}, {x:px,y:0.78,z:-0.02}, "#122025", 2.6);
+      line3(ctx, P, {x:px,y:0.78,z:0}, {x:px,y:1.5,z:0}, "#122025", 2.8);
+      if (headC && headE) {
+        ctx.fillStyle = "#122025";
+        ctx.beginPath(); ctx.arc(headC.x, headC.y, Math.max(3.5, Math.abs(headC.y-headE.y)), 0, Math.PI*2); ctx.fill();
+      }
+      // 视线
+      line3(ctx, P, {x:px,y:EYE_H,z:0}, {x:cx,y:cy,z:cz}, okAll ? "#315fba" : "#b74845", 1.7, [7,5]);
+      // 图例与提示
+      ctx.fillStyle = "#71848a"; ctx.font = "12px sans-serif";
+      ctx.fillText("浅青色区域 = 放这里会被认真看", 14, h-12);
+      if (!D.touched && D._signPx) {
+        ctx.fillStyle = "#0b8f87"; ctx.font = "600 13px sans-serif"; ctx.textAlign = "center";
+        ctx.fillText("👆 拖我换位置", D._signPx.x, D._signPx.y - (D.type==="D" ? 16 : 38));
+        ctx.textAlign = "left";
+      }
+      updateVerdict(e);
+    }
+    function updateVerdict(e) {
+      const big = $("#verdictBig"), txt = $("#verdictText");
+      const {dist, inc, pitch, v, t, s} = e;
+      big.className = "verdictBig " + (v.all ? "ok" : "no");
+      big.querySelector(".mark").textContent = v.all ? "✓" : "✗";
+      const who = D.task === "wayfinding" ? "赶路的人" : "闲逛的人";
+      if (D.type === "D") {
+        txt.textContent = dist <= 2.4
+          ? "走到脚下才看得到。地贴只适合路径确认类的辅助信息，别用它传关键指示。"
+          : "地贴怎么摆都进不了「认真看」区：牌面朝天，行走的视线扫不到。论文中地贴注意最少，适合做辅助信息。";
+      } else if (v.all) {
+        txt.textContent = v.peak
+          ? `会被认真看，而且正处 ${t.peak[0]}–${t.peak[1]} m 注意峰值区——${who}来得及看完并做决定。`
+          : `会被认真看：距离、视角、俯仰都在${who}的注意阈值内。`;
+      } else if (v.back) {
+        txt.textContent = "牌面背对行人，看到的是牌背——拖小箭头把牌转过来。";
+      } else if (!v.dist) {
+        txt.textContent = `太远了：${who}只在 ${t.dist} m 内认真看标识，现在 ${dist.toFixed(0)} m，大概率只是扫一眼。`;
+      } else if (!v.inc) {
+        txt.textContent = `牌面太斜：视线与牌面成 ${inc.toFixed(0)}°（阈值 ${t.inc}°）——拖小箭头把牌转向行人来的方向。`;
+      } else {
+        txt.textContent = s.centerH > EYE_H
+          ? `要抬头 ${pitch.toFixed(1)}°（阈值 ${t.pitch}°）：悬挂牌太近没人抬头看，往远处挪反而有效。`
+          : `视线俯仰 ${pitch.toFixed(1)}° 超过 ${t.pitch}°。`;
+      }
+      const mk = ok => `<b class="${ok?"ok":"no"}">${ok?"✓":"✗"}</b>`;
+      $("#geoLine").innerHTML =
+        `${mk(v.dist)} 距离 ${dist.toFixed(1)} m　${mk(v.inc && !v.back)} 视角 ${v.back ? "背面" : inc.toFixed(0)+"°"}　${mk(v.pitch)} 俯仰 ${pitch.toFixed(1)}°　<span style="color:var(--soft)">— 全部由摆放位置自动算出</span>`;
+    }
+    (function () {
+      const c = $("#designCanvas");
+      setupSeg("#typeSeg", d => { D.type = d.type; D.touched = true; drawDesigner(); });
+      setupSeg("#taskSeg", d => { D.task = d.task; drawDesigner(); });
+      let mode = null, start = null;
+      c.addEventListener("pointerdown", e => {
+        const r = c.getBoundingClientRect(), px = e.clientX-r.left, py = e.clientY-r.top;
+        const dh = (D._handlePx && D.type !== "D") ? Math.hypot(px-D._handlePx.x, py-D._handlePx.y) : 1e9;
+        const ds = D._signPx ? Math.hypot(px-D._signPx.x, py-D._signPx.y) : 1e9;
+        const signR = Math.max(24, (D._signHalfH || 20) + 14);   // 命中区随投影尺寸缩放
+        if (dh < 16 && dh < ds) mode = "rotate";
+        else if (ds < signR) mode = "move";
+        else { mode = "orbit"; start = {x:e.clientX, y:e.clientY, az:D.az, el:D.el}; }
+        c.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+      c.addEventListener("pointermove", e => {
+        if (!mode) return;
+        const r = c.getBoundingClientRect(), px = e.clientX-r.left, py = e.clientY-r.top;
+        if (mode === "orbit") {
+          D.az = clamp(start.az + (e.clientX-start.x)*0.004, 2.35, 3.05);
+          D.el = clamp(start.el + (e.clientY-start.y)*0.003, 0.14, 0.42);
+        } else {
+          const g = D._geom && D._geom.toGround(px, py);
+          if (!g) return;
+          if (mode === "move") { D.sx = clamp(g.x, 2, 98); D.sz = clamp(g.z, -7.5, 7.5); D.touched = true; }
+          else D.phi = Math.atan2(g.z - D.sz, g.x - D.sx);
+        }
+        drawDesigner();
+      });
+      ["pointerup","pointercancel"].forEach(ev => c.addEventListener(ev, () => mode = null));
+      $("#walkBtn").addEventListener("click", () => {
+        D.touched = true;
+        const end = Math.min(D.sx + 12, 96);
+        if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          D.ped = Math.max(0, D.sx - 8); drawDesigner();
+          setTimeout(() => { D.ped = 0; drawDesigner(); }, 1500);
+          return;
+        }
+        D.walking = true; D.ped = 0;
+        (function step() {
+          if (!D.walking) return;
+          D.ped = Math.min(end, D.ped + 0.45);
+          drawDesigner();
+          if (D.ped < end) requestAnimationFrame(step);
+          else { D.walking = false; setTimeout(() => { D.ped = 0; drawDesigner(); }, 900); }
+        })();
+      });
+      addEventListener("resize", drawDesigner);
+      drawDesigner();
+    })();
+
+    /* ============ 方法管线 ============ */
+    (function () {
+      const wrap = $("#pipeline");
+      STEP_TEXT.forEach((s, i) => {
+        const b = document.createElement("button");
+        b.className = "step" + (i===0 ? " active" : "");
+        b.innerHTML = `<b>${s[0]}</b>`;
+        b.addEventListener("click", () => {
+          $all("#pipeline .step").forEach(x => x.classList.remove("active"));
+          b.classList.add("active");
+          $("#stepTitle").textContent = s[0];
+          $("#stepBody").textContent = s[1];
+          $("#stepFormula").textContent = s[2];
+        });
+        wrap.appendChild(b);
+      });
+      wrap.firstChild.click();
+    })();
+
+    /* ============ 图库 ============ */
+    (function () {
+      const list = $("#figureList");
+      FIGURES.forEach((f, i) => {
+        const b = document.createElement("button");
+        b.className = "figButton" + (i===0 ? " active" : "");
+        b.innerHTML = `<strong>${f.title}</strong><span>${f.caption}</span>`;
+        b.addEventListener("click", () => {
+          $all(".figButton").forEach(x => x.classList.remove("active"));
+          b.classList.add("active");
+          const img = $("#galleryImage");
+          img.src = f.src; img.alt = f.title; img.width = f.w; img.height = f.h;
+          $("#galleryTitle").textContent = f.title;
+          $("#galleryCaption").textContent = f.caption;
+        });
+        list.appendChild(b);
+      });
+      list.firstChild.click();
+    })();
+
+    /* ============ 指标图 ============ */
+    let curMetric = T1_METRICS[0], chartGeom = null;
+    function drawMetricChart() {
+      const c = $("#metricChart");
+      const {ctx, w, h} = ctx2d(c, 360);
+      const M = {l:70, r:18, t:26, b:42};
+      const m = curMetric;
+      const max = Math.max(...m.mean.map((v,i)=>v+m.sd[i])) * 1.12, range = max;
+      const y = v => h-M.b - v/range*(h-M.t-M.b);
+      ctx.clearRect(0,0,w,h);
+      ctx.strokeStyle="#d7e2df"; ctx.lineWidth=1; ctx.fillStyle="#52666e"; ctx.font="12.5px sans-serif";
+      for (let g=0; g<5; g++) {
+        const yy = M.t + g*(h-M.t-M.b)/4;
+        ctx.beginPath(); ctx.moveTo(M.l,yy); ctx.lineTo(w-M.r,yy); ctx.stroke();
+        ctx.fillText(fmtTick(max - g*range/4, range), 6, yy+4);
+      }
+      const slotW = (w-M.l-M.r)/3, barW = Math.min(110, slotW*.5);
+      chartGeom = {bars:[]};
+      T1_CONDITIONS.forEach((cond, i) => {
+        const cx = M.l + slotW*i + slotW/2, mean = m.mean[i], sd = m.sd[i];
+        ctx.fillStyle = cond.color;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(cx-barW/2, y(mean), barW, y(0)-y(mean), [6,6,0,0]); else ctx.rect(cx-barW/2, y(mean), barW, y(0)-y(mean));
+        ctx.fill();
+        ctx.strokeStyle = "#39535b"; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(cx, y(Math.max(0, mean-sd))); ctx.lineTo(cx, y(mean+sd));
+        ctx.moveTo(cx-7, y(mean+sd)); ctx.lineTo(cx+7, y(mean+sd));
+        ctx.moveTo(cx-7, y(Math.max(0, mean-sd))); ctx.lineTo(cx+7, y(Math.max(0, mean-sd)));
+        ctx.stroke();
+        ctx.fillStyle="#29434a"; ctx.textAlign="center";
+        ctx.font="13px sans-serif"; ctx.fillText(cond.name, cx, h-18);
+        ctx.font="600 12.5px " + getComputedStyle(document.body).getPropertyValue("--mono");
+        ctx.fillText(mean.toFixed(m.fmt) + " " + m.unit, cx, y(mean+sd)-8);
+        ctx.textAlign="left";
+        chartGeom.bars.push({x:cx-barW/2, y:y(mean), w:barW, h:y(0)-y(mean), cond, mean, sd});
+      });
+      $("#metricLegend").innerHTML = T1_CONDITIONS.map(cd =>
+        `<span class="key"><span class="swatch" style="background:${cd.color}"></span>${cd.name}</span>`).join("") +
+        `<span class="key" style="color:var(--soft)">竖线 = ±1 标准差</span>`;
+      $("#metricExplain").textContent = m.explain;
+    }
+    (function () {
+      const seg = $("#metricSeg");
+      T1_METRICS.forEach((m,i) => {
+        const b = document.createElement("button");
+        b.dataset.idx = i; b.textContent = m.label;
+        if (i===0) b.classList.add("active");
+        seg.appendChild(b);
+      });
+      setupSeg("#metricSeg", d => { curMetric = T1_METRICS[Number(d.idx)]; drawMetricChart(); });
+      const tip = $("#metricTip"), c = $("#metricChart");
+      c.addEventListener("pointermove", e => {
+        if (!chartGeom) return;
+        const r = c.getBoundingClientRect(), px = e.clientX-r.left, py = e.clientY-r.top;
+        const hit = chartGeom.bars.find(b => px >= b.x && px <= b.x+b.w && py >= b.y-30 && py <= b.y+b.h);
+        if (hit) {
+          tip.textContent = `${hit.cond.name} · ${hit.mean.toFixed(curMetric.fmt)} ± ${hit.sd.toFixed(curMetric.fmt)} ${curMetric.unit}`;
+          tip.style.left = (hit.x+hit.w/2)+"px"; tip.style.top = hit.y+"px"; tip.style.opacity = 1;
+        } else tip.style.opacity = 0;
+      });
+      c.addEventListener("pointerleave", () => tip.style.opacity = 0);
+      addEventListener("resize", drawMetricChart);
+      drawMetricChart();
+    })();
+  </script>
+</body>
+</html>

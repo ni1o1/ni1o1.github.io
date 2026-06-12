@@ -6,7 +6,6 @@ import ReactMarkdown from 'react-markdown';
 export default function Home() {
   const { t, i18n } = useTranslation();
   const [intro, setIntro] = useState('');
-  const [news, setNews] = useState([]);
   const [research, setResearch] = useState([]);
   const [projects, setProjects] = useState([]);
 
@@ -16,13 +15,6 @@ export default function Home() {
       .then(r => r.text())
       .then(setIntro);
   }, [i18n.language]);
-
-  useEffect(() => {
-    fetch('/posts/index.json')
-      .then(r => r.json())
-      .then(posts => setNews(posts.slice(0, 5)))
-      .catch(() => setNews([]));
-  }, []);
 
   useEffect(() => {
     fetch('/research/index.json')
@@ -112,31 +104,76 @@ export default function Home() {
         )}
       </section>
 
-      {/* Latest News */}
-      {news.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl font-semibold text-slate-800 mb-4">{t('新闻')}</h2>
-          <div className="space-y-3">
-            {news.map((item) => (
-              <Link
-                key={item.filename}
-                to={`/news/${item.filename}`}
-                className="block group no-underline"
-              >
-                <div className="flex items-baseline gap-3">
-                  <span className="text-xs text-gray-400 font-mono whitespace-nowrap">{item.date}</span>
-                  <span className="text-sm text-slate-700 group-hover:text-blue-600 transition-colors">
-                    {i18n.language === 'zh' ? item.title_zh : item.title_en}
-                  </span>
+      {/* Project Showcase */}
+      <section className="mb-12">
+        <h2 className="text-xl font-semibold text-slate-800 mb-4">
+          {i18n.language === 'zh' ? '我们在做什么？' : "What We're Working On"}
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            {
+              id: 'vr-gaze',
+              title_zh: 'VR 眼动与标识设计',
+              title_en: 'VR Gaze & Signage Design',
+              image: '/images/vr-gaze-showcase.jpg',
+              href: '/showcase/vr-gaze/',
+            },
+            {
+              id: 'coming-soon',
+              title_zh: '更多项目即将上线',
+              title_en: 'More projects coming soon',
+              image: null,
+            },
+          ].map((project) => {
+            const inner = (
+              <div className="aspect-square rounded-lg overflow-hidden relative bg-slate-800">
+                {project.image ? (
+                  <img
+                    src={project.image}
+                    alt={i18n.language === 'zh' ? project.title_zh : project.title_en}
+                    className={`w-full h-full object-cover transition-all duration-500 ${
+                      project.path || project.href ? 'opacity-80 group-hover:opacity-100 group-hover:scale-105' : 'opacity-60'
+                    }`}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <svg className="w-10 h-10 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-2.5 sm:p-3">
+                  <h3 className="text-xs sm:text-sm font-medium text-white leading-tight">
+                    {i18n.language === 'zh' ? project.title_zh : project.title_en}
+                  </h3>
+                  {!project.path && !project.href && (
+                    <span className="text-[10px] text-white/40 mt-0.5 block">
+                      {i18n.language === 'zh' ? '即将上线' : 'Coming soon'}
+                    </span>
+                  )}
                 </div>
-              </Link>
-            ))}
-          </div>
-          <Link to="/news" className="inline-block mt-4 text-sm text-gray-500 hover:text-black no-underline">
-            {i18n.language === 'zh' ? '查看全部 →' : 'View all →'}
-          </Link>
-        </section>
-      )}
+              </div>
+            );
+
+            if (project.href) {
+              return (
+                <a key={project.id} href={project.href} target="_blank" rel="noopener noreferrer" className="group block no-underline">
+                  {inner}
+                </a>
+              );
+            }
+            if (project.path) {
+              return (
+                <Link key={project.id} to={project.path} className="group block no-underline">
+                  {inner}
+                </Link>
+              );
+            }
+            return <div key={project.id}>{inner}</div>;
+          })}
+        </div>
+      </section>
 
       {/* Books */}
       <section className="mb-12">
