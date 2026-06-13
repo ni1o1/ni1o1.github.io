@@ -119,6 +119,13 @@ export default function Home() {
               href: '/showcase/vr-gaze/',
             },
             {
+              id: 'ev-resilience',
+              title_zh: '高速充电网络韧性仿真',
+              title_en: 'EV Charging Network Resilience',
+              image: '/images/ev-resilience-showcase.jpg',
+              href: '/showcase/ev-resilience/',
+            },
+            {
               id: 'coming-soon',
               title_zh: '更多项目即将上线',
               title_en: 'More projects coming soon',
