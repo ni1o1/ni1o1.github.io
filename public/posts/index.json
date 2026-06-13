@@ -1,5 +1,21 @@
 [
   {
+    "filename": "partD_resilience",
+    "title_zh": "论文发表 | TR part D | 高速公路充电网络韧性与级联失效的智能体仿真",
+    "title_en": "Article Publication | TR part D | Agent-Based Modeling of Resilience and Cascading Failures in Highway Charging Networks",
+    "brief_zh": "本研究构建数据驱动的高速公路充电网络智能体仿真框架，揭示局部充电站故障如何沿走廊远距离传播为全网级联失效，并识别出四类典型失效模式。",
+    "brief_en": "This study builds a data-driven agent-based simulation of highway charging networks, revealing how a local station outage propagates along corridors into network-wide cascading failures and identifying four typical failure patterns.",
+    "date": "2026-06-13",
+    "tags": [
+      "电动汽车",
+      "充电网络",
+      "韧性",
+      "级联失效",
+      "智能体仿真"
+    ],
+    "show": true
+  },
+  {
     "filename": "nc2025ev",
     "title_zh": "论文发表 | Nature Communications | 中国城市电动汽车超快充电扭曲了受管制的价格信号并加剧了电网稳定性风险",
     "title_en": "Paper Published | Nature Communications | China's urban EV ultra-fast charging distorts regulated price signals and elevates risk to grid stability",
