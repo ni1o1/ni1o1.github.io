@@ -12,6 +12,7 @@
 3. [Jiang, H., Hong, S., Zhang, K., Yuan, J., & **Yu, Q.** (2026). Two-stage optimization approach for dynamic routing and charging scheduling in electrified-autonomous flexible transit. *Transportation Research Part E: Logistics and Transportation Review, 207*, 104600.](https://doi.org/10.1016/j.tre.2025.104600)
 4. [Dong, K., Guo, Z., **Yu, Q.**, Xu, J., & Yan, J. (2026). Data-driven prediction of fine-grained facade solar irradiance for urban PV potential assessment. *Applied Energy, 403*, 127009.](https://doi.org/10.1016/j.apenergy.2025.127009)
 5. [Zhang, Z., Liu, S., **Yu, Q.**, Huang, H., Yang, Y., Liu, Y., & Gao, K. (2026). Cross-city carbon emission estimation for electric mobility services: a transfer learning approach. *Transportation Research Part E: Logistics and Transportation Review, 213*, 104991.](https://doi.org/10.1016/j.tre.2026.104991)
+6. [Xu, X., & **Yu, Q.\*** (2026). Spatiotemporal Decomposition of Urban Traffic Congestion into Recurrent and Incidental Patterns Based on Web Map Data. *Transportation Research Record*, 1-17.](https://doi.org/10.1177/03611981261431731)
 
 ### 2025
 
