@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>低空航线形态沙盘</title>
+<style>
+  :root{
+    --bg:#f7f8f7;
+    --paper:rgba(255,255,255,.86);
+    --ink:#17191c;
+    --muted:#6d747c;
+    --line:#d9dee4;
+    --soft:#eef1f4;
+    --accent:#1677ff;
+    --danger:#d94841;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  #stage{position:fixed;inset:0;background:#f7f8f7}
+  #stage canvas{display:block}
+  .panel{position:absolute;z-index:5;background:var(--paper);border:1px solid var(--line);
+    box-shadow:0 12px 34px rgba(25,30,35,.10);backdrop-filter:blur(12px);border-radius:8px}
+  #controlPanel{left:18px;top:18px;width:430px;max-height:calc(100vh - 36px);overflow:auto;padding:17px 18px}
+  #hint{right:18px;bottom:18px;padding:9px 12px;font-size:12px;color:var(--muted);line-height:1.55}
+  h1{font-size:18px;line-height:1.25;margin:0 0 12px;font-weight:700;letter-spacing:0}
+  .sub{font-size:13px;color:var(--muted);line-height:1.5;margin:-4px 0 12px}
+  .sec{margin-top:15px}
+  .lbl{display:block;font-size:11px;letter-spacing:.55px;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin-bottom:6px}
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  button{appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:7px;
+    min-height:36px;padding:8px 10px;font-size:13px;cursor:pointer}
+  button:hover{border-color:#aab4c1;background:#fafafa}
+  button.active{border-color:#222;background:#222;color:#fff}
+  .btnrow{display:flex;gap:6px}
+  .btnrow button{flex:1}
+  button.danger:hover{border-color:var(--danger);color:var(--danger)}
+  .slider{margin:7px 0}
+  .row{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:6px}
+  .k{font-size:13px}.v{font-size:13px;color:#0c63d4;font-weight:700;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;height:5px;border-radius:999px;background:#dfe4ea;outline:none;-webkit-appearance:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+    background:#fff;border:2px solid #20242a;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+  .metric{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid var(--soft)}
+  .metric:first-of-type{border-top:0}
+  .metric span:first-child{font-size:11px;color:var(--muted)}
+  .metric span:last-child{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .alt{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12px;color:var(--muted)}
+  .sw{width:30px;height:6px;border-radius:5px;display:inline-block;flex:none}
+  #mapsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .mapTile{min-width:0}
+  .mapTile canvas{width:126px;height:126px;display:block;background:#fff;border:1px solid var(--line);border-radius:7px}
+  .mapCap{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:4px;font-size:11px;color:var(--muted)}
+  .mapCap b{font-size:12px;color:var(--ink);font-weight:700}
+  #busy{position:absolute;z-index:6;top:16px;left:50%;transform:translateX(-50%);
+    opacity:0;transition:.16s;background:#fff;border:1px solid var(--line);border-radius:999px;
+    padding:5px 12px;font-size:11px;color:var(--muted);box-shadow:0 8px 22px rgba(25,30,35,.08)}
+  #busy.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="busy">计算多高度航线...</div>
+
+  <div id="controlPanel" class="panel">
+    <h1>城市形态 → 多高度航线</h1>
+    <p class="sub">边界探针在不同高度可飞地图上连最短路径，透明度按高度权重。</p>
+
+    <div class="sec">
+      <label class="lbl">预设地块</label>
+      <div class="presets" id="presets"></div>
+    </div>
+
+    <div class="sec">
+      <label class="lbl">航线显示</label>
+      <div class="slider">
+        <div class="row"><span class="k">入口密度</span><span class="v"><span id="densityV">6</span> /边</span></div>
+        <input type="range" id="density" min="2" max="20" step="1" value="6">
+      </div>
+      <div class="slider">
+        <div class="row"><span class="k">高度间隔</span><span class="v">10 m</span></div>
+      </div>
+      <div class="slider">
+        <div class="row"><span class="k">航线透明度</span><span class="v"><span id="opacityV">100</span>%</span></div>
+        <input type="range" id="routeOpacity" min="20" max="180" step="10" value="100">
+      </div>
+    </div>
+
+    <div class="sec">
+      <label class="lbl">可飞地图</label>
+      <div id="mapsGrid"></div>
+      <p class="sub" style="margin:8px 0 0">浅色=可飞，深色=障碍/地形，蓝线=该高度最短航线。</p>
+    </div>
+
+    <div class="sec">
+      <label class="lbl">巡航高度</label>
+      <div id="altLegend"></div>
+    </div>
+  </div>
+
+  <div id="hint" class="panel">
+    空白处旋转视角 · 滚轮缩放 · 右键平移
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script src="data/city-blocks.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
