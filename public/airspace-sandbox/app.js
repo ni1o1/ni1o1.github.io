@@ -13,6 +13,9 @@ const ALT_MIN = 25;
 const ALT_MAX = 120;
 const WEIGHT_CENTER = 65;
 const WEIGHT_SIGMA = 22;
+const NOISE_GRID = 64;
+const NOISE_MAX_PATHS_PER_ALT = 72;
+const NOISE_MAX_SEGMENTS = 5200;
 
 const gx = i => (i + 0.5) * CELL - HALF;
 const gz = j => (iToZ(j));
@@ -30,10 +33,14 @@ let altitudes = buildAltitudes(HEIGHT_GAP);
 let maxHeightWeight = Math.max(...altitudes.map(heightWeight));
 let entriesPerEdge = 6;
 let routeOpacityScale = 1;
+let routesVisible = true;
+let noiseEnabled = true;
 let heightField = new Float32Array(N * N);
 let flyable = new Uint8Array(N * N);
 let routeSummaries = [];
 let totalRoutes = 0;
+let noiseGroundMesh = null;
+let noiseOverlays = [];
 
 function buildAltitudes(gap) {
   const out = [];
@@ -133,13 +140,25 @@ border.visible = false;
 const buildingGroup = new THREE.Group();
 const routeGroup = new THREE.Group();
 const anchorGroup = new THREE.Group();
+const noiseGroup = new THREE.Group();
 const heightScaleGroup = new THREE.Group();
-scene.add(buildingGroup, routeGroup, anchorGroup, heightScaleGroup);
+scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, heightScaleGroup);
 
 const buildingMat = new THREE.MeshStandardMaterial({ color: '#f8f8f5', roughness: 0.72, metalness: 0.0, vertexColors: true, side: THREE.DoubleSide });
 const edgeMat = new THREE.LineBasicMaterial({ color: '#67717d', transparent: true, opacity: 0.92 });
 const scaleMat = new THREE.LineBasicMaterial({ color: '#242a31', transparent: true, opacity: 0.78 });
 const capMat = new THREE.LineBasicMaterial({ color: ROUTE_COLOR, transparent: true, opacity: 0.34 });
+const noiseMat = new THREE.MeshBasicMaterial({
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.58,
+  depthWrite: false,
+  depthTest: true,
+  polygonOffset: true,
+  polygonOffsetFactor: -2,
+  polygonOffsetUnits: -8,
+  side: THREE.DoubleSide,
+});
 
 function polygonArea(poly) {
   let a = 0;
@@ -203,6 +222,31 @@ function applyFacadeShading(geom) {
     colors.push(shade, shade, shade);
   }
   geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+}
+
+function colorRamp(v) {
+  const stops = [
+    [0.00, [247, 248, 247]],
+    [0.18, [223, 235, 244]],
+    [0.38, [159, 199, 219]],
+    [0.62, [246, 196, 106]],
+    [0.82, [222, 112, 72]],
+    [1.00, [170, 42, 46]],
+  ];
+  const t = Math.max(0, Math.min(1, v));
+  for (let i = 1; i < stops.length; i++) {
+    if (t <= stops[i][0]) {
+      const [t0, c0] = stops[i - 1];
+      const [t1, c1] = stops[i];
+      const u = (t - t0) / (t1 - t0 || 1);
+      return [
+        (c0[0] + (c1[0] - c0[0]) * u) / 255,
+        (c0[1] + (c1[1] - c0[1]) * u) / 255,
+        (c0[2] + (c1[2] - c0[2]) * u) / 255,
+      ];
+    }
+  }
+  return stops[stops.length - 1][1].map(c => c / 255);
 }
 
 function makeOutlineGeometry(localPoly, height) {
@@ -347,6 +391,7 @@ function buildHeightScale() {
 function loadPreset(name) {
   currentPreset = name;
   currentBlock = BLOCKS.find(b => b.name === name) || BLOCKS[0];
+  clearNoiseLayer();
   buildingGroup.clear();
   buildings = [];
   nextId = 1;
@@ -585,6 +630,8 @@ function recompute() {
 
   updateMetrics();
   drawMiniMap();
+  if (noiseEnabled) buildNoiseLayer();
+  applyRouteVisibility();
 }
 
 function updateMetrics() {
@@ -646,6 +693,147 @@ function drawMiniMap() {
   });
 }
 
+function cellToVec(k, alt) {
+  return new THREE.Vector3(gx(k % N), alt + 2.4, iToZ((k / N) | 0));
+}
+
+function collectNoiseSegments() {
+  const segments = [];
+  for (const s of routeSummaries) {
+    if (!s.paths.length) continue;
+    const stride = Math.max(1, Math.ceil(s.paths.length / NOISE_MAX_PATHS_PER_ALT));
+    for (let pi = 0; pi < s.paths.length; pi += stride) {
+      const path = s.paths[pi];
+      const cellStep = Math.max(1, Math.floor(path.length / 24));
+      for (let ci = 0; ci < path.length - 1; ci += cellStep) {
+        const a = cellToVec(path[ci], s.alt);
+        const b = cellToVec(path[Math.min(path.length - 1, ci + cellStep)], s.alt);
+        segments.push({ a, b, amp: s.weight * stride * cellStep });
+        if (segments.length >= NOISE_MAX_SEGMENTS) return segments;
+      }
+    }
+  }
+  return segments;
+}
+
+function pointSegmentDistanceSq3(px, py, pz, a, b) {
+  const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z;
+  const l2 = abx * abx + aby * aby + abz * abz || 1;
+  const t = Math.max(0, Math.min(1, ((px - a.x) * abx + (py - a.y) * aby + (pz - a.z) * abz) / l2));
+  const x = a.x + abx * t, y = a.y + aby * t, z = a.z + abz * t;
+  return (px - x) ** 2 + (py - y) ** 2 + (pz - z) ** 2;
+}
+
+function noiseAt(px, py, pz, segments) {
+  let v = 0;
+  for (const s of segments) {
+    const d2 = pointSegmentDistanceSq3(px, py, pz, s.a, s.b);
+    v += s.amp / (420 + d2);
+  }
+  return v;
+}
+
+function normalizeNoise(values) {
+  const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+  if (!sorted.length) return 1;
+  const p95 = sorted[Math.floor(sorted.length * 0.95)] || sorted[sorted.length - 1] || 1;
+  return Math.max(1e-6, p95);
+}
+
+function clearNoiseLayer() {
+  if (noiseGroundMesh) {
+    noiseGroup.remove(noiseGroundMesh);
+    noiseGroundMesh.geometry.dispose();
+    noiseGroundMesh.material.dispose();
+    noiseGroundMesh = null;
+  }
+  for (const item of noiseOverlays) {
+    item.parent.remove(item.mesh);
+    item.mesh.geometry.dispose();
+    item.mesh.material.dispose();
+  }
+  noiseOverlays = [];
+}
+
+function buildNoiseLayer() {
+  clearNoiseLayer();
+  const segments = collectNoiseSegments();
+  if (!segments.length) return;
+
+  const groundPositions = [];
+  const groundIndices = [];
+  const groundValues = [];
+  for (let j = 0; j <= NOISE_GRID; j++) {
+    for (let i = 0; i <= NOISE_GRID; i++) {
+      const x = -HALF + DOMAIN * i / NOISE_GRID;
+      const z = -HALF + DOMAIN * j / NOISE_GRID;
+      const y = terrainHeight(x, z) + 0.42;
+      groundPositions.push(x, y, z);
+      groundValues.push(noiseAt(x, y, z, segments));
+    }
+  }
+  for (let j = 0; j < NOISE_GRID; j++) {
+    for (let i = 0; i < NOISE_GRID; i++) {
+      const a = j * (NOISE_GRID + 1) + i;
+      groundIndices.push(a, a + 1, a + NOISE_GRID + 2, a, a + NOISE_GRID + 2, a + NOISE_GRID + 1);
+    }
+  }
+
+  const probeValues = groundValues.slice();
+  const overlayGeoms = [];
+  for (const b of buildings) {
+    const geom = b.box.geometry.clone();
+    geom.computeVertexNormals();
+    const pos = geom.getAttribute('position');
+    for (let i = 0; i < pos.count; i += Math.max(1, Math.floor(pos.count / 24))) {
+      probeValues.push(noiseAt(pos.getX(i) + b.group.position.x, pos.getY(i) + b.group.position.y, pos.getZ(i) + b.group.position.z, segments));
+    }
+    overlayGeoms.push({ b, geom });
+  }
+
+  const norm = normalizeNoise(probeValues);
+  const groundColors = [];
+  for (const v of groundValues) {
+    const c = colorRamp(Math.log1p(v / norm * 3.2) / Math.log1p(3.2));
+    groundColors.push(c[0], c[1], c[2]);
+  }
+  const groundGeom = new THREE.BufferGeometry();
+  groundGeom.setAttribute('position', new THREE.Float32BufferAttribute(groundPositions, 3));
+  groundGeom.setAttribute('color', new THREE.Float32BufferAttribute(groundColors, 3));
+  groundGeom.setIndex(groundIndices);
+  groundGeom.computeVertexNormals();
+  noiseGroundMesh = new THREE.Mesh(groundGeom, noiseMat.clone());
+  noiseGroundMesh.renderOrder = 4;
+  noiseGroup.add(noiseGroundMesh);
+
+  for (const { b, geom } of overlayGeoms) {
+    const pos = geom.getAttribute('position');
+    const normal = geom.getAttribute('normal');
+    const colors = [];
+    for (let i = 0; i < pos.count; i++) {
+      const wx = pos.getX(i) + b.group.position.x;
+      const wy = pos.getY(i) + b.group.position.y;
+      const wz = pos.getZ(i) + b.group.position.z;
+      const value = noiseAt(wx, wy, wz, segments);
+      const hot = Math.log1p(value / norm * 3.2) / Math.log1p(3.2);
+      const c = colorRamp(hot);
+      colors.push(c[0], c[1], c[2]);
+      pos.setXYZ(
+        i,
+        pos.getX(i) + normal.getX(i) * 0.45,
+        pos.getY(i) + normal.getY(i) * 0.45,
+        pos.getZ(i) + normal.getZ(i) * 0.45
+      );
+    }
+    pos.needsUpdate = true;
+    geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    const mesh = new THREE.Mesh(geom, noiseMat.clone());
+    mesh.renderOrder = 5;
+    b.group.add(mesh);
+    noiseOverlays.push({ parent: b.group, mesh });
+  }
+}
+
 function buildMapTiles() {
   const grid = $('mapsGrid');
   grid.innerHTML = '';
@@ -655,6 +843,11 @@ function buildMapTiles() {
     tile.innerHTML = `<div class="mapCap"><b>${alt} m</b><span id="mapCap-${i}">-</span></div><canvas id="mapCanvas-${i}" width="192" height="192"></canvas>`;
     grid.appendChild(tile);
   });
+}
+
+function applyRouteVisibility() {
+  routeGroup.visible = routesVisible;
+  anchorGroup.visible = routesVisible;
 }
 
 let needsCompute = false;
@@ -692,6 +885,24 @@ $('routeOpacity').addEventListener('input', e => {
   routeOpacityScale = +e.target.value / 100;
   $('opacityV').textContent = e.target.value;
   scheduleCompute();
+});
+
+$('routeToggle').addEventListener('change', e => {
+  routesVisible = e.target.checked;
+  applyRouteVisibility();
+});
+
+$('noiseToggle').addEventListener('change', e => {
+  noiseEnabled = e.target.checked;
+  if (noiseEnabled) {
+    $('busy').classList.add('on');
+    setTimeout(() => {
+      buildNoiseLayer();
+      $('busy').classList.remove('on');
+    }, 20);
+  } else {
+    clearNoiseLayer();
+  }
 });
 
 function onResize() {
