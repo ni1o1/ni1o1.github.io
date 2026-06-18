@@ -27,6 +27,9 @@ const idx = (i, j) => j * N + i;
 const $ = id => document.getElementById(id);
 const heightWeight = alt => Math.exp(-((alt - WEIGHT_CENTER) ** 2) / (2 * WEIGHT_SIGMA ** 2));
 const inCore = (x, z) => Math.abs(x) <= CORE_HALF && Math.abs(z) <= CORE_HALF;
+const CORE_N = Math.round(CORE_DOMAIN / CELL);
+const CORE_OFFSET = Math.round((N - CORE_N) / 2);
+const isCoreCell = (i, j) => i >= CORE_OFFSET && i < CORE_OFFSET + CORE_N && j >= CORE_OFFSET && j < CORE_OFFSET + CORE_N;
 
 let buildings = [];
 let nextId = 1;
@@ -470,11 +473,17 @@ function pointSegDist2(px, pz, ax, az, bx, bz) {
 
 function computeFlyable(alt) {
   let count = 0;
+  let coreCount = 0;
   for (let k = 0; k < N * N; k++) {
     flyable[k] = heightField[k] + SAFETY_M < alt ? 1 : 0;
     count += flyable[k];
+    const i = k % N, j = (k / N) | 0;
+    if (isCoreCell(i, j)) coreCount += flyable[k];
   }
-  return count / (N * N);
+  return {
+    all: count / (N * N),
+    core: coreCount / (CORE_N * CORE_N),
+  };
 }
 
 function boundaryAnchors() {
@@ -662,7 +671,7 @@ function updateMetrics() {
   routeSummaries.forEach((s, i) => {
     const row = document.createElement('div');
     row.className = 'alt';
-    const pct = Math.round(s.flyPct * 100);
+    const pct = Math.round(s.flyPct.core * 100);
     row.innerHTML = `<span class="sw" style="background:${ROUTE_COLOR};opacity:${Math.min(1, (0.18 + 0.75 * s.weight) * routeOpacityScale).toFixed(2)}"></span><span>${s.alt} m</span><span style="margin-left:auto">W ${(s.weight).toFixed(2)} · ${s.paths.length} 条 · ${pct}%</span>`;
     legend.appendChild(row);
   });
@@ -677,11 +686,13 @@ function drawMiniMap() {
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-  const img = ctx.createImageData(N, N);
-  for (let j = 0; j < N; j++) {
-    for (let i = 0; i < N; i++) {
+  const img = ctx.createImageData(CORE_N, CORE_N);
+  for (let cj = 0; cj < CORE_N; cj++) {
+    for (let ci = 0; ci < CORE_N; ci++) {
+      const i = ci + CORE_OFFSET;
+      const j = cj + CORE_OFFSET;
       const k = idx(i, j);
-      const p = ((N - 1 - j) * N + i) * 4;
+      const p = ((CORE_N - 1 - cj) * CORE_N + ci) * 4;
       if (s.flyable[k]) {
         img.data[p] = 245; img.data[p + 1] = 247; img.data[p + 2] = 246; img.data[p + 3] = 255;
       } else {
@@ -690,7 +701,7 @@ function drawMiniMap() {
     }
   }
   const tmp = document.createElement('canvas');
-  tmp.width = tmp.height = N;
+  tmp.width = tmp.height = CORE_N;
   tmp.getContext('2d').putImageData(img, 0, 0);
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
@@ -701,17 +712,33 @@ function drawMiniMap() {
   ctx.strokeStyle = ROUTE_COLOR;
   ctx.globalAlpha = Math.min(0.95, (0.10 + 0.52 * s.weight) * routeOpacityScale);
   for (const path of s.paths) {
+    let drawing = false;
     ctx.beginPath();
-    path.forEach((k, pi) => {
-      const x = (k % N + 0.5) / N * W;
-      const y = H - (((k / N) | 0) + 0.5) / N * H;
-      if (pi === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
+    for (const k of path) {
+      const i = k % N;
+      const j = (k / N) | 0;
+      if (!isCoreCell(i, j)) {
+        if (drawing) {
+          ctx.stroke();
+          ctx.beginPath();
+          drawing = false;
+        }
+        continue;
+      }
+      const x = (i - CORE_OFFSET + 0.5) / CORE_N * W;
+      const y = H - (j - CORE_OFFSET + 0.5) / CORE_N * H;
+      if (!drawing) {
+        ctx.moveTo(x, y);
+        drawing = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    if (drawing) ctx.stroke();
   }
   ctx.globalAlpha = 1;
     const cap = $(`mapCap-${si}`);
-    if (cap) cap.textContent = `${s.paths.length} 条 · ${Math.round(s.flyPct * 100)}%`;
+    if (cap) cap.textContent = `${s.paths.length} 条 · ${Math.round(s.flyPct.core * 100)}%`;
   });
 }
 
