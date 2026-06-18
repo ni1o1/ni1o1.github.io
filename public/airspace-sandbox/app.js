@@ -43,6 +43,7 @@ let entriesPerEdge = 6;
 let routeOpacityScale = 1;
 let routesVisible = true;
 let noiseEnabled = true;
+let demEnabled = false;
 let heightField = new Float32Array(N * N);
 let flyable = new Uint8Array(N * N);
 let routeSummaries = [];
@@ -85,7 +86,7 @@ function fallbackBlocks() {
 
 function terrainHeight(x, z) {
   const dem = currentBlock?.dem;
-  if (dem?.values?.length && dem.grid > 1 && dem.extent > 0) {
+  if (demEnabled && dem?.values?.length && dem.grid > 1 && dem.extent > 0) {
     const half = dem.extent / 2;
     const u = (x + half) / dem.extent * (dem.grid - 1);
     const v = (z + half) / dem.extent * (dem.grid - 1);
@@ -923,6 +924,13 @@ function applyRouteVisibility() {
   anchorGroup.visible = routesVisible;
 }
 
+function applyTerrainMode() {
+  clearNoiseLayer();
+  buildTerrain();
+  buildings.forEach(syncBuilding);
+  scheduleCompute();
+}
+
 let needsCompute = false;
 let busyTimer = null;
 function scheduleCompute() {
@@ -976,6 +984,11 @@ $('noiseToggle').addEventListener('change', e => {
   } else {
     clearNoiseLayer();
   }
+});
+
+$('demToggle').addEventListener('change', e => {
+  demEnabled = e.target.checked;
+  applyTerrainMode();
 });
 
 function onResize() {
