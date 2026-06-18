@@ -20,6 +20,7 @@ const NOISE_GRID = 64;
 const NOISE_MAX_PATHS_PER_ALT = 72;
 const NOISE_MAX_SEGMENTS = 5200;
 const DEM_VISUAL_SCALE = 0.3;
+const TERRAIN_LINE_STEP = 50;
 
 const gx = i => (i + 0.5) * CELL - HALF;
 const gz = j => (iToZ(j));
@@ -52,6 +53,7 @@ let routeSummaries = [];
 let totalRoutes = 0;
 let noiseGroundMesh = null;
 let noiseOverlays = [];
+let terrainReliefLines = null;
 
 function buildAltitudes(gap) {
   const out = [];
@@ -184,6 +186,7 @@ scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, heightScaleGroup);
 const buildingMat = new THREE.MeshStandardMaterial({ color: '#f8f8f5', roughness: 0.72, metalness: 0.0, vertexColors: true, side: THREE.DoubleSide });
 const edgeMat = new THREE.LineBasicMaterial({ color: '#67717d', transparent: true, opacity: 0.92 });
 const scaleMat = new THREE.LineBasicMaterial({ color: '#242a31', transparent: true, opacity: 0.78 });
+const terrainLineMat = new THREE.LineBasicMaterial({ color: '#7d8791', transparent: true, opacity: 0.32 });
 const noiseMat = new THREE.MeshBasicMaterial({
   vertexColors: true,
   transparent: true,
@@ -361,6 +364,11 @@ function buildTerrain() {
     terrainMesh.geometry.dispose();
     terrainMesh.material.dispose();
   }
+  if (terrainReliefLines) {
+    scene.remove(terrainReliefLines);
+    terrainReliefLines.geometry.dispose();
+    terrainReliefLines = null;
+  }
   const seg = 40;
   const positions = [];
   const indices = [];
@@ -387,8 +395,41 @@ function buildTerrain() {
   );
   terrainMesh.receiveShadow = true;
   scene.add(terrainMesh);
+  buildTerrainReliefLines();
   grid.position.y = Math.max(0.12, terrainVisualHeight(0, 0) + 0.12);
   buildHeightScale();
+}
+
+function buildTerrainReliefLines() {
+  if (!demEnabled) return;
+  const pts = [];
+  const min = -CORE_HALF - HALO_M;
+  const max = CORE_HALF + HALO_M;
+  const sampleStep = 25;
+  const add = (a, b) => {
+    pts.push(a[0], a[1], a[2], b[0], b[1], b[2]);
+  };
+  for (let z = min; z <= max + 0.01; z += TERRAIN_LINE_STEP) {
+    let prev = null;
+    for (let x = min; x <= max + 0.01; x += sampleStep) {
+      const p = [x, terrainVisualHeight(x, z) + 0.58, z];
+      if (prev) add(prev, p);
+      prev = p;
+    }
+  }
+  for (let x = min; x <= max + 0.01; x += TERRAIN_LINE_STEP) {
+    let prev = null;
+    for (let z = min; z <= max + 0.01; z += sampleStep) {
+      const p = [x, terrainVisualHeight(x, z) + 0.58, z];
+      if (prev) add(prev, p);
+      prev = p;
+    }
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  terrainReliefLines = new THREE.LineSegments(geom, terrainLineMat);
+  terrainReliefLines.renderOrder = 3;
+  scene.add(terrainReliefLines);
 }
 
 function makeLine(points, material) {
