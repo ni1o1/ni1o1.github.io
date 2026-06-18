@@ -84,6 +84,25 @@ function fallbackBlocks() {
 }
 
 function terrainHeight(x, z) {
+  const dem = currentBlock?.dem;
+  if (dem?.values?.length && dem.grid > 1 && dem.extent > 0) {
+    const half = dem.extent / 2;
+    const u = (x + half) / dem.extent * (dem.grid - 1);
+    const v = (z + half) / dem.extent * (dem.grid - 1);
+    if (u >= 0 && v >= 0 && u <= dem.grid - 1 && v <= dem.grid - 1) {
+      const i0 = Math.floor(u);
+      const j0 = Math.floor(v);
+      const i1 = Math.min(dem.grid - 1, i0 + 1);
+      const j1 = Math.min(dem.grid - 1, j0 + 1);
+      const fu = u - i0;
+      const fv = v - j0;
+      const a = dem.values[j0 * dem.grid + i0];
+      const b = dem.values[j0 * dem.grid + i1];
+      const c = dem.values[j1 * dem.grid + i0];
+      const d = dem.values[j1 * dem.grid + i1];
+      return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
+    }
+  }
   const t = currentBlock?.terrain || {};
   const sx = t.slopeX || 0;
   const sz = t.slopeZ || 0;
