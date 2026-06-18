@@ -16,9 +16,9 @@ const ALT_MIN = 25;
 const ALT_MAX = 120;
 const WEIGHT_CENTER = 65;
 const WEIGHT_SIGMA = 22;
-const NOISE_GRID = 64;
-const NOISE_MAX_PATHS_PER_ALT = 72;
-const NOISE_MAX_SEGMENTS = 5200;
+const NOISE_GRID = 48;
+const NOISE_MAX_PATHS_PER_ALT = 36;
+const NOISE_MAX_SEGMENTS = 2400;
 const DEM_VISUAL_SCALE = 0.3;
 const TERRAIN_LINE_STEP = 50;
 
@@ -56,6 +56,7 @@ let totalRoutes = 0;
 let noiseGroundMesh = null;
 let noiseOverlays = [];
 let terrainReliefLines = null;
+let externalityTimer = null;
 
 function buildAltitudes(gap) {
   const out = [];
@@ -126,11 +127,10 @@ function terrainVisualHeight(x, z) {
 
 const stage = $('stage');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = false;
 stage.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -152,14 +152,6 @@ controls.target.copy(ORBIT_TARGET);
 scene.add(new THREE.HemisphereLight('#ffffff', '#d7dde2', 0.72));
 const sun = new THREE.DirectionalLight('#ffffff', 1.15);
 sun.position.set(-360, 520, 280);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -560;
-sun.shadow.camera.right = 560;
-sun.shadow.camera.top = 560;
-sun.shadow.camera.bottom = -560;
-sun.shadow.camera.near = 1;
-sun.shadow.camera.far = 1250;
 scene.add(sun);
 
 let terrainMesh = null;
@@ -354,7 +346,7 @@ function makeBuilding(raw, addToScene = true) {
   b.group = new THREE.Group();
   b.group.position.set(b.x, terrainVisualHeight(b.x, b.z) + b.minH + (b.minH > 0 ? 0.08 : 0), b.z);
   b.box = new THREE.Mesh(makePrismGeometry(b.localPoly, b.h - b.minH), buildingMat);
-  b.box.castShadow = true;
+  b.box.castShadow = false;
   b.box.receiveShadow = false;
   b.box.userData = { type: 'building', id: b.id };
   b.edges = new THREE.LineSegments(makeOutlineGeometry(b.localPoly, b.h - b.minH), edgeMat);
@@ -385,7 +377,7 @@ function buildTerrain() {
     terrainReliefLines.geometry.dispose();
     terrainReliefLines = null;
   }
-  const seg = 40;
+  const seg = 30;
   const positions = [];
   const indices = [];
   for (let j = 0; j <= seg; j++) {
@@ -409,7 +401,7 @@ function buildTerrain() {
     geom,
     new THREE.MeshStandardMaterial({ color: '#eef0ed', roughness: 0.94, metalness: 0 })
   );
-  terrainMesh.receiveShadow = true;
+  terrainMesh.receiveShadow = false;
   scene.add(terrainMesh);
   buildTerrainReliefLines();
   grid.position.y = Math.max(0.12, terrainVisualHeight(0, 0) + 0.12);
@@ -700,7 +692,7 @@ function makeRouteTube(cells, alt, opacity) {
   const points = cells.map(k => new THREE.Vector3(gx(k % N), alt + 2.4, iToZ((k / N) | 0)));
   if (points.length < 2) return null;
   const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal', 0.12);
-  const geom = new THREE.TubeGeometry(curve, Math.max(8, points.length * 2), 1.25, 7, false);
+  const geom = new THREE.TubeGeometry(curve, Math.max(6, Math.ceil(points.length * 0.75)), 0.95, 5, false);
   const mat = new THREE.MeshBasicMaterial({
     color: ROUTE_COLOR,
     transparent: true,
@@ -712,7 +704,7 @@ function makeRouteTube(cells, alt, opacity) {
   return mesh;
 }
 
-const anchorGeom = new THREE.SphereGeometry(2.7, 9, 9);
+const anchorGeom = new THREE.SphereGeometry(2.4, 6, 6);
 function drawAnchors(anchors, alt, opacity) {
   const mat = new THREE.MeshBasicMaterial({ color: ROUTE_COLOR, transparent: true, opacity, depthWrite: false });
   anchors.forEach(k => {
@@ -744,7 +736,7 @@ function recompute() {
 
   updateMetrics();
   drawMiniMap();
-  if (noiseEnabled) buildNoiseLayer();
+  if (noiseEnabled) scheduleExternalityLayer();
   applyRouteVisibility();
 }
 
@@ -887,6 +879,7 @@ function normalizeNoise(values) {
 }
 
 function clearNoiseLayer() {
+  clearTimeout(externalityTimer);
   if (noiseGroundMesh) {
     noiseGroup.remove(noiseGroundMesh);
     noiseGroundMesh.geometry.dispose();
@@ -899,6 +892,15 @@ function clearNoiseLayer() {
     item.mesh.material.dispose();
   }
   noiseOverlays = [];
+}
+
+function scheduleExternalityLayer() {
+  clearTimeout(externalityTimer);
+  $('busy').classList.add('on');
+  externalityTimer = setTimeout(() => {
+    buildNoiseLayer();
+    $('busy').classList.remove('on');
+  }, 30);
 }
 
 function buildNoiseLayer() {
@@ -1053,11 +1055,7 @@ $('routeToggle').addEventListener('change', e => {
 $('noiseToggle').addEventListener('change', e => {
   noiseEnabled = e.target.checked;
   if (noiseEnabled) {
-    $('busy').classList.add('on');
-    setTimeout(() => {
-      buildNoiseLayer();
-      $('busy').classList.remove('on');
-    }, 20);
+    scheduleExternalityLayer();
   } else {
     clearNoiseLayer();
   }
@@ -1069,11 +1067,7 @@ document.querySelectorAll('input[name="externalityChannel"]').forEach(input => {
     externalityChannel = e.target.value;
     $('channelV').textContent = (CHANNELS[externalityChannel] || CHANNELS.noise).label;
     if (noiseEnabled) {
-      $('busy').classList.add('on');
-      setTimeout(() => {
-        buildNoiseLayer();
-        $('busy').classList.remove('on');
-      }, 20);
+      scheduleExternalityLayer();
     }
   });
 });
