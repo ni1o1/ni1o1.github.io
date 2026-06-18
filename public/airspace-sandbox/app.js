@@ -30,6 +30,7 @@ const inCore = (x, z) => Math.abs(x) <= CORE_HALF && Math.abs(z) <= CORE_HALF;
 const CORE_N = Math.round(CORE_DOMAIN / CELL);
 const CORE_OFFSET = Math.round((N - CORE_N) / 2);
 const isCoreCell = (i, j) => i >= CORE_OFFSET && i < CORE_OFFSET + CORE_N && j >= CORE_OFFSET && j < CORE_OFFSET + CORE_N;
+const PANEL_GAP = 18;
 
 let buildings = [];
 let nextId = 1;
@@ -962,9 +963,19 @@ function onResize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  applyCameraCompositionOffset(w);
   renderer.setSize(w, h);
 }
 window.addEventListener('resize', onResize);
+
+function applyCameraCompositionOffset(width) {
+  const panel = $('controlPanel');
+  const panelRight = panel ? panel.getBoundingClientRect().right + PANEL_GAP : 0;
+  const visualCenter = panelRight + Math.max(0, width - panelRight) / 2;
+  const shiftPx = Math.max(0, visualCenter - width / 2);
+  camera.projectionMatrix.elements[8] = -2 * shiftPx / width;
+  camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+}
 
 function animate(t) {
   requestAnimationFrame(animate);
@@ -979,4 +990,5 @@ buildMapTiles();
 currentPreset = BLOCKS[0].name;
 loadPreset(currentPreset);
 recompute();
+onResize();
 animate(0);
