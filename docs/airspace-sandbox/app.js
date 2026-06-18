@@ -505,7 +505,7 @@ function loadPreset(name) {
   buildTerrain();
   obstacleBuildings = currentBlock.buildings.map(raw => makeBuilding(raw, false));
   currentBlock.buildings.forEach(raw => buildings.push(makeBuilding(raw, true)));
-  document.querySelectorAll('#presets button').forEach(el => el.classList.toggle('active', el.dataset.name === name));
+  if ($('presets').value !== currentBlock.name) $('presets').value = currentBlock.name;
   scheduleCompute();
 }
 
@@ -1023,12 +1023,14 @@ function flushCompute() {
 }
 
 BLOCKS.forEach(block => {
-  const btn = document.createElement('button');
-  btn.textContent = block.name.replace(' · ', '\n');
-  btn.style.whiteSpace = 'pre-line';
-  btn.dataset.name = block.name;
-  btn.onclick = () => loadPreset(block.name);
-  $('presets').appendChild(btn);
+  const option = document.createElement('option');
+  option.value = block.name;
+  option.textContent = block.name;
+  $('presets').appendChild(option);
+});
+
+$('presets').addEventListener('change', e => {
+  loadPreset(e.target.value);
 });
 
 $('density').addEventListener('input', e => {
