@@ -133,7 +133,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 stage.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color('#f7f8f7');
+scene.background = new THREE.Color('#ffffff');
 
 const camera = new THREE.PerspectiveCamera(34, stage.clientWidth / stage.clientHeight, 1, 6000);
 camera.position.set(980, 670, 980);
