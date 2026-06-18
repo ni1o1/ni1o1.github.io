@@ -44,6 +44,7 @@ let routeOpacityScale = 1;
 let routesVisible = true;
 let noiseEnabled = true;
 let demEnabled = false;
+let heightScaleVisible = true;
 let heightField = new Float32Array(N * N);
 let flyable = new Uint8Array(N * N);
 let routeSummaries = [];
@@ -177,7 +178,6 @@ scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, heightScaleGroup);
 const buildingMat = new THREE.MeshStandardMaterial({ color: '#f8f8f5', roughness: 0.72, metalness: 0.0, vertexColors: true, side: THREE.DoubleSide });
 const edgeMat = new THREE.LineBasicMaterial({ color: '#67717d', transparent: true, opacity: 0.92 });
 const scaleMat = new THREE.LineBasicMaterial({ color: '#242a31', transparent: true, opacity: 0.78 });
-const capMat = new THREE.LineBasicMaterial({ color: ROUTE_COLOR, transparent: true, opacity: 0.34 });
 const noiseMat = new THREE.MeshBasicMaterial({
   vertexColors: true,
   transparent: true,
@@ -413,9 +413,9 @@ function makeLabel(text) {
 
 function buildHeightScale() {
   heightScaleGroup.clear();
-  const x = HALF + 34;
-  const z = -HALF - 18;
-  const base = terrainHeight(HALF, -HALF);
+  const x = 0;
+  const z = 0;
+  const base = terrainHeight(x, z);
   const tickLen = 14;
   const pts = [
     new THREE.Vector3(x, base, z),
@@ -428,12 +428,7 @@ function buildHeightScale() {
     heightScaleGroup.add(lab);
   }
   heightScaleGroup.add(makeLine(pts, scaleMat));
-  heightScaleGroup.add(makeLine([
-    new THREE.Vector3(-HALF, base + ALT_MAX, z),
-    new THREE.Vector3(HALF, base + ALT_MAX, z),
-    new THREE.Vector3(x, base + ALT_MAX, -HALF),
-    new THREE.Vector3(x, base + ALT_MAX, HALF),
-  ], capMat));
+  heightScaleGroup.visible = heightScaleVisible;
 }
 
 function loadPreset(name) {
@@ -989,6 +984,11 @@ $('noiseToggle').addEventListener('change', e => {
 $('demToggle').addEventListener('change', e => {
   demEnabled = e.target.checked;
   applyTerrainMode();
+});
+
+$('heightScaleToggle').addEventListener('change', e => {
+  heightScaleVisible = e.target.checked;
+  heightScaleGroup.visible = heightScaleVisible;
 });
 
 function onResize() {
