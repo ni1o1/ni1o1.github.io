@@ -19,6 +19,7 @@ const WEIGHT_SIGMA = 22;
 const NOISE_GRID = 64;
 const NOISE_MAX_PATHS_PER_ALT = 72;
 const NOISE_MAX_SEGMENTS = 5200;
+const DEM_VISUAL_SCALE = 0.3;
 
 const gx = i => (i + 0.5) * CELL - HALF;
 const gz = j => (iToZ(j));
@@ -112,6 +113,11 @@ function terrainHeight(x, z) {
   const rough = t.roughness || 0;
   const hill = ridge * Math.exp(-((x + 110) ** 2 + (z - 70) ** 2) / (2 * 150 ** 2));
   return sx * x + sz * z + hill + rough * Math.sin((x + z) * 0.025) * Math.cos(z * 0.016);
+}
+
+function terrainVisualHeight(x, z) {
+  const h = terrainHeight(x, z);
+  return demEnabled ? h * DEM_VISUAL_SCALE : h;
 }
 
 const stage = $('stage');
@@ -327,7 +333,7 @@ function makeBuilding(raw) {
   };
   if (b.h <= b.minH + 1) b.h = b.minH + 4;
   b.group = new THREE.Group();
-  b.group.position.set(b.x, terrainHeight(b.x, b.z) + b.minH + (b.minH > 0 ? 0.08 : 0), b.z);
+  b.group.position.set(b.x, terrainVisualHeight(b.x, b.z) + b.minH + (b.minH > 0 ? 0.08 : 0), b.z);
   b.box = new THREE.Mesh(makePrismGeometry(b.localPoly, b.h - b.minH), buildingMat);
   b.box.castShadow = true;
   b.box.receiveShadow = false;
@@ -346,7 +352,7 @@ function rebuildBuildingGeometry(b) {
 }
 
 function syncBuilding(b) {
-  b.group.position.set(b.x, terrainHeight(b.x, b.z) + b.minH + (b.minH > 0 ? 0.08 : 0), b.z);
+  b.group.position.set(b.x, terrainVisualHeight(b.x, b.z) + b.minH + (b.minH > 0 ? 0.08 : 0), b.z);
 }
 
 function buildTerrain() {
@@ -362,7 +368,7 @@ function buildTerrain() {
     for (let i = 0; i <= seg; i++) {
       const x = -VIEW_HALF + VIEW_DOMAIN * i / seg;
       const z = -VIEW_HALF + VIEW_DOMAIN * j / seg;
-      positions.push(x, terrainHeight(x, z), z);
+      positions.push(x, terrainVisualHeight(x, z), z);
     }
   }
   for (let j = 0; j < seg; j++) {
@@ -381,7 +387,7 @@ function buildTerrain() {
   );
   terrainMesh.receiveShadow = true;
   scene.add(terrainMesh);
-  grid.position.y = Math.max(0.12, terrainHeight(0, 0) + 0.12);
+  grid.position.y = Math.max(0.12, terrainVisualHeight(0, 0) + 0.12);
   buildHeightScale();
 }
 
@@ -413,9 +419,9 @@ function makeLabel(text) {
 
 function buildHeightScale() {
   heightScaleGroup.clear();
-  const x = 0;
-  const z = 0;
-  const base = terrainHeight(x, z);
+  const x = CORE_HALF + 18;
+  const z = -CORE_HALF - 18;
+  const base = terrainVisualHeight(CORE_HALF, -CORE_HALF);
   const tickLen = 14;
   const pts = [
     new THREE.Vector3(x, base, z),
@@ -834,7 +840,7 @@ function buildNoiseLayer() {
     for (let i = 0; i <= NOISE_GRID; i++) {
       const x = -CORE_HALF + CORE_DOMAIN * i / NOISE_GRID;
       const z = -CORE_HALF + CORE_DOMAIN * j / NOISE_GRID;
-      const y = terrainHeight(x, z) + 0.42;
+      const y = terrainVisualHeight(x, z) + 0.42;
       groundPositions.push(x, y, z);
       groundValues.push(noiseAt(x, y, z, segments));
     }
