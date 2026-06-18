@@ -1,11 +1,14 @@
 /* global THREE, CITY_BLOCKS */
 'use strict';
 
-const N = 50;
-const DOMAIN = 500;
+const CORE_DOMAIN = 500;
+const HALO_M = 150;
+const DOMAIN = CORE_DOMAIN + HALO_M * 2;
+const CELL = 10;
+const N = Math.round(DOMAIN / CELL);
 const VIEW_DOMAIN = 950;
-const CELL = DOMAIN / N;
 const HALF = DOMAIN / 2;
+const CORE_HALF = CORE_DOMAIN / 2;
 const VIEW_HALF = VIEW_DOMAIN / 2;
 const ROUTE_COLOR = '#1677ff';
 const SAFETY_M = 4;
@@ -23,6 +26,7 @@ const iToZ = j => (j + 0.5) * CELL - HALF;
 const idx = (i, j) => j * N + i;
 const $ = id => document.getElementById(id);
 const heightWeight = alt => Math.exp(-((alt - WEIGHT_CENTER) ** 2) / (2 * WEIGHT_SIGMA ** 2));
+const inCore = (x, z) => Math.abs(x) <= CORE_HALF && Math.abs(z) <= CORE_HALF;
 
 let buildings = [];
 let nextId = 1;
@@ -765,8 +769,8 @@ function buildNoiseLayer() {
   const groundValues = [];
   for (let j = 0; j <= NOISE_GRID; j++) {
     for (let i = 0; i <= NOISE_GRID; i++) {
-      const x = -HALF + DOMAIN * i / NOISE_GRID;
-      const z = -HALF + DOMAIN * j / NOISE_GRID;
+      const x = -CORE_HALF + CORE_DOMAIN * i / NOISE_GRID;
+      const z = -CORE_HALF + CORE_DOMAIN * j / NOISE_GRID;
       const y = terrainHeight(x, z) + 0.42;
       groundPositions.push(x, y, z);
       groundValues.push(noiseAt(x, y, z, segments));
@@ -782,6 +786,7 @@ function buildNoiseLayer() {
   const probeValues = groundValues.slice();
   const overlayGeoms = [];
   for (const b of buildings) {
+    if (!inCore(b.x, b.z)) continue;
     const geom = b.box.geometry.clone();
     geom.computeVertexNormals();
     const pos = geom.getAttribute('position');
