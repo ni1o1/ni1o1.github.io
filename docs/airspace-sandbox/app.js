@@ -202,11 +202,11 @@ const noiseMat = new THREE.MeshBasicMaterial({
 });
 
 const CHANNELS = {
-  noise: { label: '噪声', ground: 1, facade: 1, palette: 'heat' },
-  risk: { label: '坠落风险', ground: 1, facade: 0, palette: 'risk' },
-  privacy: { label: '隐私', ground: 0.22, facade: 1.25, palette: 'privacy' },
-  visual: { label: '视觉烦扰', ground: 0.75, facade: 0.9, palette: 'visual' },
-  conflict: { label: '空中冲突', ground: 1, facade: 0, palette: 'conflict' },
+  noise: { label: '噪声', ground: 1, facade: 1, palette: 'coolwarm' },
+  risk: { label: '坠落风险', ground: 1, facade: 1, palette: 'coolwarm' },
+  privacy: { label: '隐私', ground: 1, facade: 1, palette: 'coolwarm' },
+  visual: { label: '视觉烦扰', ground: 1, facade: 1, palette: 'coolwarm' },
+  conflict: { label: '空中冲突', ground: 1, facade: 1, palette: 'coolwarm' },
 };
 
 function polygonArea(poly) {
@@ -293,40 +293,17 @@ function applyFacadeShading(geom) {
 
 function colorRamp(v, palette = 'heat') {
   const palettes = {
-    heat: [
-      [0.00, [247, 248, 247]],
-      [0.18, [223, 235, 244]],
-      [0.38, [159, 199, 219]],
-      [0.62, [246, 196, 106]],
-      [0.82, [222, 112, 72]],
-      [1.00, [170, 42, 46]],
-    ],
-    risk: [
-      [0.00, [248, 248, 244]],
-      [0.35, [245, 214, 132]],
-      [0.68, [221, 126, 76]],
-      [1.00, [150, 50, 48]],
-    ],
-    privacy: [
-      [0.00, [247, 248, 247]],
-      [0.30, [206, 218, 245]],
-      [0.65, [126, 144, 216]],
-      [1.00, [86, 74, 160]],
-    ],
-    visual: [
-      [0.00, [247, 248, 247]],
-      [0.34, [191, 226, 213]],
-      [0.68, [83, 173, 159]],
-      [1.00, [33, 114, 126]],
-    ],
-    conflict: [
-      [0.00, [247, 248, 247]],
-      [0.26, [227, 212, 245]],
-      [0.58, [169, 117, 210]],
-      [1.00, [94, 44, 145]],
+    coolwarm: [
+      [0.00, [59, 76, 192]],
+      [0.18, [104, 136, 238]],
+      [0.36, [170, 198, 253]],
+      [0.50, [242, 242, 242]],
+      [0.64, [252, 190, 161]],
+      [0.82, [219, 94, 75]],
+      [1.00, [180, 4, 38]],
     ],
   };
-  const stops = palettes[palette] || palettes.heat;
+  const stops = palettes[palette] || palettes.coolwarm;
   const t = Math.max(0, Math.min(1, v));
   for (let i = 1; i < stops.length; i++) {
     if (t <= stops[i][0]) {
@@ -951,17 +928,15 @@ function buildNoiseLayer() {
 
   const probeValues = groundValues.slice();
   const overlayGeoms = [];
-  if (channel.facade) {
-    for (const b of buildings) {
-      if (!buildingTouchesCore(b)) continue;
-      const geom = b.box.geometry.clone();
-      geom.computeVertexNormals();
-      const pos = geom.getAttribute('position');
-      for (let i = 0; i < pos.count; i += Math.max(1, Math.floor(pos.count / 24))) {
-        probeValues.push(noiseAt(pos.getX(i) + b.group.position.x, pos.getY(i) + b.group.position.y, pos.getZ(i) + b.group.position.z, segments) * channel.facade);
-      }
-      overlayGeoms.push({ b, geom });
+  for (const b of buildings) {
+    if (!buildingTouchesCore(b)) continue;
+    const geom = b.box.geometry.clone();
+    geom.computeVertexNormals();
+    const pos = geom.getAttribute('position');
+    for (let i = 0; i < pos.count; i += Math.max(1, Math.floor(pos.count / 24))) {
+      probeValues.push(noiseAt(pos.getX(i) + b.group.position.x, pos.getY(i) + b.group.position.y, pos.getZ(i) + b.group.position.z, segments) * channel.facade);
     }
+    overlayGeoms.push({ b, geom });
   }
 
   const norm = normalizeNoise(probeValues);
