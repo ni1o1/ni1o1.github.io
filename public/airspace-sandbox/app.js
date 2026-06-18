@@ -110,10 +110,12 @@ camera.position.set(980, 670, 980);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
+controls.enablePan = false;
 controls.minDistance = 130;
 controls.maxDistance = 3000;
 controls.maxPolarAngle = Math.PI * 0.49;
-controls.target.set(80, 18, 0);
+const ORBIT_TARGET = new THREE.Vector3(0, 35, 0);
+controls.target.copy(ORBIT_TARGET);
 
 scene.add(new THREE.HemisphereLight('#ffffff', '#d7dde2', 0.72));
 const sun = new THREE.DirectionalLight('#ffffff', 1.15);
@@ -967,7 +969,9 @@ window.addEventListener('resize', onResize);
 function animate(t) {
   requestAnimationFrame(animate);
   flushCompute();
+  controls.target.copy(ORBIT_TARGET);
   controls.update();
+  controls.target.copy(ORBIT_TARGET);
   renderer.render(scene, camera);
 }
 
