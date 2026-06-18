@@ -226,21 +226,6 @@ function pointInPoly(x, z, poly) {
   return inside;
 }
 
-function rawCentroid(raw) {
-  return centroid(raw.polygon || []);
-}
-
-function parentRowsCoveredByParts(rows) {
-  const parts = rows.filter(row => row.isPart);
-  const covered = new Set();
-  if (!parts.length) return covered;
-  const partCenters = parts.map(rawCentroid);
-  rows.forEach(row => {
-    if (!row.isPart && partCenters.some(c => pointInPoly(c[0], c[1], row.polygon))) covered.add(row.id);
-  });
-  return covered;
-}
-
 function buildingTouchesCore(b) {
   const worldPoly = b.localPoly.map(p => [p[0] + b.x, p[1] + b.z]);
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -338,7 +323,7 @@ function makeOutlineGeometry(localPoly, height) {
   return geom;
 }
 
-function makeBuilding(raw, addToScene = true, skipNoiseOverlay = false) {
+function makeBuilding(raw, addToScene = true) {
   const absPoly = raw.polygon.map(p => [p[0], p[1]]);
   const c = centroid(absPoly);
   const localPoly = absPoly.map(p => [p[0] - c[0], p[1] - c[1]]);
@@ -350,7 +335,6 @@ function makeBuilding(raw, addToScene = true, skipNoiseOverlay = false) {
     h: Math.max(3, Math.min(220, raw.height || 12)),
     minH: Math.max(0, Math.min(210, raw.minHeight || 0)),
     isPart: Boolean(raw.isPart),
-    skipNoiseOverlay,
   };
   if (b.h <= b.minH + 1) b.h = b.minH + 4;
   if (!addToScene) return b;
@@ -506,9 +490,8 @@ function loadPreset(name) {
   obstacleBuildings = [];
   nextId = 1;
   buildTerrain();
-  const skipNoiseOverlayIds = parentRowsCoveredByParts(currentBlock.buildings);
   obstacleBuildings = currentBlock.buildings.map(raw => makeBuilding(raw, false));
-  currentBlock.buildings.forEach(raw => buildings.push(makeBuilding(raw, true, skipNoiseOverlayIds.has(raw.id))));
+  currentBlock.buildings.forEach(raw => buildings.push(makeBuilding(raw, true)));
   document.querySelectorAll('#presets button').forEach(el => el.classList.toggle('active', el.dataset.name === name));
   scheduleCompute();
 }
@@ -918,7 +901,6 @@ function buildNoiseLayer() {
   const probeValues = groundValues.slice();
   const overlayGeoms = [];
   for (const b of buildings) {
-    if (b.skipNoiseOverlay) continue;
     if (!buildingTouchesCore(b)) continue;
     const geom = b.box.geometry.clone();
     geom.computeVertexNormals();
