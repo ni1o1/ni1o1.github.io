@@ -35,6 +35,7 @@ const isCoreCell = (i, j) => i >= CORE_OFFSET && i < CORE_OFFSET + CORE_N && j >
 const PANEL_GAP = 18;
 
 let buildings = [];
+let obstacleBuildings = [];
 let nextId = 1;
 let currentPreset = '';
 let currentBlock = null;
@@ -225,6 +226,20 @@ function pointInPoly(x, z, poly) {
   return inside;
 }
 
+function rawCentroid(raw) {
+  return centroid(raw.polygon || []);
+}
+
+function renderableBuildingRows(rows) {
+  const parts = rows.filter(row => row.isPart);
+  if (!parts.length) return rows;
+  const partCenters = parts.map(rawCentroid);
+  return rows.filter(row => {
+    if (row.isPart) return true;
+    return !partCenters.some(c => pointInPoly(c[0], c[1], row.polygon));
+  });
+}
+
 function buildingTouchesCore(b) {
   const worldPoly = b.localPoly.map(p => [p[0] + b.x, p[1] + b.z]);
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -322,7 +337,7 @@ function makeOutlineGeometry(localPoly, height) {
   return geom;
 }
 
-function makeBuilding(raw) {
+function makeBuilding(raw, addToScene = true) {
   const absPoly = raw.polygon.map(p => [p[0], p[1]]);
   const c = centroid(absPoly);
   const localPoly = absPoly.map(p => [p[0] - c[0], p[1] - c[1]]);
@@ -333,8 +348,10 @@ function makeBuilding(raw) {
     localPoly,
     h: Math.max(3, Math.min(220, raw.height || 12)),
     minH: Math.max(0, Math.min(210, raw.minHeight || 0)),
+    isPart: Boolean(raw.isPart),
   };
   if (b.h <= b.minH + 1) b.h = b.minH + 4;
+  if (!addToScene) return b;
   b.group = new THREE.Group();
   b.group.position.set(b.x, terrainVisualHeight(b.x, b.z) + b.minH + (b.minH > 0 ? 0.08 : 0), b.z);
   b.box = new THREE.Mesh(makePrismGeometry(b.localPoly, b.h - b.minH), buildingMat);
@@ -484,9 +501,11 @@ function loadPreset(name) {
   clearNoiseLayer();
   buildingGroup.clear();
   buildings = [];
+  obstacleBuildings = [];
   nextId = 1;
   buildTerrain();
-  currentBlock.buildings.forEach(raw => buildings.push(makeBuilding(raw)));
+  obstacleBuildings = currentBlock.buildings.map(raw => makeBuilding(raw, false));
+  renderableBuildingRows(currentBlock.buildings).forEach(raw => buildings.push(makeBuilding(raw, true)));
   document.querySelectorAll('#presets button').forEach(el => el.classList.toggle('active', el.dataset.name === name));
   scheduleCompute();
 }
@@ -495,7 +514,7 @@ function rasterize() {
   for (let j = 0; j < N; j++) {
     for (let i = 0; i < N; i++) heightField[idx(i, j)] = terrainHeight(gx(i), iToZ(j)) + 1;
   }
-  for (const b of buildings) {
+  for (const b of obstacleBuildings) {
     const worldPoly = b.localPoly.map(p => [p[0] + b.x, p[1] + b.z]);
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
     for (const p of worldPoly) {
