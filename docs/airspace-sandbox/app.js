@@ -48,6 +48,7 @@ let routesVisible = true;
 let noiseEnabled = true;
 let demEnabled = false;
 let heightScaleVisible = true;
+let externalityChannel = 'noise';
 let heightField = new Float32Array(N * N);
 let flyable = new Uint8Array(N * N);
 let routeSummaries = [];
@@ -200,6 +201,14 @@ const noiseMat = new THREE.MeshBasicMaterial({
   side: THREE.DoubleSide,
 });
 
+const CHANNELS = {
+  noise: { label: '噪声', ground: 1, facade: 1, palette: 'heat' },
+  risk: { label: '坠落风险', ground: 1, facade: 0, palette: 'risk' },
+  privacy: { label: '隐私', ground: 0.22, facade: 1.25, palette: 'privacy' },
+  visual: { label: '视觉烦扰', ground: 0.75, facade: 0.9, palette: 'visual' },
+  conflict: { label: '空中冲突', ground: 1, facade: 0, palette: 'conflict' },
+};
+
 function polygonArea(poly) {
   let a = 0;
   for (let i = 0; i < poly.length; i++) {
@@ -282,15 +291,42 @@ function applyFacadeShading(geom) {
   geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 }
 
-function colorRamp(v) {
-  const stops = [
-    [0.00, [247, 248, 247]],
-    [0.18, [223, 235, 244]],
-    [0.38, [159, 199, 219]],
-    [0.62, [246, 196, 106]],
-    [0.82, [222, 112, 72]],
-    [1.00, [170, 42, 46]],
-  ];
+function colorRamp(v, palette = 'heat') {
+  const palettes = {
+    heat: [
+      [0.00, [247, 248, 247]],
+      [0.18, [223, 235, 244]],
+      [0.38, [159, 199, 219]],
+      [0.62, [246, 196, 106]],
+      [0.82, [222, 112, 72]],
+      [1.00, [170, 42, 46]],
+    ],
+    risk: [
+      [0.00, [248, 248, 244]],
+      [0.35, [245, 214, 132]],
+      [0.68, [221, 126, 76]],
+      [1.00, [150, 50, 48]],
+    ],
+    privacy: [
+      [0.00, [247, 248, 247]],
+      [0.30, [206, 218, 245]],
+      [0.65, [126, 144, 216]],
+      [1.00, [86, 74, 160]],
+    ],
+    visual: [
+      [0.00, [247, 248, 247]],
+      [0.34, [191, 226, 213]],
+      [0.68, [83, 173, 159]],
+      [1.00, [33, 114, 126]],
+    ],
+    conflict: [
+      [0.00, [247, 248, 247]],
+      [0.26, [227, 212, 245]],
+      [0.58, [169, 117, 210]],
+      [1.00, [94, 44, 145]],
+    ],
+  };
+  const stops = palettes[palette] || palettes.heat;
   const t = Math.max(0, Math.min(1, v));
   for (let i = 1; i < stops.length; i++) {
     if (t <= stops[i][0]) {
@@ -847,7 +883,21 @@ function noiseAt(px, py, pz, segments) {
   let v = 0;
   for (const s of segments) {
     const d2 = pointSegmentDistanceSq3(px, py, pz, s.a, s.b);
-    v += s.amp / (420 + d2);
+    const dxz2 = pointSegDist2(px, pz, s.a.x, s.a.z, s.b.x, s.b.z);
+    const channelAmp = externalityChannel === 'conflict' ? s.amp * s.amp : s.amp;
+    if (externalityChannel === 'risk') {
+      const fallSpread = 260 + Math.max(0, (s.a.y + s.b.y) * 0.5) * 3.2;
+      v += channelAmp / (fallSpread + dxz2 * 1.8);
+    } else if (externalityChannel === 'privacy') {
+      const verticalBias = py > 6 ? 1.8 : 0.45;
+      v += channelAmp * verticalBias / (90 + d2 * 0.72);
+    } else if (externalityChannel === 'visual') {
+      v += channelAmp / (170 + d2);
+    } else if (externalityChannel === 'conflict') {
+      v += channelAmp / (70 + dxz2 * 3.4);
+    } else {
+      v += channelAmp / (420 + d2);
+    }
   }
   return v;
 }
@@ -878,6 +928,7 @@ function buildNoiseLayer() {
   clearNoiseLayer();
   const segments = collectNoiseSegments();
   if (!segments.length) return;
+  const channel = CHANNELS[externalityChannel] || CHANNELS.noise;
 
   const groundPositions = [];
   const groundIndices = [];
@@ -888,7 +939,7 @@ function buildNoiseLayer() {
       const z = -CORE_HALF + CORE_DOMAIN * j / NOISE_GRID;
       const y = terrainVisualHeight(x, z) + 0.42;
       groundPositions.push(x, y, z);
-      groundValues.push(noiseAt(x, y, z, segments));
+      groundValues.push(channel.ground ? noiseAt(x, y, z, segments) * channel.ground : 0);
     }
   }
   for (let j = 0; j < NOISE_GRID; j++) {
@@ -900,21 +951,23 @@ function buildNoiseLayer() {
 
   const probeValues = groundValues.slice();
   const overlayGeoms = [];
-  for (const b of buildings) {
-    if (!buildingTouchesCore(b)) continue;
-    const geom = b.box.geometry.clone();
-    geom.computeVertexNormals();
-    const pos = geom.getAttribute('position');
-    for (let i = 0; i < pos.count; i += Math.max(1, Math.floor(pos.count / 24))) {
-      probeValues.push(noiseAt(pos.getX(i) + b.group.position.x, pos.getY(i) + b.group.position.y, pos.getZ(i) + b.group.position.z, segments));
+  if (channel.facade) {
+    for (const b of buildings) {
+      if (!buildingTouchesCore(b)) continue;
+      const geom = b.box.geometry.clone();
+      geom.computeVertexNormals();
+      const pos = geom.getAttribute('position');
+      for (let i = 0; i < pos.count; i += Math.max(1, Math.floor(pos.count / 24))) {
+        probeValues.push(noiseAt(pos.getX(i) + b.group.position.x, pos.getY(i) + b.group.position.y, pos.getZ(i) + b.group.position.z, segments) * channel.facade);
+      }
+      overlayGeoms.push({ b, geom });
     }
-    overlayGeoms.push({ b, geom });
   }
 
   const norm = normalizeNoise(probeValues);
   const groundColors = [];
   for (const v of groundValues) {
-    const c = colorRamp(Math.log1p(v / norm * 3.2) / Math.log1p(3.2));
+    const c = colorRamp(Math.log1p(v / norm * 3.2) / Math.log1p(3.2), channel.palette);
     groundColors.push(c[0], c[1], c[2]);
   }
   const groundGeom = new THREE.BufferGeometry();
@@ -934,10 +987,10 @@ function buildNoiseLayer() {
       const wx = pos.getX(i) + b.group.position.x;
       const wy = pos.getY(i) + b.group.position.y;
       const wz = pos.getZ(i) + b.group.position.z;
-      const value = noiseAt(wx, wy, wz, segments);
+      const value = noiseAt(wx, wy, wz, segments) * channel.facade;
       const rawHot = Math.log1p(value / norm * 3.2) / Math.log1p(3.2);
       const hot = 0.10 + 0.90 * rawHot;
-      const c = colorRamp(hot);
+      const c = colorRamp(hot, channel.palette);
       colors.push(c[0], c[1], c[2]);
       pos.setXYZ(
         i,
@@ -1031,6 +1084,21 @@ $('noiseToggle').addEventListener('change', e => {
   } else {
     clearNoiseLayer();
   }
+});
+
+document.querySelectorAll('input[name="externalityChannel"]').forEach(input => {
+  input.addEventListener('change', e => {
+    if (!e.target.checked) return;
+    externalityChannel = e.target.value;
+    $('channelV').textContent = (CHANNELS[externalityChannel] || CHANNELS.noise).label;
+    if (noiseEnabled) {
+      $('busy').classList.add('on');
+      setTimeout(() => {
+        buildNoiseLayer();
+        $('busy').classList.remove('on');
+      }, 20);
+    }
+  });
 });
 
 $('demToggle').addEventListener('change', e => {
