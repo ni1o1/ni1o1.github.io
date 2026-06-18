@@ -128,9 +128,9 @@ scene.add(sun);
 let terrainMesh = null;
 const grid = new THREE.GridHelper(VIEW_DOMAIN, Math.round(VIEW_DOMAIN / CELL), '#aeb7c2', '#d7dce2');
 grid.material.transparent = true;
-grid.material.opacity = 0.34;
+grid.material.opacity = 0;
 grid.position.y = 0.08;
-scene.add(grid);
+grid.visible = false;
 
 const border = new THREE.LineLoop(
   new THREE.BufferGeometry().setFromPoints([
