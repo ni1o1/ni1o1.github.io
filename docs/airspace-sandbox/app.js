@@ -190,6 +190,24 @@ function pointInPoly(x, z, poly) {
   return inside;
 }
 
+function buildingTouchesCore(b) {
+  const worldPoly = b.localPoly.map(p => [p[0] + b.x, p[1] + b.z]);
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const p of worldPoly) {
+    minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
+    minZ = Math.min(minZ, p[1]); maxZ = Math.max(maxZ, p[1]);
+    if (inCore(p[0], p[1])) return true;
+  }
+  if (maxX < -CORE_HALF || minX > CORE_HALF || maxZ < -CORE_HALF || minZ > CORE_HALF) return false;
+  const corners = [
+    [-CORE_HALF, -CORE_HALF],
+    [CORE_HALF, -CORE_HALF],
+    [CORE_HALF, CORE_HALF],
+    [-CORE_HALF, CORE_HALF],
+  ];
+  return corners.some(p => pointInPoly(p[0], p[1], worldPoly));
+}
+
 function makePrismGeometry(localPoly, height) {
   let contour = localPoly.map(p => new THREE.Vector2(p[0], p[1]));
   if (THREE.ShapeUtils.isClockWise(contour)) contour = contour.slice().reverse();
@@ -786,7 +804,7 @@ function buildNoiseLayer() {
   const probeValues = groundValues.slice();
   const overlayGeoms = [];
   for (const b of buildings) {
-    if (!inCore(b.x, b.z)) continue;
+    if (!buildingTouchesCore(b)) continue;
     const geom = b.box.geometry.clone();
     geom.computeVertexNormals();
     const pos = geom.getAttribute('position');
@@ -820,7 +838,8 @@ function buildNoiseLayer() {
       const wy = pos.getY(i) + b.group.position.y;
       const wz = pos.getZ(i) + b.group.position.z;
       const value = noiseAt(wx, wy, wz, segments);
-      const hot = Math.log1p(value / norm * 3.2) / Math.log1p(3.2);
+      const rawHot = Math.log1p(value / norm * 3.2) / Math.log1p(3.2);
+      const hot = 0.10 + 0.90 * rawHot;
       const c = colorRamp(hot);
       colors.push(c[0], c[1], c[2]);
       pos.setXYZ(
