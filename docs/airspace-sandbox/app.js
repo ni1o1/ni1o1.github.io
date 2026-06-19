@@ -1120,6 +1120,12 @@ document.querySelectorAll('input[name="externalityChannel"]').forEach(input => {
     if (!e.target.checked) return;
     externalityChannel = e.target.value;
     $('channelV').textContent = (CHANNELS[externalityChannel] || CHANNELS.noise).label;
+    const sketch = $('kernelSketch');
+    if (sketch) {
+      sketch.dataset.channel = '';
+      void sketch.offsetWidth;
+      sketch.dataset.channel = externalityChannel;
+    }
     if (noiseEnabled) {
       scheduleExternalityLayer();
     }

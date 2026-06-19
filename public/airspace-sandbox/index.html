@@ -71,23 +71,30 @@
     background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);overflow:hidden}
   .kernelSketch svg{position:absolute;inset:0;width:100%;height:100%}
   .kernelSketch .droneIcon{position:absolute;left:50%;top:21px;width:42px;height:42px;transform:translateX(-50%);
-    opacity:.9;animation:droneFloat 2.8s ease-in-out infinite}
-  .kernelSketch .range{fill:none;stroke-width:2.2;vector-effect:non-scaling-stroke}
-  .range.noise{stroke:#4867c6;opacity:.28;animation:pulseWide 3.4s ease-in-out infinite}
-  .range.risk{fill:#d94841;stroke:#d94841;opacity:.22;animation:riskSlide 3.2s ease-in-out infinite}
-  .range.privacy{fill:#557fd3;stroke:#557fd3;opacity:.20;animation:privacySweep 3.6s ease-in-out infinite;transform-origin:50% 44%}
-  .range.visual{stroke:#e08f2f;opacity:.62;stroke-dasharray:5 6;animation:dashFlow 2.4s linear infinite}
-  .range.conflict{fill:#222831;stroke:#222831;opacity:.18;animation:conflictBeat 2s ease-in-out infinite}
+    opacity:.92}
+  .kernelSketch .range{opacity:0;fill:none;stroke-width:2.2;vector-effect:non-scaling-stroke;
+    clip-path:circle(0 at 50% 39%)}
+  .range.noise{stroke:#4867c6}
+  .range.risk{fill:#d94841;stroke:#d94841}
+  .range.privacy{fill:#557fd3;stroke:#557fd3}
+  .range.visual{stroke:#e08f2f;stroke-dasharray:230;stroke-dashoffset:230;clip-path:none}
+  .range.conflict{fill:#222831;stroke:#222831}
+  .kernelSketch[data-channel="noise"] .range.noise{animation:projectRange .55s ease-out forwards;opacity:.30}
+  .kernelSketch[data-channel="risk"] .range.risk{animation:projectRange .55s ease-out forwards;opacity:.24}
+  .kernelSketch[data-channel="privacy"] .range.privacy{animation:projectRange .55s ease-out forwards;opacity:.22}
+  .kernelSketch[data-channel="visual"] .range.visual{animation:drawSight .62s ease-out forwards;opacity:.64}
+  .kernelSketch[data-channel="conflict"] .range.conflict{animation:projectRange .46s ease-out forwards;opacity:.22}
   .sketchRoute{stroke:#1677ff;stroke-width:3;stroke-linecap:round;opacity:.62}
   .sketchGround{stroke:#c8cfd8;stroke-width:1.2}
   .kernelLabels{position:absolute;left:10px;right:10px;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
   .kernelLabels span{font-size:10px;line-height:1.2;text-align:center;color:#4f5862;white-space:nowrap}
-  @keyframes droneFloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,4px)}}
-  @keyframes pulseWide{0%,100%{opacity:.18;transform:scale(.96)}50%{opacity:.38;transform:scale(1.05)}}
-  @keyframes riskSlide{0%,100%{transform:translateX(-4px);opacity:.18}50%{transform:translateX(8px);opacity:.30}}
-  @keyframes privacySweep{0%,100%{transform:rotate(-7deg);opacity:.14}50%{transform:rotate(7deg);opacity:.26}}
-  @keyframes dashFlow{to{stroke-dashoffset:-22}}
-  @keyframes conflictBeat{0%,100%{opacity:.12;transform:scale(.92)}45%{opacity:.30;transform:scale(1.08)}}
+  .kernelSketch[data-channel="noise"] .kernelLabels [data-k="noise"],
+  .kernelSketch[data-channel="risk"] .kernelLabels [data-k="risk"],
+  .kernelSketch[data-channel="privacy"] .kernelLabels [data-k="privacy"],
+  .kernelSketch[data-channel="visual"] .kernelLabels [data-k="visual"],
+  .kernelSketch[data-channel="conflict"] .kernelLabels [data-k="conflict"]{color:#111820;font-weight:750}
+  @keyframes projectRange{from{clip-path:circle(0 at 50% 39%)}to{clip-path:circle(92% at 50% 39%)}}
+  @keyframes drawSight{to{stroke-dashoffset:0}}
   #mapsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .mapTile{min-width:0}
   .mapTile canvas{width:132px;height:132px;display:block;background:#fff;border:1px solid var(--line);border-radius:7px}
@@ -138,7 +145,7 @@
     <div class="sec">
       <label class="lbl">外部性通道</label>
       <div class="row"><span class="k">当前内核</span><span class="v" id="channelV">噪声</span></div>
-      <div class="kernelSketch" aria-label="五种外部性影响范围示意">
+      <div class="kernelSketch" id="kernelSketch" data-channel="noise" aria-label="五种外部性影响范围示意">
         <svg viewBox="0 0 420 150" aria-hidden="true">
           <line class="sketchGround" x1="26" y1="104" x2="394" y2="104"/>
           <path class="sketchRoute" d="M126 43 C174 25 239 25 294 43"/>
@@ -150,7 +157,7 @@
         </svg>
         <img class="droneIcon" src="assets/drone.svg" alt="">
         <div class="kernelLabels">
-          <span>噪声</span><span>坠落</span><span>隐私</span><span>视觉</span><span>冲突</span>
+          <span data-k="noise">噪声</span><span data-k="risk">坠落</span><span data-k="privacy">隐私</span><span data-k="visual">视觉</span><span data-k="conflict">冲突</span>
         </div>
       </div>
       <div class="radioGrid" id="channelRadios">
