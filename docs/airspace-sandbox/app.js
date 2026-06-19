@@ -29,6 +29,8 @@ const idx = (i, j) => j * N + i;
 const $ = id => document.getElementById(id);
 const heightWeight = alt => Math.exp(-((alt - WEIGHT_CENTER) ** 2) / (2 * WEIGHT_SIGMA ** 2));
 const inCore = (x, z) => Math.abs(x) <= CORE_HALF && Math.abs(z) <= CORE_HALF;
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const sigmoid = v => 1 / (1 + Math.exp(-v));
 const CORE_N = Math.round(CORE_DOMAIN / CELL);
 const CORE_OFFSET = Math.round((N - CORE_N) / 2);
 const isCoreCell = (i, j) => i >= CORE_OFFSET && i < CORE_OFFSET + CORE_N && j >= CORE_OFFSET && j < CORE_OFFSET + CORE_N;
@@ -832,7 +834,17 @@ function collectNoiseSegments() {
       for (let ci = 0; ci < path.length - 1; ci += cellStep) {
         const a = cellToVec(path[ci], s.alt);
         const b = cellToVec(path[Math.min(path.length - 1, ci + cellStep)], s.alt);
-        segments.push({ a, b, amp: s.weight * stride * cellStep });
+        const hx = b.x - a.x;
+        const hz = b.z - a.z;
+        const hLen = Math.hypot(hx, hz) || 1;
+        segments.push({
+          a,
+          b,
+          amp: s.weight * stride * cellStep,
+          dirX: hx / hLen,
+          dirZ: hz / hLen,
+          alt: s.alt,
+        });
         if (segments.length >= NOISE_MAX_SEGMENTS) return segments;
       }
     }
@@ -849,23 +861,65 @@ function pointSegmentDistanceSq3(px, py, pz, a, b) {
 }
 
 function noiseAt(px, py, pz, segments) {
+  if (externalityChannel === 'conflict') {
+    let total = 0;
+    let vx = 0;
+    let vz = 0;
+    for (const s of segments) {
+      const dxz2 = pointSegDist2(px, pz, s.a.x, s.a.z, s.b.x, s.b.z);
+      const verticalGap = Math.abs(py - s.alt);
+      const layerWeight = Math.exp(-(verticalGap * verticalGap) / (2 * 28 * 28));
+      const w = s.amp * layerWeight / (55 + dxz2 * 2.6);
+      total += w;
+      vx += w * s.dirX;
+      vz += w * s.dirZ;
+    }
+    if (total <= 0) return 0;
+    const coherence = Math.min(1, Math.hypot(vx, vz) / total);
+    const headingMix = 1 - coherence;
+    return total * total * (0.16 + 0.84 * headingMix);
+  }
+
   let v = 0;
   for (const s of segments) {
     const d2 = pointSegmentDistanceSq3(px, py, pz, s.a, s.b);
     const dxz2 = pointSegDist2(px, pz, s.a.x, s.a.z, s.b.x, s.b.z);
-    const channelAmp = externalityChannel === 'conflict' ? s.amp * s.amp : s.amp;
+    const alt = s.alt || (s.a.y + s.b.y) * 0.5;
     if (externalityChannel === 'risk') {
-      const fallSpread = 260 + Math.max(0, (s.a.y + s.b.y) * 0.5) * 3.2;
-      v += channelAmp / (fallSpread + dxz2 * 1.8);
+      const mx = (s.a.x + s.b.x) * 0.5;
+      const mz = (s.a.z + s.b.z) * 0.5;
+      const forward = 14 + alt * 0.34;
+      const sx = mx + s.dirX * forward;
+      const sz = mz + s.dirZ * forward;
+      const rx = px - sx;
+      const rz = pz - sz;
+      const along = rx * s.dirX + rz * s.dirZ;
+      const cross = rx * -s.dirZ + rz * s.dirX;
+      const sigmaLong = 30 + alt * 0.45;
+      const sigmaCross = 20 + alt * 0.25;
+      const ballistic = Math.exp(-0.5 * ((along / sigmaLong) ** 2 + (cross / sigmaCross) ** 2));
+      const sigmaVertical = 24 + alt * 0.30;
+      const verticalDrop = Math.exp(-0.5 * (dxz2 / (sigmaVertical * sigmaVertical)));
+      const surfaceCatch = py > terrainVisualHeight(px, pz) + 7 ? 0.78 : 1.08;
+      v += s.amp * surfaceCatch * (0.62 * ballistic + 0.38 * verticalDrop);
     } else if (externalityChannel === 'privacy') {
-      const verticalBias = py > 6 ? 1.8 : 0.45;
-      v += channelAmp * verticalBias / (90 + d2 * 0.72);
+      if (py >= alt - 1) continue;
+      const d = Math.sqrt(d2);
+      const lowerHemisphere = clamp01((alt - py) / Math.max(1, d));
+      const identify = sigmoid((150 - d) / 18);
+      const nadirPreference = 0.55 + 0.45 * lowerHemisphere;
+      const receiverBias = py > terrainVisualHeight(px, pz) + 7 ? 0.74 : 1.12;
+      v += s.amp * identify * nadirPreference * receiverBias / (1 + d2 / 26000);
     } else if (externalityChannel === 'visual') {
-      v += channelAmp / (170 + d2);
-    } else if (externalityChannel === 'conflict') {
-      v += channelAmp / (70 + dxz2 * 3.4);
+      const dh = Math.sqrt(dxz2) + 1;
+      const dy = alt - py;
+      const elevDeg = Math.atan2(dy, dh) * 180 / Math.PI;
+      const highAnglePenalty = 1 / (1 + ((Math.max(0, elevDeg - 18) / 34) ** 2));
+      const sameHeightBoost = 0.72 + 0.42 * Math.exp(-(dy * dy) / (2 * 26 * 26));
+      const angularSize = sigmoid((115 - Math.sqrt(d2)) / 28);
+      v += s.amp * highAnglePenalty * sameHeightBoost * angularSize / (155 + d2 * 0.82);
     } else {
-      v += channelAmp / (420 + d2);
+      v += s.amp / (420 + d2);
     }
   }
   return v;
