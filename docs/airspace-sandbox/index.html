@@ -72,20 +72,20 @@
   .kernelSketch svg{position:absolute;inset:0;width:100%;height:100%}
   .kernelSketch .droneIcon{position:absolute;left:50%;top:21px;width:42px;height:42px;transform:translateX(-50%);
     opacity:.92}
+  .kernelSketch .personIcon{position:absolute;left:58px;top:85px;width:30px;height:30px;opacity:0;transition:opacity .16s}
   .kernelSketch .range{opacity:0;stroke:none;vector-effect:non-scaling-stroke;clip-path:circle(0 at 50% 34%)}
   .range.noise{fill:#4867c6}
   .range.risk{fill:#d94841}
   .range.privacy{fill:#557fd3}
-  .range.visual{fill:#e08f2f;clip-path:circle(0 at 20% 68%)}
+  .range.visual{fill:#e08f2f;clip-path:circle(0 at 17.5% 68%)}
   .kernelSketch[data-channel="noise"] .range.noise{animation:projectFromDrone .55s ease-out forwards;opacity:.28}
   .kernelSketch[data-channel="risk"] .range.risk{animation:projectFromDrone .55s ease-out forwards;opacity:.24}
   .kernelSketch[data-channel="privacy"] .range.privacy{animation:projectFromDrone .55s ease-out forwards;opacity:.22}
   .kernelSketch[data-channel="visual"] .range.visual{animation:projectFromPerson .55s ease-out forwards;opacity:.28}
-  .personIcon{opacity:0;fill:#30363d;transition:opacity .16s}
   .kernelSketch[data-channel="visual"] .personIcon{opacity:.78}
   .sketchGround{stroke:#c8cfd8;stroke-width:1.2}
   @keyframes projectFromDrone{from{clip-path:circle(0 at 50% 34%)}to{clip-path:circle(95% at 50% 34%)}}
-  @keyframes projectFromPerson{from{clip-path:circle(0 at 20% 68%)}to{clip-path:circle(100% at 20% 68%)}}
+  @keyframes projectFromPerson{from{clip-path:circle(0 at 17.5% 68%)}to{clip-path:circle(100% at 17.5% 68%)}}
   #mapsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .mapTile{min-width:0}
   .mapTile canvas{width:132px;height:132px;display:block;background:#fff;border:1px solid var(--line);border-radius:7px}
@@ -144,14 +144,11 @@
             <path d="M210 50 L124 106 Q210 133 296 106 Z"/>
             <ellipse cx="210" cy="106" rx="86" ry="19"/>
           </g>
-          <path class="range privacy" d="M210 50 L128 50 A82 82 0 0 1 292 50 Z"/>
-          <path class="range visual" d="M84 98 L210 50 L84 120 Z"/>
-          <g class="personIcon">
-            <circle cx="72" cy="88" r="8"/>
-            <path d="M61 123 Q72 105 83 123 Z"/>
-          </g>
+          <path class="range privacy" d="M128 50 C128 95 165 132 210 132 C255 132 292 95 292 50 Z"/>
+          <path class="range visual" d="M72 104 L210 42 Q241 58 224 86 Z"/>
         </svg>
         <img class="droneIcon" src="assets/drone.svg" alt="">
+        <img class="personIcon" src="assets/person.svg" alt="">
       </div>
       <div class="radioGrid" id="channelRadios">
         <label class="radioChip"><input type="radio" name="externalityChannel" value="noise" checked>噪声</label>

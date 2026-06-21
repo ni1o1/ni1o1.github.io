@@ -16,9 +16,9 @@ const ALT_MIN = 25;
 const ALT_MAX = 120;
 const WEIGHT_CENTER = 65;
 const WEIGHT_SIGMA = 22;
-const NOISE_GRID = 48;
-const NOISE_MAX_PATHS_PER_ALT = 36;
-const NOISE_MAX_SEGMENTS = 2400;
+const NOISE_GRID = 36;
+const NOISE_MAX_PATHS_PER_ALT = 24;
+const NOISE_MAX_SEGMENTS = 1200;
 const DEM_VISUAL_SCALE = 0.3;
 const TERRAIN_LINE_STEP = 50;
 
@@ -31,6 +31,7 @@ const heightWeight = alt => Math.exp(-((alt - WEIGHT_CENTER) ** 2) / (2 * WEIGHT
 const inCore = (x, z) => Math.abs(x) <= CORE_HALF && Math.abs(z) <= CORE_HALF;
 const clamp01 = v => Math.max(0, Math.min(1, v));
 const sigmoid = v => 1 / (1 + Math.exp(-v));
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
 const CORE_N = Math.round(CORE_DOMAIN / CELL);
 const CORE_OFFSET = Math.round((N - CORE_N) / 2);
 const isCoreCell = (i, j) => i >= CORE_OFFSET && i < CORE_OFFSET + CORE_N && j >= CORE_OFFSET && j < CORE_OFFSET + CORE_N;
@@ -59,6 +60,10 @@ let noiseGroundMesh = null;
 let noiseOverlays = [];
 let terrainReliefLines = null;
 let externalityTimer = null;
+let externalityVersion = 0;
+let routeWorker = null;
+let routeDrawChain = Promise.resolve();
+let activeComputeDone = null;
 
 function buildAltitudes(gap) {
   const out = [];
@@ -502,11 +507,16 @@ function loadPreset(name) {
   scheduleCompute();
 }
 
-function rasterize() {
+async function rasterize(version) {
   for (let j = 0; j < N; j++) {
     for (let i = 0; i < N; i++) heightField[idx(i, j)] = terrainHeight(gx(i), iToZ(j)) + 1;
+    if (j % 8 === 7) {
+      if (version !== computeVersion) return false;
+      await nextFrame();
+    }
   }
-  for (const b of obstacleBuildings) {
+  for (let bi = 0; bi < obstacleBuildings.length; bi++) {
+    const b = obstacleBuildings[bi];
     const worldPoly = b.localPoly.map(p => [p[0] + b.x, p[1] + b.z]);
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
     for (const p of worldPoly) {
@@ -527,7 +537,12 @@ function rasterize() {
         }
       }
     }
+    if (bi % 8 === 7) {
+      if (version !== computeVersion) return false;
+      await nextFrame();
+    }
   }
+  return version === computeVersion;
 }
 
 function nearPoly(x, z, poly, dist) {
@@ -662,13 +677,18 @@ function allowedPair(a, b) {
     (ea === 'left' && eb === 'right') || (ea === 'right' && eb === 'left');
 }
 
-function routePathsForAltitude(alt) {
+async function routePathsForAltitude(alt, version) {
   const flyPct = computeFlyable(alt);
   const anchors = boundaryAnchors();
   const paths = [];
   const weight = heightWeight(alt) / maxHeightWeight;
   if (anchors.length < 2) return { alt, flyPct, anchors, paths, weight, flyable: new Uint8Array(flyable) };
-  const solved = anchors.map(a => ({ a, ...dijkstra(a) }));
+  const solved = [];
+  for (let i = 0; i < anchors.length; i++) {
+    if (version !== computeVersion) return null;
+    solved.push({ a: anchors[i], ...dijkstra(anchors[i]) });
+    if (i % 3 === 2) await nextFrame();
+  }
   for (let p = 0; p < anchors.length; p++) {
     const { dist, prev } = solved[p];
     for (let q = p + 1; q < anchors.length; q++) {
@@ -685,60 +705,155 @@ function routePathsForAltitude(alt) {
       cells.reverse();
       paths.push(cells);
     }
+    if (p % 8 === 7) await nextFrame();
   }
   return { alt, flyPct, anchors, paths, weight, flyable: new Uint8Array(flyable) };
 }
 
-function makeRouteTube(cells, alt, opacity) {
-  const points = cells.map(k => new THREE.Vector3(gx(k % N), alt + 2.4, iToZ((k / N) | 0)));
-  if (points.length < 2) return null;
-  const curve = new THREE.CatmullRomCurve3(points, false, 'centripetal', 0.12);
-  const geom = new THREE.TubeGeometry(curve, Math.max(6, Math.ceil(points.length * 0.75)), 0.95, 5, false);
+function makeRouteBandMesh(paths, alt, opacity) {
+  const positions = [];
+  const indices = [];
+  const halfWidth = 1.35;
+  for (const cells of paths) {
+    for (let p = 0; p < cells.length - 1; p++) {
+      const a = cells[p];
+      const b = cells[p + 1];
+      const ax = gx(a % N), az = iToZ((a / N) | 0);
+      const bx = gx(b % N), bz = iToZ((b / N) | 0);
+      const dx = bx - ax;
+      const dz = bz - az;
+      const len = Math.hypot(dx, dz) || 1;
+      const ox = -dz / len * halfWidth;
+      const oz = dx / len * halfWidth;
+      const base = positions.length / 3;
+      const y = alt + 2.4;
+      positions.push(ax + ox, y, az + oz, ax - ox, y, az - oz, bx + ox, y, bz + oz, bx - ox, y, bz - oz);
+      indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+    }
+  }
+  if (!positions.length) return null;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geom.setIndex(indices);
   const mat = new THREE.MeshBasicMaterial({
     color: ROUTE_COLOR,
     transparent: true,
     opacity,
     depthWrite: false,
+    side: THREE.DoubleSide,
   });
   const mesh = new THREE.Mesh(geom, mat);
   mesh.renderOrder = 10;
   return mesh;
 }
 
-const anchorGeom = new THREE.SphereGeometry(2.4, 6, 6);
-function drawAnchors(anchors, alt, opacity) {
-  const mat = new THREE.MeshBasicMaterial({ color: ROUTE_COLOR, transparent: true, opacity, depthWrite: false });
-  anchors.forEach(k => {
-    const m = new THREE.Mesh(anchorGeom, mat);
-    m.position.set(gx(k % N), alt + 2.5, iToZ((k / N) | 0));
-    anchorGroup.add(m);
-  });
+function disposeRouteLayer() {
+  for (const child of routeGroup.children) {
+    child.geometry?.dispose();
+    if (Array.isArray(child.material)) {
+      child.material.forEach(mat => mat.dispose());
+    } else {
+      child.material?.dispose();
+    }
+  }
+  routeGroup.clear();
+  for (const child of anchorGroup.children) {
+    if (Array.isArray(child.material)) {
+      child.material.forEach(mat => mat.dispose());
+    } else {
+      child.material?.dispose();
+    }
+  }
+  anchorGroup.clear();
 }
 
-function recompute() {
-  rasterize();
-  routeGroup.clear();
-  anchorGroup.clear();
+function drawAnchors(anchors, alt, opacity) {
+  const pts = [];
+  anchors.forEach(k => pts.push(gx(k % N), alt + 2.5, iToZ((k / N) | 0)));
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const mat = new THREE.PointsMaterial({ color: ROUTE_COLOR, transparent: true, opacity, size: 4.8, sizeAttenuation: true, depthWrite: false });
+  anchorGroup.add(new THREE.Points(geom, mat));
+}
+
+async function drawAltitudeResult(result, version) {
+  if (version !== computeVersion) return;
+  result.flyable = new Uint8Array(result.flyable);
+  const routeOpacity = Math.min(0.22, (0.010 + 0.070 * result.weight) * routeOpacityScale);
+  const anchorOpacity = Math.min(0.5, (0.045 + 0.16 * result.weight) * routeOpacityScale);
+  drawAnchors(result.anchors, result.alt, anchorOpacity);
+  const routeMesh = makeRouteBandMesh(result.paths, result.alt, routeOpacity);
+  if (routeMesh) routeGroup.add(routeMesh);
+  await nextFrame();
+  if (version !== computeVersion) return;
+  totalRoutes += result.pathCount || result.paths.length;
+  routeSummaries.push(result);
+  applyRouteVisibility();
+}
+
+function stopRouteWorker() {
+  if (routeWorker) {
+    routeWorker.terminate();
+    routeWorker = null;
+  }
+  if (activeComputeDone) {
+    activeComputeDone(false);
+    activeComputeDone = null;
+  }
+}
+
+async function recompute(version) {
+  const rasterReady = await rasterize(version);
+  if (!rasterReady || version !== computeVersion) return false;
+  externalityVersion++;
+  clearNoiseLayer();
+  disposeRouteLayer();
   totalRoutes = 0;
   routeSummaries = [];
+  routeDrawChain = Promise.resolve();
 
-  altitudes.forEach(alt => {
-    const result = routePathsForAltitude(alt);
-    const routeOpacity = Math.min(0.22, (0.010 + 0.070 * result.weight) * routeOpacityScale);
-    const anchorOpacity = Math.min(0.5, (0.045 + 0.16 * result.weight) * routeOpacityScale);
-    drawAnchors(result.anchors, alt, anchorOpacity);
-    result.paths.forEach(cells => {
-      const tube = makeRouteTube(cells, alt, routeOpacity);
-      if (tube) routeGroup.add(tube);
-    });
-    totalRoutes += result.paths.length;
-    routeSummaries.push(result);
+  return new Promise(resolve => {
+    activeComputeDone = resolve;
+    routeWorker = new Worker('route-worker.js');
+    routeWorker.onmessage = event => {
+      const { type, result, version: msgVersion } = event.data;
+      if (msgVersion !== computeVersion || msgVersion !== version) return;
+      if (type === 'altResult') {
+        routeDrawChain = routeDrawChain.then(() => drawAltitudeResult(result, version));
+      } else if (type === 'done') {
+        routeDrawChain.then(() => {
+          if (version !== computeVersion) return resolve(false);
+          routeWorker?.terminate();
+          routeWorker = null;
+          activeComputeDone = null;
+          routeSummaries.sort((a, b) => a.alt - b.alt);
+          updateMetrics();
+          drawMiniMap();
+          if (noiseEnabled) scheduleExternalityLayer();
+          resolve(true);
+        });
+      }
+    };
+    routeWorker.onerror = error => {
+      console.error(error);
+      routeWorker?.terminate();
+      routeWorker = null;
+      activeComputeDone = null;
+      resolve(false);
+    };
+    const heightFieldBuffer = heightField.slice().buffer;
+    routeWorker.postMessage({
+      type: 'compute',
+      version,
+      N,
+      CORE_N,
+      CORE_OFFSET,
+      entriesPerEdge,
+      maxHeightWeight,
+      altitudes: altitudes.slice(),
+      heightFieldBuffer,
+    }, [heightFieldBuffer]);
   });
-
-  updateMetrics();
-  drawMiniMap();
-  if (noiseEnabled) scheduleExternalityLayer();
-  applyRouteVisibility();
 }
 
 function updateMetrics() {
@@ -748,7 +863,7 @@ function updateMetrics() {
     const row = document.createElement('div');
     row.className = 'alt';
     const pct = Math.round(s.flyPct.core * 100);
-    row.innerHTML = `<span class="sw" style="background:${ROUTE_COLOR};opacity:${Math.min(1, (0.18 + 0.75 * s.weight) * routeOpacityScale).toFixed(2)}"></span><span>${s.alt} m</span><span style="margin-left:auto">W ${(s.weight).toFixed(2)} · ${s.paths.length} 条 · ${pct}%</span>`;
+    row.innerHTML = `<span class="sw" style="background:${ROUTE_COLOR};opacity:${Math.min(1, (0.18 + 0.75 * s.weight) * routeOpacityScale).toFixed(2)}"></span><span>${s.alt} m</span><span style="margin-left:auto">W ${(s.weight).toFixed(2)} · ${s.pathCount || s.paths.length} 条 · ${pct}%</span>`;
     legend.appendChild(row);
   });
 }
@@ -814,7 +929,7 @@ function drawMiniMap() {
   }
   ctx.globalAlpha = 1;
     const cap = $(`mapCap-${si}`);
-    if (cap) cap.textContent = `${s.paths.length} 条 · ${Math.round(s.flyPct.core * 100)}%`;
+    if (cap) cap.textContent = `${s.pathCount || s.paths.length} 条 · ${Math.round(s.flyPct.core * 100)}%`;
   });
 }
 
@@ -930,14 +1045,16 @@ function clearNoiseLayer() {
 
 function scheduleExternalityLayer() {
   clearTimeout(externalityTimer);
+  const version = ++externalityVersion;
   $('busy').classList.add('on');
-  externalityTimer = setTimeout(() => {
-    buildNoiseLayer();
-    $('busy').classList.remove('on');
+  externalityTimer = setTimeout(async () => {
+    await nextFrame();
+    await buildNoiseLayer(version);
+    if (version === externalityVersion && !computing) $('busy').classList.remove('on');
   }, 30);
 }
 
-function buildNoiseLayer() {
+async function buildNoiseLayer(version) {
   clearNoiseLayer();
   const segments = collectNoiseSegments();
   if (!segments.length) return;
@@ -953,6 +1070,10 @@ function buildNoiseLayer() {
       const y = terrainVisualHeight(x, z) + 0.42;
       groundPositions.push(x, y, z);
       groundValues.push(channel.ground ? noiseAt(x, y, z, segments) * channel.ground : 0);
+    }
+    if (j % 5 === 4) {
+      if (version !== externalityVersion) return;
+      await nextFrame();
     }
   }
   for (let j = 0; j < NOISE_GRID; j++) {
@@ -973,14 +1094,24 @@ function buildNoiseLayer() {
       probeValues.push(noiseAt(pos.getX(i) + b.group.position.x, pos.getY(i) + b.group.position.y, pos.getZ(i) + b.group.position.z, segments) * channel.facade);
     }
     overlayGeoms.push({ b, geom });
+    if (overlayGeoms.length % 8 === 0) {
+      if (version !== externalityVersion) return;
+      await nextFrame();
+    }
   }
 
   const norm = normalizeNoise(probeValues);
   const groundColors = [];
-  for (const v of groundValues) {
+  for (let i = 0; i < groundValues.length; i++) {
+    const v = groundValues[i];
     const c = colorRamp(Math.log1p(v / norm * 3.2) / Math.log1p(3.2), channel.palette);
     groundColors.push(c[0], c[1], c[2]);
+    if (i % 500 === 499) {
+      if (version !== externalityVersion) return;
+      await nextFrame();
+    }
   }
+  if (version !== externalityVersion) return;
   const groundGeom = new THREE.BufferGeometry();
   groundGeom.setAttribute('position', new THREE.Float32BufferAttribute(groundPositions, 3));
   groundGeom.setAttribute('color', new THREE.Float32BufferAttribute(groundColors, 3));
@@ -1009,7 +1140,12 @@ function buildNoiseLayer() {
         pos.getY(i) + normal.getY(i) * 0.45,
         pos.getZ(i) + normal.getZ(i) * 0.45
       );
+      if (i % 1200 === 1199) {
+        if (version !== externalityVersion) return;
+        await nextFrame();
+      }
     }
+    if (version !== externalityVersion) return;
     pos.needsUpdate = true;
     geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
     const mesh = new THREE.Mesh(geom, noiseMat.clone());
@@ -1043,19 +1179,30 @@ function applyTerrainMode() {
 }
 
 let needsCompute = false;
+let computing = false;
+let computeVersion = 0;
 let busyTimer = null;
 function scheduleCompute() {
   needsCompute = true;
+  computeVersion++;
+  stopRouteWorker();
+  computing = false;
   $('busy').classList.add('on');
   clearTimeout(busyTimer);
 }
 
 function flushCompute() {
-  if (!needsCompute) return;
+  if (!needsCompute || computing) return;
   needsCompute = false;
-  recompute();
-  clearTimeout(busyTimer);
-  busyTimer = setTimeout(() => $('busy').classList.remove('on'), 160);
+  computing = true;
+  const version = computeVersion;
+  recompute(version).finally(() => {
+    if (version !== computeVersion) return;
+    computing = false;
+    if (needsCompute) return;
+    clearTimeout(busyTimer);
+    busyTimer = setTimeout(() => $('busy').classList.remove('on'), 160);
+  });
 }
 
 BLOCKS.forEach(block => {
@@ -1091,6 +1238,7 @@ $('noiseToggle').addEventListener('change', e => {
   if (noiseEnabled) {
     scheduleExternalityLayer();
   } else {
+    externalityVersion++;
     clearNoiseLayer();
   }
 });
@@ -1152,6 +1300,5 @@ function animate(t) {
 buildMapTiles();
 currentPreset = BLOCKS[0].name;
 loadPreset(currentPreset);
-recompute();
 onResize();
 animate(0);
