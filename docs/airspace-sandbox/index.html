@@ -62,7 +62,7 @@
   .toggle:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.16s}
   .switchRow input:checked + .toggle{background:#242a31}
   .switchRow input:checked + .toggle:before{transform:translateX(18px)}
-  .radioGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+  .radioGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .radioChip{border:1px solid var(--soft);background:#fff;border-radius:7px;min-height:34px;padding:7px 9px;
     display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer}
   .radioChip input{accent-color:#242a31}
@@ -72,29 +72,20 @@
   .kernelSketch svg{position:absolute;inset:0;width:100%;height:100%}
   .kernelSketch .droneIcon{position:absolute;left:50%;top:21px;width:42px;height:42px;transform:translateX(-50%);
     opacity:.92}
-  .kernelSketch .range{opacity:0;fill:none;stroke-width:2.2;vector-effect:non-scaling-stroke;
-    clip-path:circle(0 at 50% 39%)}
-  .range.noise{stroke:#4867c6}
-  .range.risk{fill:#d94841;stroke:#d94841}
-  .range.privacy{fill:#557fd3;stroke:#557fd3}
-  .range.visual{stroke:#e08f2f;stroke-dasharray:230;stroke-dashoffset:230;clip-path:none}
-  .range.conflict{fill:#222831;stroke:#222831}
-  .kernelSketch[data-channel="noise"] .range.noise{animation:projectRange .55s ease-out forwards;opacity:.30}
-  .kernelSketch[data-channel="risk"] .range.risk{animation:projectRange .55s ease-out forwards;opacity:.24}
-  .kernelSketch[data-channel="privacy"] .range.privacy{animation:projectRange .55s ease-out forwards;opacity:.22}
-  .kernelSketch[data-channel="visual"] .range.visual{animation:drawSight .62s ease-out forwards;opacity:.64}
-  .kernelSketch[data-channel="conflict"] .range.conflict{animation:projectRange .46s ease-out forwards;opacity:.22}
-  .sketchRoute{stroke:#1677ff;stroke-width:3;stroke-linecap:round;opacity:.62}
+  .kernelSketch .range{opacity:0;stroke:none;vector-effect:non-scaling-stroke;clip-path:circle(0 at 50% 34%)}
+  .range.noise{fill:#4867c6}
+  .range.risk{fill:#d94841}
+  .range.privacy{fill:#557fd3}
+  .range.visual{fill:#e08f2f;clip-path:circle(0 at 20% 68%)}
+  .kernelSketch[data-channel="noise"] .range.noise{animation:projectFromDrone .55s ease-out forwards;opacity:.28}
+  .kernelSketch[data-channel="risk"] .range.risk{animation:projectFromDrone .55s ease-out forwards;opacity:.24}
+  .kernelSketch[data-channel="privacy"] .range.privacy{animation:projectFromDrone .55s ease-out forwards;opacity:.22}
+  .kernelSketch[data-channel="visual"] .range.visual{animation:projectFromPerson .55s ease-out forwards;opacity:.28}
+  .personIcon{opacity:0;fill:#30363d;transition:opacity .16s}
+  .kernelSketch[data-channel="visual"] .personIcon{opacity:.78}
   .sketchGround{stroke:#c8cfd8;stroke-width:1.2}
-  .kernelLabels{position:absolute;left:10px;right:10px;bottom:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
-  .kernelLabels span{font-size:10px;line-height:1.2;text-align:center;color:#4f5862;white-space:nowrap}
-  .kernelSketch[data-channel="noise"] .kernelLabels [data-k="noise"],
-  .kernelSketch[data-channel="risk"] .kernelLabels [data-k="risk"],
-  .kernelSketch[data-channel="privacy"] .kernelLabels [data-k="privacy"],
-  .kernelSketch[data-channel="visual"] .kernelLabels [data-k="visual"],
-  .kernelSketch[data-channel="conflict"] .kernelLabels [data-k="conflict"]{color:#111820;font-weight:750}
-  @keyframes projectRange{from{clip-path:circle(0 at 50% 39%)}to{clip-path:circle(92% at 50% 39%)}}
-  @keyframes drawSight{to{stroke-dashoffset:0}}
+  @keyframes projectFromDrone{from{clip-path:circle(0 at 50% 34%)}to{clip-path:circle(95% at 50% 34%)}}
+  @keyframes projectFromPerson{from{clip-path:circle(0 at 20% 68%)}to{clip-path:circle(100% at 20% 68%)}}
   #mapsGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .mapTile{min-width:0}
   .mapTile canvas{width:132px;height:132px;display:block;background:#fff;border:1px solid var(--line);border-radius:7px}
@@ -145,27 +136,28 @@
     <div class="sec">
       <label class="lbl">外部性通道</label>
       <div class="row"><span class="k">当前内核</span><span class="v" id="channelV">噪声</span></div>
-      <div class="kernelSketch" id="kernelSketch" data-channel="noise" aria-label="五种外部性影响范围示意">
+      <div class="kernelSketch" id="kernelSketch" data-channel="noise" aria-label="外部性影响范围示意">
         <svg viewBox="0 0 420 150" aria-hidden="true">
           <line class="sketchGround" x1="26" y1="104" x2="394" y2="104"/>
-          <path class="sketchRoute" d="M126 43 C174 25 239 25 294 43"/>
-          <ellipse class="range noise" cx="210" cy="73" rx="124" ry="46"/>
-          <ellipse class="range risk" cx="249" cy="105" rx="74" ry="17" transform="rotate(9 249 105)"/>
-          <path class="range privacy" d="M205 58 L108 104 L312 104 Z"/>
-          <path class="range visual" d="M76 104 C126 73 162 57 205 47 M344 104 C293 73 258 57 215 47"/>
-          <circle class="range conflict" cx="212" cy="42" r="17"/>
+          <circle class="range noise" cx="210" cy="50" r="72"/>
+          <g class="range risk">
+            <path d="M210 50 L124 106 Q210 133 296 106 Z"/>
+            <ellipse cx="210" cy="106" rx="86" ry="19"/>
+          </g>
+          <path class="range privacy" d="M210 50 L128 50 A82 82 0 0 1 292 50 Z"/>
+          <path class="range visual" d="M84 98 L210 50 L84 120 Z"/>
+          <g class="personIcon">
+            <circle cx="72" cy="88" r="8"/>
+            <path d="M61 123 Q72 105 83 123 Z"/>
+          </g>
         </svg>
         <img class="droneIcon" src="assets/drone.svg" alt="">
-        <div class="kernelLabels">
-          <span data-k="noise">噪声</span><span data-k="risk">坠落</span><span data-k="privacy">隐私</span><span data-k="visual">视觉</span><span data-k="conflict">冲突</span>
-        </div>
       </div>
       <div class="radioGrid" id="channelRadios">
         <label class="radioChip"><input type="radio" name="externalityChannel" value="noise" checked>噪声</label>
         <label class="radioChip"><input type="radio" name="externalityChannel" value="risk">坠落风险</label>
         <label class="radioChip"><input type="radio" name="externalityChannel" value="privacy">隐私</label>
         <label class="radioChip"><input type="radio" name="externalityChannel" value="visual">视觉烦扰</label>
-        <label class="radioChip"><input type="radio" name="externalityChannel" value="conflict">空中冲突</label>
       </div>
     </div>
 

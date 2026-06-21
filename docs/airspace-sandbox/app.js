@@ -200,7 +200,6 @@ const CHANNELS = {
   risk: { label: '坠落风险', ground: 1, facade: 1, palette: 'coolwarm' },
   privacy: { label: '隐私', ground: 1, facade: 1, palette: 'coolwarm' },
   visual: { label: '视觉烦扰', ground: 1, facade: 1, palette: 'coolwarm' },
-  conflict: { label: '空中冲突', ground: 1, facade: 1, palette: 'coolwarm' },
 };
 
 function polygonArea(poly) {
@@ -861,25 +860,6 @@ function pointSegmentDistanceSq3(px, py, pz, a, b) {
 }
 
 function noiseAt(px, py, pz, segments) {
-  if (externalityChannel === 'conflict') {
-    let total = 0;
-    let vx = 0;
-    let vz = 0;
-    for (const s of segments) {
-      const dxz2 = pointSegDist2(px, pz, s.a.x, s.a.z, s.b.x, s.b.z);
-      const verticalGap = Math.abs(py - s.alt);
-      const layerWeight = Math.exp(-(verticalGap * verticalGap) / (2 * 28 * 28));
-      const w = s.amp * layerWeight / (55 + dxz2 * 2.6);
-      total += w;
-      vx += w * s.dirX;
-      vz += w * s.dirZ;
-    }
-    if (total <= 0) return 0;
-    const coherence = Math.min(1, Math.hypot(vx, vz) / total);
-    const headingMix = 1 - coherence;
-    return total * total * (0.16 + 0.84 * headingMix);
-  }
-
   let v = 0;
   for (const s of segments) {
     const d2 = pointSegmentDistanceSq3(px, py, pz, s.a, s.b);
