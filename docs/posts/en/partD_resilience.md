@@ -15,7 +15,7 @@ show: true
 
 **Original Title**: Agent-Based Modeling of Resilience and Cascading Failures in Highway Charging Networks
 **Interactive Briefing**: [https://ni1o1.github.io/showcase/ev-resilience/](https://ni1o1.github.io/showcase/ev-resilience/)
-**Original Link**: To be updated upon online publication (DOI pending)
+**Original Link**: [https://doi.org/10.1016/j.trd.2026.105478](https://doi.org/10.1016/j.trd.2026.105478)
 
 ![title](../posts/images/ev-resilience-header.jpg)
 

@@ -1,4 +1,4 @@
----
+const e=`---
 title: "Article Publication | TR part D | Agent-Based Modeling of Resilience and Cascading Failures in Highway Charging Networks"
 date: "2026-06-13"
 tags:
@@ -44,3 +44,4 @@ As electric vehicle penetration rises rapidly, the reliability of highway chargi
 ### Conclusion
 
 The study shows that the resilience weakness of highway charging networks lies not in the number of chargers but in the network propagation structure of failure stress and time-of-day load characteristics. Planning and operations should focus on potential secondary failure hubs downstream along corridors, reserve recovery margins for morning-peak cold-start loads, and allocate redundancy according to each station's failure pattern type rather than its size alone. The paper has been published in Transportation Research Part D — visit the [interactive briefing](https://ni1o1.github.io/showcase/ev-resilience/) to replay the cascading failure on the map.
+`;export{e as default};

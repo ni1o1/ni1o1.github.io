@@ -105,6 +105,11 @@
     .pipeline .step b { display:block; font-size:13.5px; color:var(--ink); }
     .pipeline .step.active { border-color:var(--teal); box-shadow:0 0 0 2px rgba(11,143,135,.18); transform:translateY(-2px); }
     .formula { font-family:var(--mono); font-size:13.5px; background:#0f2226; color:#9ddbd5; border-radius:8px; padding:12px 16px; margin-top:12px; overflow-x:auto; white-space:pre-wrap; }
+    .citationActions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:4px 0 8px; flex-wrap:wrap; }
+    .citationLabel { color:#39535b; font-size:13.5px; font-weight:600; }
+    .copyCitation { border:1px solid var(--line); background:#fff; color:#29434a; border-radius:8px; padding:7px 12px; font-size:12.5px; font-family:var(--sans); cursor:pointer; transition:background .18s ease, border-color .18s ease, color .18s ease; }
+    .copyCitation:hover { background:#edf6f5; border-color:#a9cbc6; color:#075e58; }
+    .copyCitation.copied { background:var(--teal); border-color:var(--teal); color:#fff; }
     .mathline { margin-top:14px; font-size:14.5px; color:var(--muted); overflow-x:auto; padding:2px 0; }
     .mathline .mathimg { vertical-align:middle; display:inline-block; max-width:100%; }
 
@@ -303,11 +308,16 @@
       <h2 class="reveal">论文一已发表，论文二在审</h2>
       <div class="pathList reveal">
         <div class="pathItem"><strong>论文一（已发表）</strong><a href="https://doi.org/10.1016/j.tbs.2025.101120" target="_blank" rel="noopener">Travel Behaviour and Society 42 (2026) 101120</a><small>行为发现与设计阈值</small></div>
-        <div class="pathItem"><strong>论文二（在审）</strong><small>开源 3D 语义注视分析管线，链接待录用后公开</small></div>
+        <div class="pathItem"><strong>论文二（在审）</strong><small>开源 3D 语义注视分析管线</small></div>
       </div>
       <details class="fine reveal" style="margin-top:18px;">
         <summary>引用本研究（BibTeX）</summary>
-        <div class="inner"><div class="formula">@article{jiang2026integrating,
+        <div class="inner citationBlock">
+          <div class="citationActions">
+            <span class="citationLabel">BibTeX</span>
+            <button class="copyCitation" type="button">复制 BibTeX</button>
+          </div>
+          <div class="formula">@article{jiang2026integrating,
   title   = {Integrating Virtual Reality-based eye-tracking with urban digital twin
              for unveiling pedestrian visual attention in wayfinding tasks},
   author  = {Jiang, Yinghong and Yao, Yao and Yu, Qing and Jiang, Ziwei and
@@ -407,8 +417,40 @@
         onChange(b.dataset);
       }));
     }
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
     const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }), {threshold:.12});
     $all(".reveal").forEach(el => io.observe(el));
+    $all(".copyCitation").forEach(btn => btn.addEventListener("click", async () => {
+      const block = btn.closest(".citationBlock");
+      const formula = block && block.querySelector(".formula");
+      if (!formula) return;
+      const original = btn.textContent;
+      try {
+        await copyText(formula.textContent.trim());
+        btn.textContent = "已复制";
+        btn.classList.add("copied");
+      } catch (err) {
+        btn.textContent = "复制失败";
+      }
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.classList.remove("copied");
+      }, 1600);
+    }));
     (function scrollspy() {
       const links = $all(".nav a");
       const map = new Map(links.map(a => [a.getAttribute("href").slice(1), a]));

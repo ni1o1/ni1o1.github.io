@@ -15,7 +15,7 @@ show: true
 
 **原文题目**: Agent-Based Modeling of Resilience and Cascading Failures in Highway Charging Networks
 **交互式简报**: [https://ni1o1.github.io/showcase/ev-resilience/](https://ni1o1.github.io/showcase/ev-resilience/)
-**原文链接**: 出版上线后更新（DOI 待分配）
+**原文链接**: [https://doi.org/10.1016/j.trd.2026.105478](https://doi.org/10.1016/j.trd.2026.105478)
 
 ![title](../posts/images/ev-resilience-header.jpg)
 

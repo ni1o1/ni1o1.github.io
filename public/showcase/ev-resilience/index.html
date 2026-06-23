@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>坏掉的只是一根充电枪,雪崩却在一百多公里外爆发 — 高速充电网络韧性 ABM 仿真</title>
-  <meta name="description" content="把长三角高速网的每一辆电动车放进智能体仿真,重演充电网络从拥堵、饱和到级联失效的全过程。Transportation Research Part D 录用研究的交互简报。">
+  <meta name="description" content="把长三角高速网的每一辆电动车放进智能体仿真,重演充电网络从拥堵、饱和到级联失效的全过程。Transportation Research Part D 正式发表研究的交互简报。">
   <meta property="og:title" content="坏掉的只是一根充电枪,雪崩却在一百多公里外爆发">
-  <meta property="og:description" content="长三角高速充电网络的级联失效交互仿真简报 — Transportation Research Part D 录用研究">
+  <meta property="og:description" content="长三角高速充电网络的级联失效交互仿真简报 — Transportation Research Part D 正式发表研究">
   <meta property="og:image" content="assets/og.jpg">
   <meta property="og:type" content="article">
   <style>
@@ -115,6 +115,11 @@
     .pipeline .step.active { border-color:var(--teal); box-shadow:0 0 0 2px rgba(11,143,135,.18); transform:translateY(-2px); }
     .formula { font-family:var(--mono); font-size:13.5px; background:#0f2226; color:#9ddbd5; border-radius:8px; padding:12px 16px; margin-top:12px; overflow-x:auto; line-height:1.9; white-space:pre-wrap; }
     .formula sub, .formula sup { font-size:.72em; }
+    .citationActions { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; flex-wrap:wrap; }
+    .citationActions h3 { margin:0; }
+    .copyCitation { border:1px solid var(--line); background:#fff; color:#29434a; border-radius:8px; padding:7px 12px; font-size:12.5px; font-family:var(--sans); cursor:pointer; transition:background .18s ease, border-color .18s ease, color .18s ease; }
+    .copyCitation:hover { background:#edf6f5; border-color:#a9cbc6; color:#075e58; }
+    .copyCitation.copied { background:var(--teal); border-color:var(--teal); color:#fff; }
     .mathline { margin-top:14px; font-size:14.5px; color:var(--muted); overflow-x:auto; padding:2px 0; }
     .mathline .mathimg { vertical-align:middle; display:inline-block; max-width:100%; }
     .mathline .mathside { color:var(--muted); }
@@ -168,12 +173,12 @@
     <canvas id="heroCanvas" aria-hidden="true"></canvas>
     <div class="heroShade" aria-hidden="true"></div>
     <div class="wrap heroContent">
-      <div class="kicker">Interactive Research Briefing · Transportation Research Part D · 2026 录用</div>
+      <div class="kicker">Interactive Research Briefing · Transportation Research Part D · 158 (2026) 105478</div>
       <h1><span>坏掉的只是一根充电枪,</span><span>雪崩却在<em>一百多公里外</em>爆发</span></h1>
       <p class="heroLead">我们把长三角高速网的每一辆电动车、每一根充电枪放进同一个仿真,让充电站一个个"出故障"——看排队、弃充和电量焦虑,如何把一次局部故障放大成全网级联失效。</p>
       <div class="heroLinks">
         <a href="#cascade">🗺 重演级联失效</a>
-        <a href="#cite">📄 论文(录用,即将上线)</a>
+        <a href="https://doi.org/10.1016/j.trd.2026.105478">📄 论文原文</a>
         <a href="#cite">📚 引用</a>
       </div>
     </div>
@@ -292,20 +297,25 @@
   <section id="cite">
     <div class="wrap">
       <div class="eyebrow reveal">04 / 引用</div>
-      <h2 class="reveal">论文已被 Transportation Research Part D 录用</h2>
+      <h2 class="reveal">论文已在 Transportation Research Part D 正式发表</h2>
       <div class="pathList reveal">
-        <div class="pathItem"><strong>论文链接</strong><span style="color:var(--soft)">出版上线后在此更新(DOI 待分配)</span></div>
+        <div class="pathItem"><strong>论文链接</strong><a href="https://doi.org/10.1016/j.trd.2026.105478">https://doi.org/10.1016/j.trd.2026.105478</a></div>
       </div>
-      <div class="panel reveal" style="margin-top:18px;">
-        <h3>引用</h3>
+      <div class="panel reveal citationBlock" style="margin-top:18px;">
+        <div class="citationActions">
+          <h3>引用</h3>
+          <button class="copyCitation" type="button">复制 BibTeX</button>
+        </div>
         <div class="formula">@article{yuan2026abm_evcn_resilience,
   title   = {Agent-Based Modeling of Resilience and Cascading Failures
              in Highway Charging Networks},
   author  = {Yuan, Jian and Zhao, Qijian and Yu, Qing and Jiang, Haoran
              and Yang, Weiyao and Zhang, Haoran},
   journal = {Transportation Research Part D: Transport and Environment},
+  volume  = {158},
+  pages   = {105478},
   year    = {2026},
-  note    = {in press}
+  doi     = {10.1016/j.trd.2026.105478}
 }</div>
       </div>
     </div>
@@ -363,8 +373,40 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       return {ctx, w: cssW, h: cssH};
     }
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+    }
     const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add("in"); }), {threshold:.12});
     $all(".reveal").forEach(el => io.observe(el));
+    $all(".copyCitation").forEach(btn => btn.addEventListener("click", async () => {
+      const block = btn.closest(".citationBlock");
+      const formula = block && block.querySelector(".formula");
+      if (!formula) return;
+      const original = btn.textContent;
+      try {
+        await copyText(formula.textContent.trim());
+        btn.textContent = "已复制";
+        btn.classList.add("copied");
+      } catch (err) {
+        btn.textContent = "复制失败";
+      }
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.classList.remove("copied");
+      }, 1600);
+    }));
     (function () {
       const links = $all(".nav a");
       const map = new Map(links.map(a => [a.getAttribute("href").slice(1), a]));

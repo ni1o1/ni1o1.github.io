@@ -125,12 +125,6 @@ export default function Home() {
               image: '/images/ev-resilience-showcase.jpg',
               href: '/showcase/ev-resilience/',
             },
-            {
-              id: 'coming-soon',
-              title_zh: '更多项目即将上线',
-              title_en: 'More projects coming soon',
-              image: null,
-            },
           ].map((project) => {
             const inner = (
               <div className="aspect-square rounded-lg overflow-hidden relative bg-slate-800">
@@ -154,11 +148,6 @@ export default function Home() {
                   <h3 className="text-xs sm:text-sm font-medium text-white leading-tight">
                     {i18n.language === 'zh' ? project.title_zh : project.title_en}
                   </h3>
-                  {!project.path && !project.href && (
-                    <span className="text-[10px] text-white/40 mt-0.5 block">
-                      {i18n.language === 'zh' ? '即将上线' : 'Coming soon'}
-                    </span>
-                  )}
                 </div>
               </div>
             );

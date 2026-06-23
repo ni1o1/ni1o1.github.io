@@ -1,4 +1,4 @@
----
+const n=`---
 title: "论文发表 | TR part D | 高速公路充电网络韧性与级联失效的智能体仿真"
 date: "2026-06-13"
 tags:
@@ -44,3 +44,4 @@ show: true
 ### 论文总结
 
 本研究表明，高速公路充电网络的韧性短板不在"建桩数量"，而在故障压力的网络传播结构与时段载荷特征。规划与运维应重点关注走廊下游的潜在次生失效枢纽、为早高峰冷启动载荷预留恢复余量，并依据站点的失效模式类型（而非单纯规模）差异化配置冗余。论文已在 Transportation Research Part D 正式发表，欢迎访问[交互式简报](https://ni1o1.github.io/showcase/ev-resilience/)在地图上重演级联失效的全过程。
+`;export{n as default};
