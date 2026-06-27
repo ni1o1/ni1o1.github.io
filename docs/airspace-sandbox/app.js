@@ -51,6 +51,7 @@ let routesVisible = true;
 let noiseEnabled = true;
 let demEnabled = false;
 let heightScaleVisible = true;
+let haloBuildingsVisible = true;
 let externalityChannel = 'noise';
 let heightField = new Float32Array(N * N);
 let flyable = new Uint8Array(N * N);
@@ -186,6 +187,17 @@ scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, heightScaleGroup);
 
 const buildingMat = new THREE.MeshStandardMaterial({ color: '#f8f8f5', roughness: 0.72, metalness: 0.0, vertexColors: true, side: THREE.DoubleSide });
 const edgeMat = new THREE.LineBasicMaterial({ color: '#67717d', transparent: true, opacity: 0.92 });
+const haloBuildingMat = new THREE.MeshStandardMaterial({
+  color: '#d7dde3',
+  roughness: 0.82,
+  metalness: 0,
+  vertexColors: true,
+  side: THREE.DoubleSide,
+  transparent: true,
+  opacity: 0.24,
+  depthWrite: false,
+});
+const haloEdgeMat = new THREE.LineBasicMaterial({ color: '#96a1ad', transparent: true, opacity: 0.22, depthWrite: false });
 const scaleMat = new THREE.LineBasicMaterial({ color: '#242a31', transparent: true, opacity: 0.78 });
 const terrainLineMat = new THREE.LineBasicMaterial({ color: '#7d8791', transparent: true, opacity: 0.32 });
 const noiseMat = new THREE.MeshBasicMaterial({
@@ -346,16 +358,18 @@ function makeBuilding(raw, addToScene = true) {
     h: Math.max(3, Math.min(220, raw.height || 12)),
     minH: Math.max(0, Math.min(210, raw.minHeight || 0)),
     isPart: Boolean(raw.isPart),
+    isHalo: raw.role === 'halo' || raw.tags?.role === 'halo',
   };
   if (b.h <= b.minH + 1) b.h = b.minH + 4;
   if (!addToScene) return b;
   b.group = new THREE.Group();
   b.group.position.set(b.x, terrainVisualHeight(b.x, b.z) + b.minH + (b.minH > 0 ? 0.08 : 0), b.z);
-  b.box = new THREE.Mesh(makePrismGeometry(b.localPoly, b.h - b.minH), buildingMat);
+  b.box = new THREE.Mesh(makePrismGeometry(b.localPoly, b.h - b.minH), b.isHalo ? haloBuildingMat : buildingMat);
   b.box.castShadow = false;
   b.box.receiveShadow = false;
   b.box.userData = { type: 'building', id: b.id };
-  b.edges = new THREE.LineSegments(makeOutlineGeometry(b.localPoly, b.h - b.minH), edgeMat);
+  b.edges = new THREE.LineSegments(makeOutlineGeometry(b.localPoly, b.h - b.minH), b.isHalo ? haloEdgeMat : edgeMat);
+  if (b.isHalo) b.group.renderOrder = 1;
   b.group.add(b.box, b.edges);
   buildingGroup.add(b.group);
   return b;
@@ -503,6 +517,7 @@ function loadPreset(name) {
   buildTerrain();
   obstacleBuildings = currentBlock.buildings.map(raw => makeBuilding(raw, false));
   currentBlock.buildings.forEach(raw => buildings.push(makeBuilding(raw, true)));
+  applyAuxiliaryBuildingVisibility();
   if ($('presets').value !== currentBlock.name) $('presets').value = currentBlock.name;
   scheduleCompute();
 }
@@ -1086,6 +1101,7 @@ async function buildNoiseLayer(version) {
   const probeValues = groundValues.slice();
   const overlayGeoms = [];
   for (const b of buildings) {
+    if (b.isHalo) continue;
     if (!buildingTouchesCore(b)) continue;
     const geom = b.box.geometry.clone();
     geom.computeVertexNormals();
@@ -1171,10 +1187,17 @@ function applyRouteVisibility() {
   anchorGroup.visible = routesVisible;
 }
 
+function applyAuxiliaryBuildingVisibility() {
+  for (const b of buildings) {
+    if (b.isHalo && b.group) b.group.visible = haloBuildingsVisible;
+  }
+}
+
 function applyTerrainMode() {
   clearNoiseLayer();
   buildTerrain();
   buildings.forEach(syncBuilding);
+  applyAuxiliaryBuildingVisibility();
   scheduleCompute();
 }
 
@@ -1268,6 +1291,11 @@ $('demToggle').addEventListener('change', e => {
 $('heightScaleToggle').addEventListener('change', e => {
   heightScaleVisible = e.target.checked;
   heightScaleGroup.visible = heightScaleVisible;
+});
+
+$('haloToggle').addEventListener('change', e => {
+  haloBuildingsVisible = e.target.checked;
+  applyAuxiliaryBuildingVisibility();
 });
 
 function onResize() {
