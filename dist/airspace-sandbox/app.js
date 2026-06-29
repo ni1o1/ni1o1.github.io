@@ -7,11 +7,18 @@ const DOMAIN = CORE_DOMAIN + HALO_M * 2;
 const CELL = 10;
 const N = Math.round(DOMAIN / CELL);
 const VIEW_DOMAIN = 950;
+const HEIGHT_GUIDE_DOMAIN = 650;
 const HALF = DOMAIN / 2;
 const CORE_HALF = CORE_DOMAIN / 2;
 const VIEW_HALF = VIEW_DOMAIN / 2;
 const ROUTE_COLOR = '#1677ff';
 const SAFETY_M = 4;
+const BOUNDARY_SNAP_M = 60;
+const FLYABLE_VISUAL_BASE_M = 5;
+const FLYABLE_VISUAL_BUFFER_M = 5;
+const FLYABLE_VISUAL_CLEARANCE_M = 5; // 屋顶以上垂直安全间距:超过即可飞
+const FLYABLE_VISUAL_BAND_M = 5;      // 高度分层步长(梯田粒度)
+const FLYABLE_RANGE_HALF = 325;       // 可飞体计算范围 = 从中心 650m(±325),纳入 halo 环建筑
 const ALT_MIN = 25;
 const ALT_MAX = 120;
 const WEIGHT_CENTER = 65;
@@ -47,11 +54,16 @@ let altitudes = buildAltitudes(HEIGHT_GAP);
 let maxHeightWeight = Math.max(...altitudes.map(heightWeight));
 let entriesPerEdge = 6;
 let routeOpacityScale = 1;
-let routesVisible = true;
+let routesVisible = false;
 let noiseEnabled = true;
 let demEnabled = false;
+let buildingsVisible = true;
+let shadowsEnabled = true;
+let shadowBlurPct = 215;
 let heightScaleVisible = true;
-let haloBuildingsVisible = true;
+let haloBuildingsVisible = false;
+let heightGuidesVisible = false;
+let flyableVolumeVisible = false;
 let externalityChannel = 'noise';
 let heightField = new Float32Array(N * N);
 let flyable = new Uint8Array(N * N);
@@ -138,7 +150,8 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.35));
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.shadowMap.enabled = false;
+renderer.shadowMap.enabled = shadowsEnabled;
+renderer.shadowMap.type = THREE.VSMShadowMap;
 stage.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -156,13 +169,36 @@ controls.maxDistance = 3000;
 controls.maxPolarAngle = Math.PI * 0.49;
 const ORBIT_TARGET = new THREE.Vector3(0, 35, 0);
 controls.target.copy(ORBIT_TARGET);
+const CAMERA_DISTANCE = camera.position.distanceTo(ORBIT_TARGET);
+let cameraAzimuthDeg = -46;
+let cameraPitchDeg = 35;
+let suppressCameraControlSync = false;
+controls.addEventListener('change', syncCameraAnglesFromView);
 
 scene.add(new THREE.HemisphereLight('#ffffff', '#d7dde2', 0.72));
 const sun = new THREE.DirectionalLight('#ffffff', 1.15);
 sun.position.set(-360, 520, 280);
+sun.target.position.copy(ORBIT_TARGET);
+sun.castShadow = shadowsEnabled;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -560;
+sun.shadow.camera.right = 560;
+sun.shadow.camera.top = 560;
+sun.shadow.camera.bottom = -560;
+sun.shadow.camera.near = 20;
+sun.shadow.camera.far = 1600;
+sun.shadow.bias = -0.00018;
+sun.shadow.normalBias = 0.02;
+sun.shadow.radius = 6;
+if ('blurSamples' in sun.shadow) sun.shadow.blurSamples = 14;
 scene.add(sun);
+scene.add(sun.target);
+let buildingColor = '#c2c2c2';
+let sunAzimuthDeg = 350;
+let sunPitchDeg = 75;
 
 let terrainMesh = null;
+let shadowGroundMesh = null;
 const grid = new THREE.GridHelper(VIEW_DOMAIN, Math.round(VIEW_DOMAIN / CELL), '#aeb7c2', '#d7dce2');
 grid.material.transparent = true;
 grid.material.opacity = 0;
@@ -183,10 +219,13 @@ const routeGroup = new THREE.Group();
 const anchorGroup = new THREE.Group();
 const noiseGroup = new THREE.Group();
 const heightScaleGroup = new THREE.Group();
-scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, heightScaleGroup);
+const heightGuideGroup = new THREE.Group();
+const flyableVolumeGroup = new THREE.Group();
+const probeGroup = new THREE.Group();
+scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, heightScaleGroup, heightGuideGroup, flyableVolumeGroup, probeGroup);
 
-const buildingMat = new THREE.MeshStandardMaterial({ color: '#f8f8f5', roughness: 0.72, metalness: 0.0, vertexColors: true, side: THREE.DoubleSide });
-const edgeMat = new THREE.LineBasicMaterial({ color: '#67717d', transparent: true, opacity: 0.92 });
+const buildingMat = new THREE.MeshStandardMaterial({ color: buildingColor, roughness: 0.72, metalness: 0.0, vertexColors: true, side: THREE.DoubleSide });
+const edgeMat = new THREE.LineBasicMaterial({ color: '#67717d', transparent: true, opacity: 0.92, depthWrite: false });
 const haloBuildingMat = new THREE.MeshStandardMaterial({
   color: '#d7dde3',
   roughness: 0.82,
@@ -199,6 +238,31 @@ const haloBuildingMat = new THREE.MeshStandardMaterial({
 });
 const haloEdgeMat = new THREE.LineBasicMaterial({ color: '#96a1ad', transparent: true, opacity: 0.22, depthWrite: false });
 const scaleMat = new THREE.LineBasicMaterial({ color: '#242a31', transparent: true, opacity: 0.78 });
+const heightGuideMat = new THREE.MeshBasicMaterial({
+  color: ROUTE_COLOR,
+  transparent: true,
+  opacity: 0.95,
+  depthWrite: false,
+});
+const groundBoundaryMat = new THREE.MeshBasicMaterial({
+  color: '#7d8791',
+  transparent: true,
+  opacity: 0.88,
+  depthWrite: false,
+});
+const flyableVolumeMat = new THREE.MeshBasicMaterial({
+  color: '#9fd3ff',
+  transparent: true,
+  opacity: 0.28,
+  side: THREE.DoubleSide,
+  depthWrite: false,
+});
+const flyableOutlineMat = new THREE.LineBasicMaterial({
+  color: '#2f8fd7',
+  transparent: true,
+  opacity: 0.72,
+  depthWrite: false,
+});
 const terrainLineMat = new THREE.LineBasicMaterial({ color: '#7d8791', transparent: true, opacity: 0.32 });
 const noiseMat = new THREE.MeshBasicMaterial({
   vertexColors: true,
@@ -290,7 +354,7 @@ function makePrismGeometry(localPoly, height) {
 function applyFacadeShading(geom) {
   const normals = geom.getAttribute('normal');
   const colors = [];
-  const light = new THREE.Vector3(-0.55, 0.72, 0.42).normalize();
+  const light = sun.position.clone().normalize();
   for (let i = 0; i < normals.count; i++) {
     const n = new THREE.Vector3(normals.getX(i), normals.getY(i), normals.getZ(i)).normalize();
     const top = Math.max(0, n.y);
@@ -299,6 +363,51 @@ function applyFacadeShading(geom) {
     colors.push(shade, shade, shade);
   }
   geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+}
+
+function updateSunDirection() {
+  const az = THREE.MathUtils.degToRad(sunAzimuthDeg);
+  const pitch = THREE.MathUtils.degToRad(sunPitchDeg);
+  const distance = 620;
+  const horizontal = distance * Math.cos(pitch);
+  sun.position.set(
+    ORBIT_TARGET.x + Math.sin(az) * horizontal,
+    ORBIT_TARGET.y + Math.sin(pitch) * distance,
+    ORBIT_TARGET.z + Math.cos(az) * horizontal
+  );
+  sun.target.position.copy(ORBIT_TARGET);
+  sun.target.updateMatrixWorld();
+  sun.shadow.needsUpdate = true;
+}
+
+function updateBuildingAppearance() {
+  buildingMat.color.set(buildingColor);
+  for (const b of buildings) {
+    if (!b.box || b.isHalo) continue;
+    applyFacadeShading(b.box.geometry);
+  }
+}
+
+function applyShadowMode() {
+  renderer.shadowMap.enabled = shadowsEnabled;
+  renderer.shadowMap.needsUpdate = true;
+  sun.castShadow = shadowsEnabled;
+  const softness = shadowBlurPct / 100;
+  sun.shadow.radius = 1 + softness * 10;
+  if ('blurSamples' in sun.shadow) sun.shadow.blurSamples = Math.round(4 + softness * 18);
+  sun.shadow.needsUpdate = true;
+  if (terrainMesh) terrainMesh.receiveShadow = shadowsEnabled;
+  if (shadowGroundMesh) {
+    shadowGroundMesh.visible = shadowsEnabled;
+    shadowGroundMesh.receiveShadow = shadowsEnabled;
+    shadowGroundMesh.material.opacity = 0.34 - softness * 0.16;
+    shadowGroundMesh.material.needsUpdate = true;
+  }
+  for (const b of buildings) {
+    if (!b.box) continue;
+    b.box.castShadow = shadowsEnabled;
+    b.box.receiveShadow = shadowsEnabled;
+  }
 }
 
 function colorRamp(v, palette = 'heat') {
@@ -332,14 +441,29 @@ function colorRamp(v, palette = 'heat') {
 
 function makeOutlineGeometry(localPoly, height) {
   const pts = [];
+  const baseY = 0.16;
+  const topY = height + 0.02;
   const add = (a, b) => {
     pts.push(a[0], a[1], a[2], b[0], b[1], b[2]);
   };
   for (let i = 0; i < localPoly.length; i++) {
     const p = localPoly[i];
     const q = localPoly[(i + 1) % localPoly.length];
-    add([p[0], height, p[1]], [q[0], height, q[1]]);
-    add([p[0], 0, p[1]], [p[0], height, p[1]]);
+    add([p[0], baseY, p[1]], [q[0], baseY, q[1]]);
+    add([p[0], topY, p[1]], [q[0], topY, q[1]]);
+    add([p[0], baseY, p[1]], [p[0], topY, p[1]]);
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  return geom;
+}
+
+function makeFootprintLineGeometry(localPoly, y) {
+  const pts = [];
+  for (let i = 0; i < localPoly.length; i++) {
+    const p = localPoly[i];
+    const q = localPoly[(i + 1) % localPoly.length];
+    pts.push(p[0], y, p[1], q[0], y, q[1]);
   }
   const geom = new THREE.BufferGeometry();
   geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
@@ -350,6 +474,7 @@ function makeBuilding(raw, addToScene = true) {
   const absPoly = raw.polygon.map(p => [p[0], p[1]]);
   const c = centroid(absPoly);
   const localPoly = absPoly.map(p => [p[0] - c[0], p[1] - c[1]]);
+  const auxiliaryByRole = raw.role === 'halo' || raw.tags?.role === 'halo';
   const b = {
     id: nextId++,
     x: c[0],
@@ -358,19 +483,25 @@ function makeBuilding(raw, addToScene = true) {
     h: Math.max(3, Math.min(220, raw.height || 12)),
     minH: Math.max(0, Math.min(210, raw.minHeight || 0)),
     isPart: Boolean(raw.isPart),
-    isHalo: raw.role === 'halo' || raw.tags?.role === 'halo',
+    isHalo: auxiliaryByRole,
   };
   if (b.h <= b.minH + 1) b.h = b.minH + 4;
   if (!addToScene) return b;
   b.group = new THREE.Group();
   b.group.position.set(b.x, terrainVisualHeight(b.x, b.z) + b.minH + (b.minH > 0 ? 0.08 : 0), b.z);
   b.box = new THREE.Mesh(makePrismGeometry(b.localPoly, b.h - b.minH), b.isHalo ? haloBuildingMat : buildingMat);
-  b.box.castShadow = false;
-  b.box.receiveShadow = false;
+  b.box.castShadow = shadowsEnabled;
+  b.box.receiveShadow = shadowsEnabled;
   b.box.userData = { type: 'building', id: b.id };
   b.edges = new THREE.LineSegments(makeOutlineGeometry(b.localPoly, b.h - b.minH), b.isHalo ? haloEdgeMat : edgeMat);
+  b.edges.renderOrder = 2;
+  if (b.minH > 0 || b.isPart) {
+    b.roofSeam = new THREE.LineSegments(makeFootprintLineGeometry(b.localPoly, 0.34), b.isHalo ? haloEdgeMat : edgeMat);
+    b.roofSeam.renderOrder = 3;
+  }
   if (b.isHalo) b.group.renderOrder = 1;
   b.group.add(b.box, b.edges);
+  if (b.roofSeam) b.group.add(b.roofSeam);
   buildingGroup.add(b.group);
   return b;
 }
@@ -378,8 +509,10 @@ function makeBuilding(raw, addToScene = true) {
 function rebuildBuildingGeometry(b) {
   b.box.geometry.dispose();
   b.edges.geometry.dispose();
+  if (b.roofSeam) b.roofSeam.geometry.dispose();
   b.box.geometry = makePrismGeometry(b.localPoly, Math.max(1, b.h - b.minH));
   b.edges.geometry = makeOutlineGeometry(b.localPoly, Math.max(1, b.h - b.minH));
+  if (b.roofSeam) b.roofSeam.geometry = makeFootprintLineGeometry(b.localPoly, 0.34);
 }
 
 function syncBuilding(b) {
@@ -391,6 +524,12 @@ function buildTerrain() {
     scene.remove(terrainMesh);
     terrainMesh.geometry.dispose();
     terrainMesh.material.dispose();
+  }
+  if (shadowGroundMesh) {
+    scene.remove(shadowGroundMesh);
+    shadowGroundMesh.geometry.dispose();
+    shadowGroundMesh.material.dispose();
+    shadowGroundMesh = null;
   }
   if (terrainReliefLines) {
     scene.remove(terrainReliefLines);
@@ -421,11 +560,29 @@ function buildTerrain() {
     geom,
     new THREE.MeshStandardMaterial({ color: '#eef0ed', roughness: 0.94, metalness: 0 })
   );
-  terrainMesh.receiveShadow = false;
+  terrainMesh.receiveShadow = shadowsEnabled;
   scene.add(terrainMesh);
+  buildShadowGround();
   buildTerrainReliefLines();
   grid.position.y = Math.max(0.12, terrainVisualHeight(0, 0) + 0.12);
   buildHeightScale();
+}
+
+function buildShadowGround() {
+  const geom = new THREE.PlaneGeometry(VIEW_DOMAIN, VIEW_DOMAIN, 1, 1);
+  const mat = new THREE.ShadowMaterial({
+    color: '#000000',
+    opacity: 0.24,
+    transparent: true,
+    depthWrite: false,
+  });
+  shadowGroundMesh = new THREE.Mesh(geom, mat);
+  shadowGroundMesh.rotation.x = -Math.PI / 2;
+  shadowGroundMesh.position.set(0, Math.max(0.06, terrainVisualHeight(0, 0) + 0.06), 0);
+  shadowGroundMesh.receiveShadow = shadowsEnabled;
+  shadowGroundMesh.visible = shadowsEnabled;
+  shadowGroundMesh.renderOrder = 1;
+  scene.add(shadowGroundMesh);
 }
 
 function buildTerrainReliefLines() {
@@ -506,18 +663,97 @@ function buildHeightScale() {
   heightScaleGroup.visible = heightScaleVisible;
 }
 
+function addGuideTube(a, b, radius, material, group = heightGuideGroup) {
+  const start = a instanceof THREE.Vector3 ? a : new THREE.Vector3(a[0], a[1], a[2]);
+  const end = b instanceof THREE.Vector3 ? b : new THREE.Vector3(b[0], b[1], b[2]);
+  const mid = start.clone().add(end).multiplyScalar(0.5);
+  const dir = end.clone().sub(start);
+  const len = dir.length();
+  if (len <= 1e-6) return;
+  const geom = new THREE.CylinderGeometry(radius, radius, len, 10, 1, false);
+  const mesh = new THREE.Mesh(geom, material);
+  mesh.position.copy(mid);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  mesh.renderOrder = 7;
+  group.add(mesh);
+}
+
+function addGuideJoint(point, radius, material, group = heightGuideGroup) {
+  const geom = new THREE.SphereGeometry(radius, 10, 6);
+  const mesh = new THREE.Mesh(geom, material);
+  mesh.position.copy(point);
+  mesh.renderOrder = 7;
+  group.add(mesh);
+}
+
+function addGuidePolyline(points, radius, material, dashed = false) {
+  const dashSize = 18;
+  const gapSize = 8;
+  if (!dashed) {
+    for (const p of points) addGuideJoint(p, radius, material);
+  }
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    if (!dashed) {
+      addGuideTube(a, b, radius, material);
+      continue;
+    }
+    const dir = b.clone().sub(a);
+    const len = dir.length();
+    if (len <= 1e-6) continue;
+    dir.normalize();
+    for (let t = 0; t < len; t += dashSize + gapSize) {
+      const s = a.clone().addScaledVector(dir, t);
+      const e = a.clone().addScaledVector(dir, Math.min(len, t + dashSize));
+      addGuideTube(s, e, radius, material);
+      addGuideJoint(s, radius, material);
+      addGuideJoint(e, radius, material);
+    }
+  }
+}
+
+function buildHeightGuides() {
+  heightGuideGroup.clear();
+  const guideHalf = HEIGHT_GUIDE_DOMAIN / 2;
+  const groundY = Math.max(0.22, terrainVisualHeight(0, 0) + 0.22);
+  const groundPts = [
+    new THREE.Vector3(-guideHalf, groundY, -guideHalf),
+    new THREE.Vector3(guideHalf, groundY, -guideHalf),
+    new THREE.Vector3(guideHalf, groundY, guideHalf),
+    new THREE.Vector3(-guideHalf, groundY, guideHalf),
+    new THREE.Vector3(-guideHalf, groundY, -guideHalf),
+  ];
+  addGuidePolyline(groundPts, 0.75, groundBoundaryMat, false);
+  for (const alt of [60, 120]) {
+    const pts = [
+      new THREE.Vector3(-guideHalf, alt, -guideHalf),
+      new THREE.Vector3(guideHalf, alt, -guideHalf),
+      new THREE.Vector3(guideHalf, alt, guideHalf),
+      new THREE.Vector3(-guideHalf, alt, guideHalf),
+      new THREE.Vector3(-guideHalf, alt, -guideHalf),
+    ];
+    addGuidePolyline(pts, 0.65, heightGuideMat, true);
+  }
+  heightGuideGroup.visible = heightGuidesVisible;
+}
+
 function loadPreset(name) {
   currentPreset = name;
   currentBlock = BLOCKS.find(b => b.name === name) || BLOCKS[0];
   clearNoiseLayer();
+  clearFlyableVolume();
   buildingGroup.clear();
   buildings = [];
   obstacleBuildings = [];
   nextId = 1;
   buildTerrain();
+  buildHeightGuides();
   obstacleBuildings = currentBlock.buildings.map(raw => makeBuilding(raw, false));
   currentBlock.buildings.forEach(raw => buildings.push(makeBuilding(raw, true)));
+  if (typeof clearProbeFacade === 'function') clearProbeFacade();  // 换街区→立面缓存失效
   applyAuxiliaryBuildingVisibility();
+  rebuildFlyableVolume();
   if ($('presets').value !== currentBlock.name) $('presets').value = currentBlock.name;
   scheduleCompute();
 }
@@ -594,20 +830,33 @@ function computeFlyable(alt) {
 
 function boundaryAnchors() {
   const anchors = [];
-  const pick = cells => {
-    const ok = cells.filter(k => flyable[k]);
-    if (!ok.length) return;
-    const want = Math.min(entriesPerEdge, ok.length);
-    for (let t = 0; t < want; t++) anchors.push(ok[Math.floor((t + 0.5) / want * ok.length)]);
+  const depth = Math.max(1, Math.round(BOUNDARY_SNAP_M / CELL));
+  const snap = (edge, a) => {
+    for (let d = 0; d < depth; d++) {
+      let i = 0, j = 0;
+      if (edge === 'top') { i = a; j = d; }
+      else if (edge === 'bottom') { i = a; j = N - 1 - d; }
+      else if (edge === 'left') { i = d; j = a; }
+      else { i = N - 1 - d; j = a; }
+      const k = idx(i, j);
+      if (flyable[k]) return k;
+    }
+    return null;
   };
-  const top = [], bottom = [], left = [], right = [];
-  for (let i = 0; i < N; i++) {
-    top.push(idx(i, 0)); bottom.push(idx(i, N - 1));
-  }
-  for (let j = 0; j < N; j++) {
-    left.push(idx(0, j)); right.push(idx(N - 1, j));
-  }
-  [top, bottom, left, right].forEach(pick);
+  const pick = (edge, n) => {
+    const gates = [];
+    for (let a = 0; a < n; a++) {
+      const k = snap(edge, a);
+      if (k !== null) gates.push(k);
+    }
+    if (!gates.length) return;
+    const want = Math.min(entriesPerEdge, gates.length);
+    for (let t = 0; t < want; t++) anchors.push(gates[Math.floor((t + 0.5) / want * gates.length)]);
+  };
+  pick('top', N);
+  pick('bottom', N);
+  pick('left', N);
+  pick('right', N);
   return [...new Set(anchors)];
 }
 
@@ -725,16 +974,96 @@ async function routePathsForAltitude(alt, version) {
   return { alt, flyPct, anchors, paths, weight, flyable: new Uint8Array(flyable) };
 }
 
-function makeRouteBandMesh(paths, alt, opacity) {
+// 体素格 k → 世界中心 [x,z]
+function cellCenterXZ(k) {
+  return [gx(k % N), iToZ((k / N) | 0)];
+}
+
+// 视线检查:世界坐标 a→b,用栅格步进(Amanatides–Woo)遍历线段穿过的**每一个格**,
+// 要求全部可飞。逐格遍历(非采样)→ 不会从两采样点之间漏掉被擦过的建筑格。
+function segmentClear(ax, az, bx, bz, flyable) {
+  const x0 = (ax + HALF) / CELL, y0 = (az + HALF) / CELL;
+  const x1 = (bx + HALF) / CELL, y1 = (bz + HALF) / CELL;
+  let i = Math.floor(x0), j = Math.floor(y0);
+  const iEnd = Math.floor(x1), jEnd = Math.floor(y1);
+  const dx = x1 - x0, dy = y1 - y0;
+  const stepi = dx > 0 ? 1 : -1, stepj = dy > 0 ? 1 : -1;
+  const tDeltaX = dx !== 0 ? Math.abs(1 / dx) : Infinity;
+  const tDeltaY = dy !== 0 ? Math.abs(1 / dy) : Infinity;
+  let tMaxX = dx !== 0 ? (dx > 0 ? (i + 1 - x0) : (x0 - i)) * tDeltaX : Infinity;
+  let tMaxY = dy !== 0 ? (dy > 0 ? (j + 1 - y0) : (y0 - j)) * tDeltaY : Infinity;
+  const blocked = (ci, cj) => ci < 0 || ci >= N || cj < 0 || cj >= N || !flyable[idx(ci, cj)];
+  if (blocked(i, j)) return false;
+  let guard = 0;
+  while ((i !== iEnd || j !== jEnd) && guard++ < 4 * N) {
+    if (tMaxX < tMaxY) { tMaxX += tDeltaX; i += stepi; }
+    else { tMaxY += tDeltaY; j += stepj; }
+    if (blocked(i, j)) return false;
+  }
+  return true;
+}
+
+// 串拉(string-pulling):贪心连接视线可达的最远点,把体素锯齿压成几段直线(保证不穿障碍)。
+function stringPull(pts, flyable) {
+  if (pts.length <= 2) return pts.slice();
+  const out = [pts[0]];
+  let anchor = 0;
+  while (anchor < pts.length - 1) {
+    let next = anchor + 1;
+    for (let j = pts.length - 1; j > anchor + 1; j--) {
+      if (segmentClear(pts[anchor][0], pts[anchor][1], pts[j][0], pts[j][1], flyable)) { next = j; break; }
+    }
+    out.push(pts[next]);
+    anchor = next;
+  }
+  return out;
+}
+
+// 带避障守卫的拐角圆角:每个拐角只在"切出来的两段都视线可达"时才切,否则保留尖角。
+// 圆角后的整条折线每一段都经 segmentClear 校验,绝不会切进建筑。
+function roundCorners(pts, flyable, iters = 2) {
+  let cur = pts;
+  for (let it = 0; it < iters; it++) {
+    if (cur.length <= 2) break;
+    const next = [cur[0]];
+    for (let i = 1; i < cur.length - 1; i++) {
+      const a = cur[i - 1], b = cur[i], c = cur[i + 1];
+      const q = [b[0] + (a[0] - b[0]) * 0.25, b[1] + (a[1] - b[1]) * 0.25];
+      const r = [b[0] + (c[0] - b[0]) * 0.25, b[1] + (c[1] - b[1]) * 0.25];
+      const prev = next[next.length - 1];
+      if (segmentClear(prev[0], prev[1], q[0], q[1], flyable) &&
+          segmentClear(q[0], q[1], r[0], r[1], flyable)) {
+        next.push(q, r);
+      } else {
+        next.push(b); // 切角会蹭楼 → 保留原拐角(那段本就安全)
+      }
+    }
+    const end = cur[cur.length - 1];
+    const tail = next[next.length - 1];
+    if (!segmentClear(tail[0], tail[1], end[0], end[1], flyable)) {
+      next[next.length - 1] = cur[cur.length - 2]; // 末段蹭楼 → 退回原倒数第二点
+    }
+    next.push(end);
+    cur = next;
+  }
+  return cur;
+}
+
+// 体素路径 → 平滑世界折线:先串拉去锯齿(几段安全直线),再守卫式圆角。
+function smoothRoutePath(cells, flyable) {
+  if (cells.length < 2) return cells.map(cellCenterXZ);
+  return roundCorners(stringPull(cells.map(cellCenterXZ), flyable), flyable, 2);
+}
+
+function makeRouteBandMesh(paths, alt, opacity, flyable) {
   const positions = [];
   const indices = [];
   const halfWidth = 1.35;
   for (const cells of paths) {
-    for (let p = 0; p < cells.length - 1; p++) {
-      const a = cells[p];
-      const b = cells[p + 1];
-      const ax = gx(a % N), az = iToZ((a / N) | 0);
-      const bx = gx(b % N), bz = iToZ((b / N) | 0);
+    const poly = flyable ? smoothRoutePath(cells, flyable) : cells.map(cellCenterXZ);
+    for (let p = 0; p < poly.length - 1; p++) {
+      const ax = poly[p][0], az = poly[p][1];
+      const bx = poly[p + 1][0], bz = poly[p + 1][1];
       const dx = bx - ax;
       const dz = bz - az;
       const len = Math.hypot(dx, dz) || 1;
@@ -782,6 +1111,252 @@ function disposeRouteLayer() {
   anchorGroup.clear();
 }
 
+function clearFlyableVolume() {
+  for (const child of flyableVolumeGroup.children) {
+    child.geometry?.dispose();
+    if (Array.isArray(child.material)) child.material.forEach(mat => mat.dispose());
+  }
+  flyableVolumeGroup.clear();
+}
+
+function signedLoopAreaWorld(loop) {
+  let a = 0;
+  for (let i = 0; i < loop.length; i++) {
+    const p = loop[i], q = loop[(i + 1) % loop.length];
+    a += p[0] * q[1] - q[0] * p[1];
+  }
+  return a / 2;
+}
+
+function ensureWinding(loop, wantCCW) {
+  const isCCW = signedLoopAreaWorld(loop) > 0;
+  return isCCW === wantCCW ? loop : loop.slice().reverse();
+}
+
+// 在高度 y 处把"外环+孔"三角化成一张水平盖(材质 DoubleSide,faceUp 仅决定缠绕)。
+function emitCap(outer, holes, y, faceUp, positions, indices) {
+  const o = ensureWinding(outer, true);
+  const hs = holes.map(h => ensureWinding(h, false));
+  const tris = THREE.ShapeUtils.triangulateShape(
+    o.map(p => new THREE.Vector2(p[0], p[1])),
+    hs.map(h => h.map(p => new THREE.Vector2(p[0], p[1]))),
+  );
+  const ids = [];
+  for (const loop of [o, ...hs]) {
+    for (const p of loop) { ids.push(positions.length / 3); positions.push(p[0], y, p[1]); }
+  }
+  for (const tri of tris) {
+    if (faceUp) indices.push(ids[tri[0]], ids[tri[1]], ids[tri[2]]);
+    else indices.push(ids[tri[2]], ids[tri[1]], ids[tri[0]]);
+  }
+}
+
+// 把若干闭合环(外环+孔)的侧墙从 y0 拉到 y1(仅出面,不画轮廓——
+// 相邻高度带的墙共面相接,填充本就连成一片;轮廓只画真实轮廓边,避免"分层"假象)。
+function emitWalls(loops, y0, y1, positions, indices) {
+  for (const loop of loops) {
+    if (loop.length < 2) continue;
+    const top = [];
+    const bottom = [];
+    for (const p of loop) {
+      top.push(positions.length / 3); positions.push(p[0], y1, p[1]);
+      bottom.push(positions.length / 3); positions.push(p[0], y0, p[1]);
+    }
+    for (let i = 0; i < loop.length; i++) {
+      const j = (i + 1) % loop.length;
+      indices.push(bottom[i], bottom[j], top[j], bottom[i], top[j], top[i]);
+    }
+  }
+}
+
+// 在高度 y 画一圈水平轮廓线(地板/天花板/屋顶盖的边缘)。
+function emitRingOutline(loops, y, outlinePositions) {
+  for (const loop of loops) {
+    for (let i = 0; i < loop.length; i++) {
+      const j = (i + 1) % loop.length;
+      outlinePositions.push(loop[i][0], y, loop[i][1], loop[j][0], y, loop[j][1]);
+    }
+  }
+}
+
+// ---- 可飞体块:Clipper 精确平面布尔(buffer + 并 + 减)+ 垂直拉伸 ----
+const CLIP_SCALE = 100; // Clipper 用整数坐标:米 ×100 → 厘米精度
+
+// Clipper 整数路径 → 世界坐标环 [[x,z],...]
+function clipPathToWorld(path) {
+  return path.map(pt => [pt.X / CLIP_SCALE, pt.Y / CLIP_SCALE]);
+}
+
+// 从 Clipper PolyTree 收集 {外环, 孔[]} 列表:非孔节点=实体,其直接子=孔,
+// 孔内的子节点(天井里的实心岛)递归再成实体。
+function collectClipperSolids(node, out) {
+  for (const child of node.Childs()) {
+    const outer = clipPathToWorld(child.Contour());
+    const holes = child.Childs().map(h => clipPathToWorld(h.Contour()));
+    if (outer.length >= 3) out.push({ outer, holes: holes.filter(h => h.length >= 3) });
+    for (const h of child.Childs()) collectClipperSolids(h, out); // 岛屿
+  }
+}
+
+// 可飞体的外裁剪方形 = 从中心 ±FLYABLE_RANGE_HALF(650m,纳入 halo 环),不再只裁到 core(500m)。
+function squareClipPath(S) {
+  const R = FLYABLE_RANGE_HALF;
+  return [[
+    { X: -R * S, Y: -R * S }, { X: R * S, Y: -R * S },
+    { X: R * S, Y: R * S }, { X: -R * S, Y: R * S },
+  ]];
+}
+
+// 给定一组建筑 → 它们 footprint 外扩 FLYABLE_VISUAL_BUFFER_M 的并集(Clipper 整数 Paths)。
+function bufferedObstaclePaths(buildings, S) {
+  const paths = buildings
+    .map(b => b.localPoly.map(p => ({ X: Math.round((p[0] + b.x) * S), Y: Math.round((p[1] + b.z) * S) })))
+    .filter(path => path.length >= 3);
+  if (!paths.length) return null;
+  const co = new ClipperLib.ClipperOffset(2, 0.25 * S);
+  co.AddPaths(paths, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+  const out = new ClipperLib.Paths();
+  co.Execute(out, FLYABLE_VISUAL_BUFFER_M * S);
+  return out.length ? out : null;
+}
+
+// PolyTree 的所有环(int),供后续布尔(梯田 ledge)复用。
+function polyTreePaths(tree) {
+  const out = [];
+  (function walk(node) {
+    for (const ch of node.Childs()) { out.push(ch.Contour()); walk(ch); }
+  })(tree);
+  return out;
+}
+
+// core 方形 ⊖ buffered 障碍 = 该高度的可飞面;返回 {solids:世界环嵌套, paths:int环}。
+function flyableRegion(buffered, S) {
+  const c = new ClipperLib.Clipper();
+  c.AddPaths(squareClipPath(S), ClipperLib.PolyType.ptSubject, true);
+  if (buffered && buffered.length) c.AddPaths(buffered, ClipperLib.PolyType.ptClip, true);
+  const tree = new ClipperLib.PolyTree();
+  c.Execute(ClipperLib.ClipType.ctDifference, tree,
+    ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+  const solids = [];
+  collectClipperSolids(tree, solids);
+  return { solids, paths: polyTreePaths(tree) };
+}
+
+// subjPaths ⊖ clipPaths → 世界环嵌套(算上层比下层新开出的"屋顶盖")。
+function differenceSolids(subjPaths, clipPaths, S) {
+  if (!subjPaths || !subjPaths.length) return [];
+  const c = new ClipperLib.Clipper();
+  c.AddPaths(subjPaths, ClipperLib.PolyType.ptSubject, true);
+  if (clipPaths && clipPaths.length) c.AddPaths(clipPaths, ClipperLib.PolyType.ptClip, true);
+  const tree = new ClipperLib.PolyTree();
+  c.Execute(ClipperLib.ClipType.ctDifference, tree,
+    ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+  const solids = [];
+  collectClipperSolids(tree, solids);
+  return solids;
+}
+
+// 可飞体块(高度相关 / 梯田):从 yBase(=5m)往上的整块,逐栋楼只挖到「屋顶 + 5m 间距」。
+// 实现:把每栋楼的"封顶高度"= ceil(屋顶+CLEARANCE) 作高度断点,逐高度带只减去仍在挡的楼
+// (Clipper buffer+difference),侧墙逐带挤出;每带交界处补一张"已开出区域"的水平盖(屋顶面),
+// 最底封地板、最高封天花板 → 得到一个在每栋楼上方阶梯式打开的可飞体。
+function addBufferedVolume(yBase, yMax, positions, indices, outlinePositions) {
+  if (typeof ClipperLib === 'undefined' || !obstacleBuildings.length) return false;
+  const S = CLIP_SCALE;
+  const STEP = FLYABLE_VISUAL_BAND_M;
+
+  // 每栋楼:从 yBase 一直挡到 屋顶+CLEARANCE(向上取整到 STEP,保证间距≥5m);clamp 到 [yBase,yMax]
+  const obstacles = obstacleBuildings.map(b => {
+    const top = Math.max(yBase, Math.min(yMax, Math.ceil((b.h + FLYABLE_VISUAL_CLEARANCE_M) / STEP) * STEP));
+    return { b, top };
+  }).filter(o => o.top > yBase + 1e-6);
+
+  // 没有障碍(或都比 yBase 还矮):整块方形从 yBase 到 yMax
+  if (!obstacles.length) {
+    const { solids } = flyableRegion(null, S);
+    for (const s of solids) {
+      const rings = [s.outer, ...s.holes];
+      emitWalls(rings, yBase, yMax, positions, indices);
+      emitCap(s.outer, s.holes, yBase, false, positions, indices);
+      emitCap(s.outer, s.holes, yMax, true, positions, indices);
+      emitRingOutline(rings, yBase, outlinePositions);
+      emitRingOutline(rings, yMax, outlinePositions);
+    }
+    return true;
+  }
+
+  // 高度断点 = yBase, yMax, 各楼封顶高度
+  const cuts = [...new Set([yBase, yMax, ...obstacles.map(o => o.top)])]
+    .filter(y => y >= yBase && y <= yMax).sort((a, b) => a - b);
+
+  let built = false;
+  let prevPaths = null; // 下层可飞面(int),用于交界处算屋顶盖
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const yA = cuts[i], yB = cuts[i + 1];
+    if (yB - yA < 1e-6) continue;
+    const blockers = obstacles.filter(o => o.top > yA + 1e-6).map(o => o.b);
+    const buffered = blockers.length ? bufferedObstaclePaths(blockers, S) : null;
+    const { solids, paths } = flyableRegion(buffered, S);
+
+    // 侧墙:逐带挤面但不画轮廓(相邻带共面,填充连成一片)
+    for (const s of solids) emitWalls([s.outer, ...s.holes], yA, yB, positions, indices);
+
+    if (i === 0) {
+      // 地板 + 地板边缘轮廓(含各楼在基面的 footprint)
+      for (const s of solids) {
+        emitCap(s.outer, s.holes, yA, false, positions, indices);
+        emitRingOutline([s.outer, ...s.holes], yA, outlinePositions);
+      }
+    } else {
+      // 这层比下层新开出的区域 = 某些楼的屋顶盖:封盖 + 屋顶边缘(只画水平边)
+      for (const s of differenceSolids(paths, prevPaths, S)) {
+        const rings = [s.outer, ...s.holes];
+        emitCap(s.outer, s.holes, yA, true, positions, indices);
+        emitRingOutline(rings, yA, outlinePositions);
+      }
+    }
+
+    if (i === cuts.length - 2) {
+      // 天花板 + 边缘(只画水平边)
+      for (const s of solids) {
+        const rings = [s.outer, ...s.holes];
+        emitCap(s.outer, s.holes, yB, true, positions, indices);
+        emitRingOutline(rings, yB, outlinePositions);
+      }
+    }
+    prevPaths = paths;
+    built = true;
+  }
+  return built;
+}
+
+function rebuildFlyableVolume() {
+  clearFlyableVolume();
+  flyableVolumeGroup.visible = flyableVolumeVisible;
+  if (!flyableVolumeVisible || !obstacleBuildings.length) return;
+  const positions = [];
+  const indices = [];
+  const outlinePositions = [];
+  const ok = addBufferedVolume(FLYABLE_VISUAL_BASE_M, ALT_MAX, positions, indices, outlinePositions);
+  if (!ok) return;
+  if (!positions.length || !indices.length) return;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geom.setIndex(indices);
+  geom.computeBoundingSphere();
+  const mat = flyableVolumeMat.clone();
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.renderOrder = 2;
+  flyableVolumeGroup.add(mesh);
+  if (outlinePositions.length) {
+    const outlineGeom = new THREE.BufferGeometry();
+    outlineGeom.setAttribute('position', new THREE.Float32BufferAttribute(outlinePositions, 3));
+    const outline = new THREE.LineSegments(outlineGeom, flyableOutlineMat.clone());
+    outline.renderOrder = 3;
+    flyableVolumeGroup.add(outline);
+  }
+}
+
 function drawAnchors(anchors, alt, opacity) {
   const pts = [];
   anchors.forEach(k => pts.push(gx(k % N), alt + 2.5, iToZ((k / N) | 0)));
@@ -794,10 +1369,10 @@ function drawAnchors(anchors, alt, opacity) {
 async function drawAltitudeResult(result, version) {
   if (version !== computeVersion) return;
   result.flyable = new Uint8Array(result.flyable);
-  const routeOpacity = Math.min(0.22, (0.010 + 0.070 * result.weight) * routeOpacityScale);
-  const anchorOpacity = Math.min(0.5, (0.045 + 0.16 * result.weight) * routeOpacityScale);
+  const routeOpacity = Math.min(0.55, (0.010 + 0.070 * result.weight) * routeOpacityScale);
+  const anchorOpacity = Math.min(0.85, (0.045 + 0.16 * result.weight) * routeOpacityScale);
   drawAnchors(result.anchors, result.alt, anchorOpacity);
-  const routeMesh = makeRouteBandMesh(result.paths, result.alt, routeOpacity);
+  const routeMesh = makeRouteBandMesh(result.paths, result.alt, routeOpacity, result.flyable);
   if (routeMesh) routeGroup.add(routeMesh);
   await nextFrame();
   if (version !== computeVersion) return;
@@ -823,6 +1398,7 @@ async function recompute(version) {
   externalityVersion++;
   clearNoiseLayer();
   disposeRouteLayer();
+  clearFlyableVolume();
   totalRoutes = 0;
   routeSummaries = [];
   routeDrawChain = Promise.resolve();
@@ -844,6 +1420,7 @@ async function recompute(version) {
           routeSummaries.sort((a, b) => a.alt - b.alt);
           updateMetrics();
           drawMiniMap();
+          rebuildFlyableVolume();
           if (noiseEnabled) scheduleExternalityLayer();
           resolve(true);
         });
@@ -989,30 +1566,41 @@ function pointSegmentDistanceSq3(px, py, pz, a, b) {
   return (px - x) ** 2 + (py - y) ** 2 + (pz - z) ** 2;
 }
 
-function noiseAt(px, py, pz, segments) {
+function noiseAt(px, py, pz, segments, channel = externalityChannel) {
   let v = 0;
   for (const s of segments) {
     const d2 = pointSegmentDistanceSq3(px, py, pz, s.a, s.b);
     const dxz2 = pointSegDist2(px, pz, s.a.x, s.a.z, s.b.x, s.b.z);
     const alt = s.alt || (s.a.y + s.b.y) * 0.5;
-    if (externalityChannel === 'risk') {
+    if (channel === 'risk') {
+      // ★坠落物只能往下砸:受体必须在无人机【下方】,且用"落到该受体高度"的下落距离 fall
+      const fall = alt - py;                    // 到该受体高度的下落距离(不是到地面)
+      if (fall <= 1) continue;                  // 同高/更高 → 砸不到,零风险(切走整面墙顶以上)
       const mx = (s.a.x + s.b.x) * 0.5;
       const mz = (s.a.z + s.b.z) * 0.5;
-      const forward = 14 + alt * 0.34;
+      const forward = 14 + fall * 0.34;         // 前甩 = 下落到该高度时已前移的量(随 fall)
       const sx = mx + s.dirX * forward;
       const sz = mz + s.dirZ * forward;
       const rx = px - sx;
       const rz = pz - sz;
       const along = rx * s.dirX + rz * s.dirZ;
       const cross = rx * -s.dirZ + rz * s.dirX;
-      const sigmaLong = 30 + alt * 0.45;
-      const sigmaCross = 20 + alt * 0.25;
-      const ballistic = Math.exp(-0.5 * ((along / sigmaLong) ** 2 + (cross / sigmaCross) ** 2));
-      const sigmaVertical = 24 + alt * 0.30;
-      const verticalDrop = Math.exp(-0.5 * (dxz2 / (sigmaVertical * sigmaVertical)));
-      const surfaceCatch = py > terrainVisualHeight(px, pz) + 7 ? 0.78 : 1.08;
-      v += s.amp * surfaceCatch * (0.62 * ballistic + 0.38 * verticalDrop);
-    } else if (externalityChannel === 'privacy') {
+      const sigmaLong = 30 + fall * 0.45;       // 弥散随【下落距离】增长:越靠近无人机越窄越集中
+      const sigmaCross = 20 + fall * 0.25;
+      const sigmaVertical = 24 + fall * 0.30;
+      // ★归一化 2D 落区 PDF(∫=1):峰值 ∝ 1/(2π σ²) → 弥散随 fall 变宽则单点风险被稀释
+      const ballistic = Math.exp(-0.5 * ((along / sigmaLong) ** 2 + (cross / sigmaCross) ** 2))
+        / (2 * Math.PI * sigmaLong * sigmaCross);
+      const verticalDrop = Math.exp(-0.5 * (dxz2 / (sigmaVertical * sigmaVertical)))
+        / (2 * Math.PI * sigmaVertical * sigmaVertical);
+      const footprint = 0.62 * ballistic + 0.38 * verticalDrop;
+      // ★撞击动能 → 致命率(落得越远动能越大、终速封顶;Dalamagkidis sigmoid)
+      const vz = Math.min(45, Math.sqrt(2 * 9.81 * fall)); // 落到该高度的落速,终速 ~45 m/s 封顶
+      const eImpact = 0.5 * 9.5 * (18 * 18 + vz * vz);     // ½m(v_h²+v_z²),美团四代 9.5kg/18m/s
+      const pFatal = 1 / (1 + Math.pow(34000 / 34, Math.sqrt(34 / eImpact)));
+      const surfaceCatch = py > terrainVisualHeight(px, pz) + 7 ? 0.78 : 1.08; // 首面截获代理
+      v += s.amp * surfaceCatch * footprint * pFatal;
+    } else if (channel === 'privacy') {
       if (py >= alt - 1) continue;
       const d = Math.sqrt(d2);
       const lowerHemisphere = clamp01((alt - py) / Math.max(1, d));
@@ -1020,7 +1608,7 @@ function noiseAt(px, py, pz, segments) {
       const nadirPreference = 0.55 + 0.45 * lowerHemisphere;
       const receiverBias = py > terrainVisualHeight(px, pz) + 7 ? 0.74 : 1.12;
       v += s.amp * identify * nadirPreference * receiverBias / (1 + d2 / 26000);
-    } else if (externalityChannel === 'visual') {
+    } else if (channel === 'visual') {
       const dh = Math.sqrt(dxz2) + 1;
       const dy = alt - py;
       const elevDeg = Math.atan2(dy, dh) * 180 / Math.PI;
@@ -1056,6 +1644,12 @@ function clearNoiseLayer() {
     item.mesh.material.dispose();
   }
   noiseOverlays = [];
+}
+
+// 只切换全局负担层(地面 + 挂在建筑上的立面 overlay)的可见性,不销毁不重算
+function setNoiseLayerVisible(visible) {
+  if (noiseGroundMesh) noiseGroundMesh.visible = visible;
+  for (const item of noiseOverlays) item.mesh.visible = visible;
 }
 
 function scheduleExternalityLayer() {
@@ -1169,6 +1763,7 @@ async function buildNoiseLayer(version) {
     b.group.add(mesh);
     noiseOverlays.push({ parent: b.group, mesh });
   }
+  if (probeMode) setNoiseLayerVisible(false);  // 探针开着时,后台重算出来的全局层保持隐藏
 }
 
 function buildMapTiles() {
@@ -1189,16 +1784,81 @@ function applyRouteVisibility() {
 
 function applyAuxiliaryBuildingVisibility() {
   for (const b of buildings) {
-    if (b.isHalo && b.group) b.group.visible = haloBuildingsVisible;
+    if (!b.group) continue;
+    b.group.visible = buildingsVisible && (!b.isHalo || haloBuildingsVisible);
   }
 }
 
 function applyTerrainMode() {
   clearNoiseLayer();
   buildTerrain();
+  buildHeightGuides();
   buildings.forEach(syncBuilding);
   applyAuxiliaryBuildingVisibility();
   scheduleCompute();
+}
+
+function applyCameraAngles() {
+  const az = THREE.MathUtils.degToRad(cameraAzimuthDeg);
+  const pitch = THREE.MathUtils.degToRad(cameraPitchDeg);
+  const horizontal = CAMERA_DISTANCE * Math.cos(pitch);
+  suppressCameraControlSync = true;
+  camera.position.set(
+    ORBIT_TARGET.x + Math.sin(az) * horizontal,
+    ORBIT_TARGET.y + Math.sin(pitch) * CAMERA_DISTANCE,
+    ORBIT_TARGET.z + Math.cos(az) * horizontal
+  );
+  controls.target.copy(ORBIT_TARGET);
+  controls.update();
+  suppressCameraControlSync = false;
+}
+
+function syncCameraControls() {
+  const azimuth = $('cameraAzimuth');
+  const pitch = $('cameraPitch');
+  if (!azimuth || !pitch) return;
+  azimuth.value = cameraAzimuthDeg;
+  pitch.value = cameraPitchDeg;
+  $('azimuthV').textContent = cameraAzimuthDeg;
+  $('pitchV').textContent = cameraPitchDeg;
+}
+
+function syncAppearanceControls() {
+  const colorInput = $('buildingColor');
+  const sunInput = $('sunAzimuth');
+  const sunPitchInput = $('sunPitch');
+  const shadowBlurInput = $('shadowBlur');
+  if (colorInput) {
+    colorInput.value = buildingColor;
+    $('buildingColorV').textContent = buildingColor;
+  }
+  if (sunInput) {
+    sunInput.value = sunAzimuthDeg;
+    $('sunAzimuthV').textContent = sunAzimuthDeg;
+  }
+  if (sunPitchInput) {
+    sunPitchInput.value = sunPitchDeg;
+    $('sunPitchV').textContent = sunPitchDeg;
+  }
+  if (shadowBlurInput) {
+    shadowBlurInput.value = shadowBlurPct;
+    $('shadowBlurV').textContent = shadowBlurPct;
+  }
+}
+
+function syncCameraAnglesFromView() {
+  if (suppressCameraControlSync) return;
+  const dx = camera.position.x - ORBIT_TARGET.x;
+  const dy = camera.position.y - ORBIT_TARGET.y;
+  const dz = camera.position.z - ORBIT_TARGET.z;
+  let az = Math.round(THREE.MathUtils.radToDeg(Math.atan2(dx, dz)));
+  if (az > 180) az -= 360;
+  if (az < -180) az += 360;
+  const pitch = Math.round(THREE.MathUtils.radToDeg(Math.atan2(dy, Math.hypot(dx, dz))));
+  if (az === cameraAzimuthDeg && pitch === cameraPitchDeg) return;
+  cameraAzimuthDeg = az;
+  cameraPitchDeg = pitch;
+  syncCameraControls();
 }
 
 let needsCompute = false;
@@ -1235,6 +1895,21 @@ BLOCKS.forEach(block => {
   $('presets').appendChild(option);
 });
 
+function activatePanelTab(tab) {
+  document.querySelectorAll('.tabBtn').forEach(item => {
+    item.classList.toggle('active', item.dataset.tab === tab);
+  });
+  document.querySelectorAll('.tabPanel').forEach(panel => {
+    panel.classList.toggle('active', panel.dataset.panel === tab);
+  });
+}
+
+document.querySelectorAll('.tabBtn').forEach(btn => {
+  btn.addEventListener('click', () => activatePanelTab(btn.dataset.tab));
+});
+
+activatePanelTab(document.querySelector('.tabBtn.active')?.dataset.tab || 'view');
+
 $('presets').addEventListener('change', e => {
   loadPreset(e.target.value);
 });
@@ -1249,6 +1924,44 @@ $('routeOpacity').addEventListener('input', e => {
   routeOpacityScale = +e.target.value / 100;
   $('opacityV').textContent = e.target.value;
   scheduleCompute();
+});
+
+$('cameraAzimuth').addEventListener('input', e => {
+  cameraAzimuthDeg = +e.target.value;
+  $('azimuthV').textContent = cameraAzimuthDeg;
+  applyCameraAngles();
+});
+
+$('cameraPitch').addEventListener('input', e => {
+  cameraPitchDeg = +e.target.value;
+  $('pitchV').textContent = cameraPitchDeg;
+  applyCameraAngles();
+});
+
+$('buildingColor').addEventListener('input', e => {
+  buildingColor = e.target.value;
+  $('buildingColorV').textContent = buildingColor;
+  updateBuildingAppearance();
+});
+
+$('sunAzimuth').addEventListener('input', e => {
+  sunAzimuthDeg = +e.target.value;
+  $('sunAzimuthV').textContent = sunAzimuthDeg;
+  updateSunDirection();
+  updateBuildingAppearance();
+});
+
+$('sunPitch').addEventListener('input', e => {
+  sunPitchDeg = +e.target.value;
+  $('sunPitchV').textContent = sunPitchDeg;
+  updateSunDirection();
+  updateBuildingAppearance();
+});
+
+$('shadowBlur').addEventListener('input', e => {
+  shadowBlurPct = +e.target.value;
+  $('shadowBlurV').textContent = shadowBlurPct;
+  applyShadowMode();
 });
 
 $('routeToggle').addEventListener('change', e => {
@@ -1280,12 +1993,23 @@ document.querySelectorAll('input[name="externalityChannel"]').forEach(input => {
     if (noiseEnabled) {
       scheduleExternalityLayer();
     }
+    if (probeMode) rebuildProbe();
   });
 });
 
 $('demToggle').addEventListener('change', e => {
   demEnabled = e.target.checked;
   applyTerrainMode();
+});
+
+$('buildingToggle').addEventListener('change', e => {
+  buildingsVisible = e.target.checked;
+  applyAuxiliaryBuildingVisibility();
+});
+
+$('shadowToggle').addEventListener('change', e => {
+  shadowsEnabled = e.target.checked;
+  applyShadowMode();
 });
 
 $('heightScaleToggle').addEventListener('change', e => {
@@ -1296,6 +2020,261 @@ $('heightScaleToggle').addEventListener('change', e => {
 $('haloToggle').addEventListener('change', e => {
   haloBuildingsVisible = e.target.checked;
   applyAuxiliaryBuildingVisibility();
+});
+
+$('heightGuideToggle').addEventListener('change', e => {
+  heightGuidesVisible = e.target.checked;
+  heightGuideGroup.visible = heightGuidesVisible;
+});
+
+$('flyableVolumeToggle').addEventListener('change', e => {
+  flyableVolumeVisible = e.target.checked;
+  rebuildFlyableVolume();
+});
+
+// ===== 空中探针:在空中点一个无人机,直接看它在地面投出的单源风险分布 =====
+let probeMode = false;
+let probePos = null;            // {x, z} 地面投影位置
+let probeAlt = 60;
+let probeHeadingDeg = 0;
+const probeRaycaster = new THREE.Raycaster();
+const probeGroundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // y=0
+const probeFacadeGroup = new THREE.Group();
+scene.add(probeFacadeGroup);
+let probeFacade = null;   // 立面缓存:[{mesh, world:Float32Array, count}](几何只克隆一次,拖动只改颜色)
+
+function clearProbeFacade() {
+  for (const c of probeFacadeGroup.children) { c.geometry?.dispose(); c.material?.dispose(); }
+  probeFacadeGroup.clear();
+  probeFacade = null;
+}
+
+// 懒构建当前街区核心建筑的立面采样网格(克隆几何 + 预存世界坐标),供探针逐点着色复用
+function ensureProbeFacade() {
+  if (probeFacade && probeFacade.length) return;  // 已建好则复用;空(建筑还没就绪)则重试
+  clearProbeFacade();
+  probeFacade = [];
+  for (const b of buildings) {
+    if (b.isHalo || !b.box || !buildingTouchesCore(b)) continue;
+    const geom = b.box.geometry.clone();
+    geom.computeVertexNormals();
+    const pos = geom.getAttribute('position');
+    const normal = geom.getAttribute('normal');
+    const count = pos.count;
+    const world = new Float32Array(count * 3);
+    const bx = b.group.position.x, by = b.group.position.y, bz = b.group.position.z;
+    for (let i = 0; i < count; i++) {
+      const lx = pos.getX(i) + normal.getX(i) * 0.6;
+      const ly = pos.getY(i) + normal.getY(i) * 0.6;
+      const lz = pos.getZ(i) + normal.getZ(i) * 0.6;
+      pos.setXYZ(i, lx, ly, lz);
+      world[i * 3] = lx + bx; world[i * 3 + 1] = ly + by; world[i * 3 + 2] = lz + bz;
+    }
+    pos.needsUpdate = true;
+    geom.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(count * 3), 3));
+    const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
+      vertexColors: true, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8, // 消与墙面 z-fighting
+    }));
+    mesh.position.set(bx, by, bz);
+    mesh.renderOrder = 6;
+    probeFacadeGroup.add(mesh);
+    probeFacade.push({ mesh, world, count });
+  }
+}
+
+function clearProbe() {
+  probeGroup.traverse(o => {
+    o.geometry?.dispose();
+    if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+    else o.material?.dispose();
+  });
+  probeGroup.clear();
+}
+
+// 四旋翼无人机图标:机身(锥台机身 + 顶盖罩 + 机头指向) + 4 根 X 臂 + 电机 + 半透明旋翼盘 + 起落架
+function makeDroneIcon(headingRad) {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshBasicMaterial({ color: '#30343a' });
+  const darkMat = new THREE.MeshBasicMaterial({ color: '#202327' });
+  const trimMat = new THREE.MeshBasicMaterial({ color: '#1677ff' });
+  const bladeMat = new THREE.MeshBasicMaterial({ color: '#aab3bd', transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 4.2, 2.2, 14), bodyMat);
+  g.add(hub);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(2.1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), trimMat);
+  dome.position.y = 1.0; g.add(dome);
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(1.0, 2.6, 10), trimMat); // 机头(指向航向)
+  nose.rotation.z = -Math.PI / 2; nose.position.set(4.4, -0.2, 0); g.add(nose);
+
+  for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+    const ex = sx * 6.2, ez = sz * 6.2;
+    const len = Math.hypot(ex, ez);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(len, 0.7, 0.7), darkMat);
+    arm.position.set(ex / 2, 0, ez / 2);
+    arm.rotation.y = -Math.atan2(ez, ex);
+    g.add(arm);
+    const motor = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 1.6, 12), bodyMat);
+    motor.position.set(ex, 0.7, ez); g.add(motor);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(3.7, 28), bladeMat);
+    disc.rotation.x = -Math.PI / 2; disc.position.set(ex, 1.55, ez); g.add(disc);
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 3, 6), darkMat);
+    leg.position.set(ex * 0.5, -2.0, ez * 0.5); g.add(leg);
+  }
+  for (const sz of [1, -1]) {            // 起落架横杆
+    const skid = new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.5, 0.5), darkMat);
+    skid.position.set(0, -3.4, sz * 3.4); g.add(skid);
+  }
+  g.rotation.y = -headingRad;            // 机头对齐航向
+  return g;
+}
+
+function rebuildProbe() {
+  clearProbe();
+  probeGroup.visible = probeMode;
+  probeFacadeGroup.visible = false;
+  if (!probeMode || !probePos) return;
+  const ch = externalityChannel;
+  const x = probePos.x, z = probePos.z, alt = probeAlt;
+  const hr = probeHeadingDeg * Math.PI / 180;
+  const hx = Math.cos(hr), hz = Math.sin(hr);
+  // 单源 = 一小段沿航向的航段,amp=1(单位流量)
+  const seg = {
+    a: new THREE.Vector3(x - hx * 10, alt, z - hz * 10),
+    b: new THREE.Vector3(x + hx * 10, alt, z + hz * 10),
+    amp: 1, dirX: hx, dirZ: hz, alt,
+  };
+  const segs = [seg];
+
+  // 局部地面网格(以探针为中心),逐点用同一通道核求值
+  const W = 260, G = 70;
+  const positions = [], values = [];
+  for (let j = 0; j <= G; j++) {
+    for (let i = 0; i <= G; i++) {
+      const cx = x - W + (2 * W) * i / G;
+      const cz = z - W + (2 * W) * j / G;
+      const cy = terrainVisualHeight(cx, cz) + 0.5;
+      positions.push(cx, cy, cz);
+      values.push(noiseAt(cx, cy, cz, segs, ch));
+    }
+  }
+  // 立面采样(复用缓存的世界坐标),和地面共用同一峰值刻度
+  ensureProbeFacade();
+  for (const f of probeFacade) {
+    f.vals = new Float32Array(f.count);
+    for (let i = 0; i < f.count; i++) {
+      f.vals[i] = noiseAt(f.world[i * 3], f.world[i * 3 + 1], f.world[i * 3 + 2], segs, ch);
+    }
+  }
+  // 99 分位做色标:既不被源正下方的单点尖峰拉爆(max 太钝),又比 95 分位少饱和(团内仍有梯度)
+  let peak = 1e-12;
+  const allVals = values.slice();
+  for (const v of values) if (v > peak) peak = v;
+  for (const f of probeFacade) for (let i = 0; i < f.count; i++) { const v = f.vals[i]; if (v > peak) peak = v; allVals.push(v); }
+  allVals.sort((a, b) => a - b);
+  const norm = Math.max(1e-9, allVals[Math.floor(allVals.length * 0.99)] || peak);
+  const colors = [];
+  for (const v of values) {
+    const t = Math.min(1, Math.log1p(v / norm * 3.2) / Math.log1p(3.2));
+    const c = colorRamp(t, 'coolwarm');
+    colors.push(c[0], c[1], c[2]);
+  }
+  const indices = [];
+  for (let j = 0; j < G; j++) {
+    for (let i = 0; i < G; i++) {
+      const p = j * (G + 1) + i;
+      indices.push(p, p + 1, p + G + 2, p, p + G + 2, p + G + 1);
+    }
+  }
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geom.setIndex(indices);
+  const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.82, side: THREE.DoubleSide, depthWrite: false,
+  }));
+  mesh.renderOrder = 6;
+  probeGroup.add(mesh);
+
+  // 立面着色(和地面同一刻度 norm,带轻微底色 floor 便于看清墙面)
+  for (const f of probeFacade) {
+    const col = f.mesh.geometry.getAttribute('color');
+    for (let i = 0; i < f.count; i++) {
+      const t = Math.log1p(f.vals[i] / norm * 3.2) / Math.log1p(3.2);
+      const c = colorRamp(0.06 + 0.94 * Math.min(1, t), 'coolwarm');
+      col.setXYZ(i, c[0], c[1], c[2]);
+    }
+    col.needsUpdate = true;
+  }
+  probeFacadeGroup.visible = true;
+
+  // 无人机图标 + 落地竖线 + 航向箭头 + 弹道前甩落点
+  const drone = makeDroneIcon(hr);
+  drone.position.set(x, alt, z);
+  probeGroup.add(drone);
+  probeGroup.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, alt, z), new THREE.Vector3(x, terrainVisualHeight(x, z), z)]),
+    new THREE.LineBasicMaterial({ color: '#d94841', transparent: true, opacity: 0.5 })));
+  probeGroup.add(new THREE.ArrowHelper(new THREE.Vector3(hx, 0, hz), new THREE.Vector3(x, alt, z), 34, '#1677ff', 10, 6));
+  const fwd = 14 + alt * 0.34;   // 仅用于读数显示(前甩落点距离)
+
+  const ro = $('probeReadout');
+  if (ro) {
+    const sl = (30 + alt * 0.45).toFixed(0), scc = (20 + alt * 0.25).toFixed(0);
+    const extra = ch === 'risk'
+      ? `前甩落点 <b>${fwd.toFixed(0)} m</b> · 落区 σ∥×σ⊥ <b>${sl}×${scc} m</b><br>`
+      : '';
+    ro.innerHTML = `通道 <b>${(CHANNELS[ch] || CHANNELS.noise).label}</b> · 高度 <b>${alt} m</b><br>${extra}峰值(相对) <b>${peak.toExponential(2)}</b> · 拖高度看变化`;
+  }
+}
+
+(function setupProbeUI() {
+  const panel = document.createElement('div');
+  panel.id = 'probePanel';
+  panel.className = 'panel';
+  panel.style.cssText = 'right:18px;bottom:18px;width:300px;padding:14px;z-index:6';
+  panel.innerHTML =
+    '<div class="row" style="margin-bottom:10px"><span class="lbl" style="margin:0">空中探针</span>' +
+    '<button id="probeToggle" style="min-height:28px;padding:4px 14px">关</button></div>' +
+    '<div class="row"><span class="k">高度</span><span class="v"><span id="probeAltV">60</span> m</span></div>' +
+    '<input type="range" id="probeAlt" min="10" max="120" value="60" style="margin-bottom:8px">' +
+    '<div class="row"><span class="k">航向</span><span class="v"><span id="probeHeadV">0</span>°</span></div>' +
+    '<input type="range" id="probeHead" min="0" max="359" value="0">' +
+    '<div id="probeReadout" class="sub" style="margin-top:10px">开启后点击地面放置无人机</div>';
+  document.body.appendChild(panel);
+  $('probeToggle').addEventListener('click', () => {
+    probeMode = !probeMode;
+    $('probeToggle').textContent = probeMode ? '开' : '关';
+    $('probeToggle').classList.toggle('active', probeMode);
+    if (probeMode) {
+      setNoiseLayerVisible(false);     // 探针时只是隐藏全局负担层(不销毁),避免叠色
+      rebuildProbe();
+    } else {
+      clearProbe();
+      probeFacadeGroup.visible = false;
+      setNoiseLayerVisible(true);      // 关探针 → 全局负担层秒回(无需重算)
+    }
+  });
+  $('probeAlt').addEventListener('input', e => { probeAlt = +e.target.value; $('probeAltV').textContent = probeAlt; rebuildProbe(); });
+  $('probeHead').addEventListener('input', e => { probeHeadingDeg = +e.target.value; $('probeHeadV').textContent = probeHeadingDeg; rebuildProbe(); });
+})();
+
+let probePointerDown = null;
+renderer.domElement.addEventListener('pointerdown', e => { probePointerDown = { x: e.clientX, y: e.clientY }; });
+renderer.domElement.addEventListener('pointerup', e => {
+  const dn = probePointerDown; probePointerDown = null;
+  if (!probeMode || !dn) return;
+  if (Math.hypot(e.clientX - dn.x, e.clientY - dn.y) > 6) return; // 拖拽=转视角,忽略
+  const rect = renderer.domElement.getBoundingClientRect();
+  const ndc = new THREE.Vector2(
+    ((e.clientX - rect.left) / rect.width) * 2 - 1,
+    -((e.clientY - rect.top) / rect.height) * 2 + 1);
+  probeRaycaster.setFromCamera(ndc, camera);
+  const hit = new THREE.Vector3();
+  if (probeRaycaster.ray.intersectPlane(probeGroundPlane, hit)) {
+    probePos = { x: hit.x, z: hit.z };
+    rebuildProbe();
+  }
 });
 
 function onResize() {
@@ -1326,6 +2305,12 @@ function animate(t) {
 }
 
 buildMapTiles();
+syncCameraControls();
+syncAppearanceControls();
+updateSunDirection();
+updateBuildingAppearance();
+applyShadowMode();
+applyCameraAngles();
 currentPreset = BLOCKS[0].name;
 loadPreset(currentPreset);
 onResize();

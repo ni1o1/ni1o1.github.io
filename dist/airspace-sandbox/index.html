@@ -48,6 +48,9 @@
   input[type=range]{width:100%;height:5px;border-radius:999px;background:#dfe4ea;outline:none;-webkit-appearance:none}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;
     background:#fff;border:2px solid #20242a;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+  input[type=color]{width:100%;height:28px;border:1px solid var(--line);border-radius:7px;background:#fff;padding:3px;cursor:pointer}
+  input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+  input[type=color]::-webkit-color-swatch{border:0;border-radius:5px}
   .metric{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:baseline;padding:7px 0;border-top:1px solid var(--soft)}
   .metric:first-of-type{border-top:0}
   .metric span:first-child{font-size:11px;color:var(--muted)}
@@ -58,10 +61,28 @@
   .switchRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 9px;border:1px solid var(--soft);border-radius:7px;background:#fff}
   .switchRow span:first-child{font-size:13px;font-weight:650}
   .switchRow input{position:absolute;opacity:0;pointer-events:none}
+  .subsec{margin-top:12px}
+  .subsec:first-child{margin-top:0}
+  .subhead{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.35px;margin:0 0 8px}
+  .layerList{display:grid;gap:6px}
+  .layerRow{display:grid;grid-template-columns:14px 1fr auto;align-items:center;gap:8px;padding:8px 9px;
+    border:1px solid var(--soft);border-radius:7px;background:#fff}
+  .layerRow input{position:absolute;opacity:0;pointer-events:none}
+  .layerMark{width:10px;height:10px;border-radius:50%;background:#9aa4af;box-shadow:inset 0 0 0 1px rgba(0,0,0,.10)}
+  .layerMark.route{background:#1677ff}.layerMark.burden{background:#d75f4b}.layerMark.terrain{background:#7d8791}
+  .layerMark.building{background:#d8d8d4}.layerMark.shadow{background:#2d333a}.layerMark.halo{background:#b8c1cb}
+  .layerMark.guide{background:#4f9cf5}.layerMark.volume{background:#9fd3ff}
+  .layerText{font-size:13px;font-weight:650}
+  .tabBar{display:flex;gap:3px;margin-top:14px;border-bottom:1px solid var(--line);padding-left:2px}
+  .tabBtn{min-height:31px;border:1px solid var(--line);border-bottom:0;border-radius:7px 7px 0 0;background:#f7f8fa;
+    padding:0 11px;font-size:12px;font-weight:750;color:var(--muted);cursor:pointer;position:relative;top:1px}
+  .tabBtn.active{background:#fff;color:#17191c;border-color:var(--line);box-shadow:0 -1px 0 #fff inset}
+  .tabPanel{display:none}
+  .tabPanel.active{display:block}
   .toggle{width:42px;height:24px;border-radius:999px;background:#dfe4ea;position:relative;flex:none;transition:.16s}
   .toggle:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.16s}
-  .switchRow input:checked + .toggle{background:#242a31}
-  .switchRow input:checked + .toggle:before{transform:translateX(18px)}
+  .switchRow input:checked + .toggle,.layerRow input:checked + .toggle{background:#242a31}
+  .switchRow input:checked + .toggle:before,.layerRow input:checked + .toggle:before{transform:translateX(18px)}
   .radioGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .radioChip{border:1px solid var(--soft);background:#fff;border-radius:7px;min-height:34px;padding:7px 9px;
     display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer}
@@ -102,7 +123,7 @@
   <div id="busy">计算多高度航线...</div>
 
   <div id="controlPanel" class="panel">
-    <h1>城市形态 → 多通道低空外部性</h1>
+    <h1>低空空域形态与外部性沙盘</h1>
     <p class="sub">边界探针生成多高度航线，同一流量场切换不同外部性内核。</p>
 
     <div class="sec">
@@ -110,8 +131,14 @@
       <select class="presets" id="presets"></select>
     </div>
 
-    <div class="sec">
-      <label class="lbl">计算与显示</label>
+    <div class="tabBar" id="tabBar">
+      <button class="tabBtn" data-tab="compute" type="button">计算与外部性</button>
+      <button class="tabBtn active" data-tab="view" type="button">视图与图层</button>
+      <button class="tabBtn" data-tab="maps" type="button">可飞图与高度</button>
+    </div>
+
+    <div class="sec tabPanel" data-panel="compute">
+      <label class="lbl">计算参数</label>
       <div class="controlGrid">
         <div class="slider span2">
           <div class="row"><span class="k">入口密度</span><span class="v"><span id="densityV">6</span> /边</span></div>
@@ -122,19 +149,57 @@
         </div>
         <div class="slider">
           <div class="row"><span class="k">航线透明度</span><span class="v"><span id="opacityV">100</span>%</span></div>
-          <input type="range" id="routeOpacity" min="20" max="180" step="10" value="100">
+          <input type="range" id="routeOpacity" min="20" max="400" step="10" value="100">
         </div>
-      </div>
-      <div class="switchGrid">
-        <label class="switchRow"><span>显示航线</span><input type="checkbox" id="routeToggle" checked><span class="toggle"></span></label>
-        <label class="switchRow"><span>外部性叠加</span><input type="checkbox" id="noiseToggle" checked><span class="toggle"></span></label>
-        <label class="switchRow"><span>DEM 地形</span><input type="checkbox" id="demToggle"><span class="toggle"></span></label>
-        <label class="switchRow"><span>显示高度尺</span><input type="checkbox" id="heightScaleToggle" checked><span class="toggle"></span></label>
-        <label class="switchRow"><span>辅助建筑</span><input type="checkbox" id="haloToggle" checked><span class="toggle"></span></label>
       </div>
     </div>
 
-    <div class="sec">
+    <div class="sec tabPanel active" data-panel="view">
+      <label class="lbl">视角与光照</label>
+      <div class="controlGrid">
+        <div class="slider">
+          <div class="row"><span class="k">水平角</span><span class="v"><span id="azimuthV">-46</span>°</span></div>
+          <input type="range" id="cameraAzimuth" min="-180" max="180" step="1" value="-46">
+        </div>
+        <div class="slider">
+          <div class="row"><span class="k">俯仰角</span><span class="v"><span id="pitchV">35</span>°</span></div>
+          <input type="range" id="cameraPitch" min="0" max="80" step="1" value="35">
+        </div>
+        <div class="slider">
+          <div class="row"><span class="k">建筑颜色</span><span class="v" id="buildingColorV">#c2c2c2</span></div>
+          <input type="color" id="buildingColor" value="#c2c2c2">
+        </div>
+        <div class="slider">
+          <div class="row"><span class="k">光线朝向</span><span class="v"><span id="sunAzimuthV">350</span>°</span></div>
+          <input type="range" id="sunAzimuth" min="0" max="360" step="1" value="350">
+        </div>
+        <div class="slider">
+          <div class="row"><span class="k">光线俯仰</span><span class="v"><span id="sunPitchV">75</span>°</span></div>
+          <input type="range" id="sunPitch" min="12" max="78" step="1" value="75">
+        </div>
+        <div class="slider">
+          <div class="row"><span class="k">阴影柔化</span><span class="v"><span id="shadowBlurV">215</span>%</span></div>
+          <input type="range" id="shadowBlur" min="0" max="300" step="5" value="215">
+        </div>
+      </div>
+    </div>
+
+    <div class="sec tabPanel" data-panel="view">
+      <label class="lbl">图层</label>
+      <div class="layerList">
+        <label class="layerRow"><span class="layerMark route"></span><span class="layerText">航线</span><input type="checkbox" id="routeToggle"><span class="toggle"></span></label>
+        <label class="layerRow"><span class="layerMark burden"></span><span class="layerText">外部性叠加</span><input type="checkbox" id="noiseToggle" checked><span class="toggle"></span></label>
+        <label class="layerRow"><span class="layerMark terrain"></span><span class="layerText">DEM 地形</span><input type="checkbox" id="demToggle"><span class="toggle"></span></label>
+        <label class="layerRow"><span class="layerMark building"></span><span class="layerText">建筑</span><input type="checkbox" id="buildingToggle" checked><span class="toggle"></span></label>
+        <label class="layerRow"><span class="layerMark shadow"></span><span class="layerText">阴影</span><input type="checkbox" id="shadowToggle" checked><span class="toggle"></span></label>
+        <label class="layerRow"><span class="layerMark halo"></span><span class="layerText">辅助建筑</span><input type="checkbox" id="haloToggle"><span class="toggle"></span></label>
+        <label class="layerRow"><span class="layerMark guide"></span><span class="layerText">高度边界</span><input type="checkbox" id="heightGuideToggle"><span class="toggle"></span></label>
+        <label class="layerRow"><span class="layerMark volume"></span><span class="layerText">可飞体块</span><input type="checkbox" id="flyableVolumeToggle"><span class="toggle"></span></label>
+        <label class="layerRow"><span class="layerMark terrain"></span><span class="layerText">高度尺</span><input type="checkbox" id="heightScaleToggle" checked><span class="toggle"></span></label>
+      </div>
+    </div>
+
+    <div class="sec tabPanel" data-panel="compute">
       <label class="lbl">外部性通道</label>
       <div class="row"><span class="k">当前内核</span><span class="v" id="channelV">噪声</span></div>
       <div class="kernelSketch" id="kernelSketch" data-channel="noise" aria-label="外部性影响范围示意">
@@ -159,13 +224,13 @@
       </div>
     </div>
 
-    <div class="sec">
+    <div class="sec tabPanel" data-panel="maps">
       <label class="lbl">可飞地图</label>
       <div id="mapsGrid"></div>
       <p class="sub">浅色=可飞，深色=障碍/地形，蓝线=该高度最短航线。</p>
     </div>
 
-    <div class="sec">
+    <div class="sec tabPanel" data-panel="maps">
       <label class="lbl">巡航高度</label>
       <div id="altLegend"></div>
     </div>
@@ -174,6 +239,7 @@
 
 <script src="vendor/three.min.js"></script>
 <script src="vendor/OrbitControls.js"></script>
+<script src="vendor/clipper.js"></script>
 <script src="data/city-blocks.js"></script>
 <script src="app.js"></script>
 </body>

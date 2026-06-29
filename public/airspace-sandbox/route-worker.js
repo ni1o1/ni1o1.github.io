@@ -10,6 +10,8 @@ let maxHeightWeight = 1;
 
 const NB = [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,Math.SQRT2],[1,-1,Math.SQRT2],[-1,1,Math.SQRT2],[-1,-1,Math.SQRT2]];
 const SAFETY_M = 4;
+const CELL = 10;
+const BOUNDARY_SNAP_M = 60;
 const WEIGHT_CENTER = 65;
 const WEIGHT_SIGMA = 22;
 const MAX_RETURN_PATHS_PER_ALT = 40;
@@ -70,20 +72,33 @@ function computeFlyable(alt) {
 
 function boundaryAnchors() {
   const anchors = [];
-  const pick = cells => {
-    const ok = cells.filter(k => flyable[k]);
-    if (!ok.length) return;
-    const want = Math.min(entriesPerEdge, ok.length);
-    for (let t = 0; t < want; t++) anchors.push(ok[Math.floor((t + 0.5) / want * ok.length)]);
+  const depth = Math.max(1, Math.round(BOUNDARY_SNAP_M / CELL));
+  const snap = (edge, a) => {
+    for (let d = 0; d < depth; d++) {
+      let i = 0, j = 0;
+      if (edge === 'top') { i = a; j = d; }
+      else if (edge === 'bottom') { i = a; j = N - 1 - d; }
+      else if (edge === 'left') { i = d; j = a; }
+      else { i = N - 1 - d; j = a; }
+      const k = idx(i, j);
+      if (flyable[k]) return k;
+    }
+    return null;
   };
-  const top = [], bottom = [], left = [], right = [];
-  for (let i = 0; i < N; i++) {
-    top.push(idx(i, 0)); bottom.push(idx(i, N - 1));
-  }
-  for (let j = 0; j < N; j++) {
-    left.push(idx(0, j)); right.push(idx(N - 1, j));
-  }
-  [top, bottom, left, right].forEach(pick);
+  const pick = (edge, n) => {
+    const gates = [];
+    for (let a = 0; a < n; a++) {
+      const k = snap(edge, a);
+      if (k !== null) gates.push(k);
+    }
+    if (!gates.length) return;
+    const want = Math.min(entriesPerEdge, gates.length);
+    for (let t = 0; t < want; t++) anchors.push(gates[Math.floor((t + 0.5) / want * gates.length)]);
+  };
+  pick('top', N);
+  pick('bottom', N);
+  pick('left', N);
+  pick('right', N);
   return [...new Set(anchors)];
 }
 
