@@ -135,6 +135,7 @@
       <button class="tabBtn" data-tab="compute" type="button">计算与外部性</button>
       <button class="tabBtn active" data-tab="view" type="button">视图与图层</button>
       <button class="tabBtn" data-tab="maps" type="button">可飞图与高度</button>
+      <button class="tabBtn" data-tab="probe" type="button">空中探针</button>
     </div>
 
     <div class="sec tabPanel" data-panel="compute">
@@ -233,6 +234,22 @@
     <div class="sec tabPanel" data-panel="maps">
       <label class="lbl">巡航高度</label>
       <div id="altLegend"></div>
+    </div>
+
+    <div class="sec tabPanel" data-panel="probe">
+      <div class="row" style="margin-bottom:10px">
+        <label class="lbl" style="margin:0">空中探针</label>
+        <button id="probeToggle" type="button" style="min-height:28px;padding:4px 14px">关</button>
+      </div>
+      <div class="slider">
+        <div class="row"><span class="k">高度</span><span class="v"><span id="probeAltV">60</span> m</span></div>
+        <input type="range" id="probeAlt" min="10" max="120" value="60">
+      </div>
+      <div class="slider">
+        <div class="row"><span class="k">航向</span><span class="v"><span id="probeHeadV">0</span>°</span></div>
+        <input type="range" id="probeHead" min="0" max="359" value="0">
+      </div>
+      <div id="probeReadout" class="sub">开启后点击地面放置无人机</div>
     </div>
   </div>
 </div>

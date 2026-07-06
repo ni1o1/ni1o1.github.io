@@ -112,11 +112,12 @@ function fallbackBlocks() {
 }
 
 function terrainHeight(x, z) {
+  const dataNorth = -z;
   const dem = currentBlock?.dem;
   if (demEnabled && dem?.values?.length && dem.grid > 1 && dem.extent > 0) {
     const half = dem.extent / 2;
     const u = (x + half) / dem.extent * (dem.grid - 1);
-    const v = (z + half) / dem.extent * (dem.grid - 1);
+    const v = (dataNorth + half) / dem.extent * (dem.grid - 1);
     if (u >= 0 && v >= 0 && u <= dem.grid - 1 && v <= dem.grid - 1) {
       const i0 = Math.floor(u);
       const j0 = Math.floor(v);
@@ -136,8 +137,9 @@ function terrainHeight(x, z) {
   const sz = t.slopeZ || 0;
   const ridge = t.ridge || 0;
   const rough = t.roughness || 0;
-  const hill = ridge * Math.exp(-((x + 110) ** 2 + (z - 70) ** 2) / (2 * 150 ** 2));
-  return sx * x + sz * z + hill + rough * Math.sin((x + z) * 0.025) * Math.cos(z * 0.016);
+  const hill = ridge * Math.exp(-((x + 110) ** 2 + (dataNorth - 70) ** 2) / (2 * 150 ** 2));
+  return sx * x + sz * dataNorth + hill
+    + rough * Math.sin((x + dataNorth) * 0.025) * Math.cos(dataNorth * 0.016);
 }
 
 function terrainVisualHeight(x, z) {
@@ -471,7 +473,10 @@ function makeFootprintLineGeometry(localPoly, y) {
 }
 
 function makeBuilding(raw, addToScene = true) {
-  const absPoly = raw.polygon.map(p => [p[0], p[1]]);
+  // JSON polygons are stored as [east, north] metres. In a Three.js top view,
+  // screen-up corresponds to world -Z, so map north to -Z to keep the 2D
+  // frontend orientation identical to the source JSON/map convention.
+  const absPoly = raw.polygon.map(p => [p[0], -p[1]]);
   const c = centroid(absPoly);
   const localPoly = absPoly.map(p => [p[0] - c[0], p[1] - c[1]]);
   const auxiliaryByRole = raw.role === 'halo' || raw.tags?.role === 'halo';
@@ -937,6 +942,9 @@ function edgeOf(k) {
 
 function allowedPair(a, b) {
   const ea = edgeOf(a), eb = edgeOf(b);
+  // OPPOSITE edges only = pure pass-through transit (top<->bottom, left<->right).
+  // Adjacent-edge (corner) pairs are short corner-clips that bundle at the corners
+  // and produce edge/caustic artifacts; excluded so the transit field stays clean.
   return (ea === 'top' && eb === 'bottom') || (ea === 'bottom' && eb === 'top') ||
     (ea === 'left' && eb === 'right') || (ea === 'right' && eb === 'left');
 }
@@ -1405,7 +1413,7 @@ async function recompute(version) {
 
   return new Promise(resolve => {
     activeComputeDone = resolve;
-    routeWorker = new Worker('route-worker.js');
+    routeWorker = new Worker('route-worker.js?v=' + Date.now());  // cache-bust: always load latest worker
     routeWorker.onmessage = event => {
       const { type, result, version: msgVersion } = event.data;
       if (msgVersion !== computeVersion || msgVersion !== version) return;
@@ -2229,19 +2237,7 @@ function rebuildProbe() {
 }
 
 (function setupProbeUI() {
-  const panel = document.createElement('div');
-  panel.id = 'probePanel';
-  panel.className = 'panel';
-  panel.style.cssText = 'right:18px;bottom:18px;width:300px;padding:14px;z-index:6';
-  panel.innerHTML =
-    '<div class="row" style="margin-bottom:10px"><span class="lbl" style="margin:0">空中探针</span>' +
-    '<button id="probeToggle" style="min-height:28px;padding:4px 14px">关</button></div>' +
-    '<div class="row"><span class="k">高度</span><span class="v"><span id="probeAltV">60</span> m</span></div>' +
-    '<input type="range" id="probeAlt" min="10" max="120" value="60" style="margin-bottom:8px">' +
-    '<div class="row"><span class="k">航向</span><span class="v"><span id="probeHeadV">0</span>°</span></div>' +
-    '<input type="range" id="probeHead" min="0" max="359" value="0">' +
-    '<div id="probeReadout" class="sub" style="margin-top:10px">开启后点击地面放置无人机</div>';
-  document.body.appendChild(panel);
+  if (!$('probeToggle')) return;
   $('probeToggle').addEventListener('click', () => {
     probeMode = !probeMode;
     $('probeToggle').textContent = probeMode ? '开' : '关';
