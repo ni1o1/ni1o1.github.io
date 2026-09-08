@@ -143,6 +143,9 @@ function edgeOf(k) {
 
 function allowedPair(a, b) {
   const ea = edgeOf(a), eb = edgeOf(b);
+  // OPPOSITE edges only = pure pass-through transit (top<->bottom, left<->right).
+  // Adjacent-edge (corner) pairs are short corner-clips that bundle at the corners
+  // and produce edge/caustic artifacts; excluded so the transit field stays clean.
   return (ea === 'top' && eb === 'bottom') || (ea === 'bottom' && eb === 'top') ||
     (ea === 'left' && eb === 'right') || (ea === 'right' && eb === 'left');
 }

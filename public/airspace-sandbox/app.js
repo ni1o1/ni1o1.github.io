@@ -7,7 +7,7 @@ const DOMAIN = CORE_DOMAIN + HALO_M * 2;
 const CELL = 10;
 const N = Math.round(DOMAIN / CELL);
 const VIEW_DOMAIN = 950;
-const HEIGHT_GUIDE_DOMAIN = 650;
+const HEIGHT_GUIDE_DOMAIN = DOMAIN;
 const HALF = DOMAIN / 2;
 const CORE_HALF = CORE_DOMAIN / 2;
 const VIEW_HALF = VIEW_DOMAIN / 2;
@@ -18,7 +18,7 @@ const FLYABLE_VISUAL_BASE_M = 5;
 const FLYABLE_VISUAL_BUFFER_M = 5;
 const FLYABLE_VISUAL_CLEARANCE_M = 5; // 屋顶以上垂直安全间距:超过即可飞
 const FLYABLE_VISUAL_BAND_M = 5;      // 高度分层步长(梯田粒度)
-const FLYABLE_RANGE_HALF = 325;       // 可飞体计算范围 = 从中心 650m(±325),纳入 halo 环建筑
+const FLYABLE_RANGE_HALF = HALF;       // 可飞体 = 800 m 外框，含 150 m 缓冲圈
 const ALT_MIN = 25;
 const ALT_MAX = 120;
 const WEIGHT_CENTER = 65;
@@ -54,15 +54,15 @@ let altitudes = buildAltitudes(HEIGHT_GAP);
 let maxHeightWeight = Math.max(...altitudes.map(heightWeight));
 let entriesPerEdge = 6;
 let routeOpacityScale = 1;
-let routesVisible = false;
+let routesVisible = true;
 let noiseEnabled = true;
 let demEnabled = false;
 let buildingsVisible = true;
 let shadowsEnabled = true;
 let shadowBlurPct = 215;
 let heightScaleVisible = true;
-let haloBuildingsVisible = false;
-let heightGuidesVisible = false;
+let haloBuildingsVisible = true;
+let heightGuidesVisible = true;
 let flyableVolumeVisible = false;
 let externalityChannel = 'noise';
 let heightField = new Float32Array(N * N);
@@ -77,6 +77,78 @@ let externalityVersion = 0;
 let routeWorker = null;
 let routeDrawChain = Promise.resolve();
 let activeComputeDone = null;
+let routeSource = 'probe'; // 默认：800 m 缓冲圈外缘对边进入；capacity = uavcap
+const PRECOMPUTED_FILES = { 'rep-oh-hongkong': 'data/precomputed/hk15-uavcap.json' };
+const FLIGHT_FILES = { 'rep-oh-hongkong': 'data/precomputed/hk15-flights.json?v=nv2-6' };
+const NOISE_V2_FILES = {
+  'hk-54-29-noisev2': 'data/precomputed/hk54-noise-v2.json',
+  'rep-oh-hongkong': 'data/precomputed/hk15-noise-v2.json?v=nv2-5',
+};
+// Viridis 连续高度色带：低空→高空，感知上单调且对色觉差异更友好。
+const ALTITUDE_CMAP = [
+  [0.00, [68, 1, 84]],
+  [0.25, [59, 82, 139]],
+  [0.50, [33, 145, 140]],
+  [0.75, [94, 201, 98]],
+  [1.00, [253, 231, 37]],
+];
+
+function altitudeColorRgb(alt) {
+  const t = Math.max(0, Math.min(1, (alt - ALT_MIN) / (ALT_MAX - ALT_MIN)));
+  for (let i = 1; i < ALTITUDE_CMAP.length; i++) {
+    if (t <= ALTITUDE_CMAP[i][0]) {
+      const [t0, c0] = ALTITUDE_CMAP[i - 1];
+      const [t1, c1] = ALTITUDE_CMAP[i];
+      const u = (t - t0) / (t1 - t0 || 1);
+      return c0.map((v, k) => Math.round(v + (c1[k] - v) * u));
+    }
+  }
+  return ALTITUDE_CMAP[ALTITUDE_CMAP.length - 1][1].slice();
+}
+
+function altitudeColorHex(alt) {
+  const [r, g, b] = altitudeColorRgb(alt);
+  return (r << 16) | (g << 8) | b;
+}
+
+function altitudeColorCss(alt) {
+  return '#' + altitudeColorHex(alt).toString(16).padStart(6, '0');
+}
+const MAX_DRONES = 700;
+const NOISE_V2_TIERS = { iso: 'iso 各向同性', dir: 'dir 指向性', refl: 'refl 反射+绕射' };
+const SURFACE_NAMES = ['ground', 'facade', 'roof', 'soffit'];
+const OPPOSITE_OD = new Set(['E>W', 'W>E', 'N>S', 'S>N']);
+const precomputedCache = {};
+const flightCache = {};
+let precomputed = null;
+let capacityField = null;
+let flightData = null;
+let flightRoutes = null;
+let droneMesh = null;
+let droneAccentMesh = null;
+let droneDummy = null;
+let droneHide = null;
+let droneColor = null;
+let playbackPlaying = true;
+let playbackRate = 5;
+let playbackT = 0;
+let lastAnimMs = null;
+let aircraftVisible = true;
+const PLAY_ODS = ['E>W', 'W>E', 'N>S', 'S>N', 'E>N', 'E>S', 'W>N', 'W>S', 'N>E', 'N>W', 'S>E', 'S>W'];
+const PLAY_ALTS = [30, 50, 70, 90, 110];
+const TRAIL_STEPS = 10;
+const TRAIL_U = 0.16;
+let playOdSet = null;
+let playAltSet = null;
+let pinnedRoutes = new Set();
+let playGhost = true;
+let dronePickMap = [];
+let flightBlockId = null;
+let noiseV2Tier = 'refl';
+let noiseV2 = null;
+const noiseV2Cache = {};
+let noiseV2Mesh = null;
+let presetLoadToken = 0;
 
 function buildAltitudes(gap) {
   const out = [];
@@ -94,6 +166,17 @@ function updateAltitudeState() {
 const BLOCKS = (window.CITY_BLOCKS && window.CITY_BLOCKS.blocks && window.CITY_BLOCKS.blocks.length)
   ? window.CITY_BLOCKS.blocks
   : fallbackBlocks();
+BLOCKS.unshift({
+  id: 'hk-54-29-noisev2',
+  name: 'Hong Kong · 54_29 (noise v2)',
+  center: [22.315793753923057, 114.18762047046113],
+  size: 500,
+  haloM: 150,
+  noiseV2: true,
+  source: 'SZU noise v2 GPU, realscene 54_29_auto, d_obs=5 m, facet L_Aeq.',
+  terrain: { slopeX: 0, slopeZ: 0, ridge: 0, roughness: 0 },
+  buildings: [],
+});
 
 function fallbackBlocks() {
   return [{
@@ -112,11 +195,16 @@ function fallbackBlocks() {
 }
 
 function terrainHeight(x, z) {
+  if (currentBlock?.noiseV2 && noiseV2?.height) {
+    const sampled = sampleNoiseV2Grid(noiseV2.height.terrain, x, z);
+    if (sampled !== null) return sampled;
+  }
+  const dataNorth = -z;
   const dem = currentBlock?.dem;
   if (demEnabled && dem?.values?.length && dem.grid > 1 && dem.extent > 0) {
     const half = dem.extent / 2;
     const u = (x + half) / dem.extent * (dem.grid - 1);
-    const v = (z + half) / dem.extent * (dem.grid - 1);
+    const v = (dataNorth + half) / dem.extent * (dem.grid - 1);
     if (u >= 0 && v >= 0 && u <= dem.grid - 1 && v <= dem.grid - 1) {
       const i0 = Math.floor(u);
       const j0 = Math.floor(v);
@@ -136,12 +224,14 @@ function terrainHeight(x, z) {
   const sz = t.slopeZ || 0;
   const ridge = t.ridge || 0;
   const rough = t.roughness || 0;
-  const hill = ridge * Math.exp(-((x + 110) ** 2 + (z - 70) ** 2) / (2 * 150 ** 2));
-  return sx * x + sz * z + hill + rough * Math.sin((x + z) * 0.025) * Math.cos(z * 0.016);
+  const hill = ridge * Math.exp(-((x + 110) ** 2 + (dataNorth - 70) ** 2) / (2 * 150 ** 2));
+  return sx * x + sz * dataNorth + hill
+    + rough * Math.sin((x + dataNorth) * 0.025) * Math.cos(dataNorth * 0.016);
 }
 
 function terrainVisualHeight(x, z) {
   const h = terrainHeight(x, z);
+  if (currentBlock?.noiseV2 && noiseV2?.height) return h;
   return demEnabled ? h * DEM_VISUAL_SCALE : h;
 }
 
@@ -220,9 +310,15 @@ const anchorGroup = new THREE.Group();
 const noiseGroup = new THREE.Group();
 const heightScaleGroup = new THREE.Group();
 const heightGuideGroup = new THREE.Group();
+const bufferGroup = new THREE.Group();
 const flyableVolumeGroup = new THREE.Group();
 const probeGroup = new THREE.Group();
-scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, heightScaleGroup, heightGuideGroup, flyableVolumeGroup, probeGroup);
+const noiseV2Group = new THREE.Group();
+const droneGroup = new THREE.Group();
+const focusRibbonGroup = new THREE.Group();
+const trailGroup = new THREE.Group();
+droneGroup.add(trailGroup);
+scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, noiseV2Group, heightScaleGroup, heightGuideGroup, bufferGroup, flyableVolumeGroup, probeGroup, droneGroup, focusRibbonGroup);
 
 const buildingMat = new THREE.MeshStandardMaterial({ color: buildingColor, roughness: 0.72, metalness: 0.0, vertexColors: true, side: THREE.DoubleSide });
 const edgeMat = new THREE.LineBasicMaterial({ color: '#67717d', transparent: true, opacity: 0.92, depthWrite: false });
@@ -233,7 +329,7 @@ const haloBuildingMat = new THREE.MeshStandardMaterial({
   vertexColors: true,
   side: THREE.DoubleSide,
   transparent: true,
-  opacity: 0.24,
+  opacity: 0.42,
   depthWrite: false,
 });
 const haloEdgeMat = new THREE.LineBasicMaterial({ color: '#96a1ad', transparent: true, opacity: 0.22, depthWrite: false });
@@ -245,10 +341,23 @@ const heightGuideMat = new THREE.MeshBasicMaterial({
   depthWrite: false,
 });
 const groundBoundaryMat = new THREE.MeshBasicMaterial({
-  color: '#7d8791',
+  color: '#17191c',
   transparent: true,
-  opacity: 0.88,
+  opacity: 0.92,
   depthWrite: false,
+});
+const bufferFrameMat = new THREE.MeshBasicMaterial({
+  color: '#1677ff',
+  transparent: true,
+  opacity: 0.78,
+  depthWrite: false,
+});
+const bufferFillMat = new THREE.MeshBasicMaterial({
+  color: '#1677ff',
+  transparent: true,
+  opacity: 0.07,
+  depthWrite: false,
+  side: THREE.DoubleSide,
 });
 const flyableVolumeMat = new THREE.MeshBasicMaterial({
   color: '#9fd3ff',
@@ -274,6 +383,11 @@ const noiseMat = new THREE.MeshBasicMaterial({
   polygonOffsetFactor: -2,
   polygonOffsetUnits: -8,
   side: THREE.DoubleSide,
+});
+const noiseV2Mat = new THREE.MeshLambertMaterial({
+  vertexColors: true,
+  side: THREE.DoubleSide,
+  transparent: false,
 });
 
 const CHANNELS = {
@@ -408,6 +522,10 @@ function applyShadowMode() {
     b.box.castShadow = shadowsEnabled;
     b.box.receiveShadow = shadowsEnabled;
   }
+  if (noiseV2Mesh) {
+    noiseV2Mesh.castShadow = shadowsEnabled;
+    noiseV2Mesh.receiveShadow = shadowsEnabled;
+  }
 }
 
 function colorRamp(v, palette = 'heat') {
@@ -471,7 +589,10 @@ function makeFootprintLineGeometry(localPoly, y) {
 }
 
 function makeBuilding(raw, addToScene = true) {
-  const absPoly = raw.polygon.map(p => [p[0], p[1]]);
+  // JSON polygons are stored as [east, north] metres. In a Three.js top view,
+  // screen-up corresponds to world -Z, so map north to -Z to keep the 2D
+  // frontend orientation identical to the source JSON/map convention.
+  const absPoly = raw.polygon.map(p => [p[0], -p[1]]);
   const c = centroid(absPoly);
   const localPoly = absPoly.map(p => [p[0] - c[0], p[1] - c[1]]);
   const auxiliaryByRole = raw.role === 'halo' || raw.tags?.role === 'halo';
@@ -686,17 +807,17 @@ function addGuideJoint(point, radius, material, group = heightGuideGroup) {
   group.add(mesh);
 }
 
-function addGuidePolyline(points, radius, material, dashed = false) {
+function addGuidePolyline(points, radius, material, dashed = false, group = heightGuideGroup) {
   const dashSize = 18;
   const gapSize = 8;
   if (!dashed) {
-    for (const p of points) addGuideJoint(p, radius, material);
+    for (const p of points) addGuideJoint(p, radius, material, group);
   }
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i];
     const b = points[i + 1];
     if (!dashed) {
-      addGuideTube(a, b, radius, material);
+      addGuideTube(a, b, radius, material, group);
       continue;
     }
     const dir = b.clone().sub(a);
@@ -706,51 +827,115 @@ function addGuidePolyline(points, radius, material, dashed = false) {
     for (let t = 0; t < len; t += dashSize + gapSize) {
       const s = a.clone().addScaledVector(dir, t);
       const e = a.clone().addScaledVector(dir, Math.min(len, t + dashSize));
-      addGuideTube(s, e, radius, material);
-      addGuideJoint(s, radius, material);
-      addGuideJoint(e, radius, material);
+      addGuideTube(s, e, radius, material, group);
+      addGuideJoint(s, radius, material, group);
+      addGuideJoint(e, radius, material, group);
     }
   }
 }
 
+function squareLoop(half, y) {
+  return [
+    new THREE.Vector3(-half, y, -half),
+    new THREE.Vector3(half, y, -half),
+    new THREE.Vector3(half, y, half),
+    new THREE.Vector3(-half, y, half),
+    new THREE.Vector3(-half, y, -half),
+  ];
+}
+
+function makeBufferRingGeometry(outerHalf, innerHalf, y) {
+  const shape = new THREE.Shape();
+  shape.moveTo(-outerHalf, -outerHalf);
+  shape.lineTo(outerHalf, -outerHalf);
+  shape.lineTo(outerHalf, outerHalf);
+  shape.lineTo(-outerHalf, outerHalf);
+  shape.closePath();
+  const hole = new THREE.Path();
+  hole.moveTo(-innerHalf, innerHalf);
+  hole.lineTo(innerHalf, innerHalf);
+  hole.lineTo(innerHalf, -innerHalf);
+  hole.lineTo(-innerHalf, -innerHalf);
+  hole.closePath();
+  shape.holes.push(hole);
+  const geom = new THREE.ShapeGeometry(shape);
+  const pos = geom.getAttribute('position');
+  for (let i = 0; i < pos.count; i++) {
+    pos.setXYZ(i, pos.getX(i), y, pos.getY(i));
+  }
+  pos.needsUpdate = true;
+  geom.computeVertexNormals();
+  return geom;
+}
+
+function buildBufferRings() {
+  while (bufferGroup.children.length) {
+    const child = bufferGroup.children[0];
+    child.geometry?.dispose();
+    bufferGroup.remove(child);
+  }
+  const y = Math.max(0.28, terrainVisualHeight(0, 0) + 0.28);
+  const fill = new THREE.Mesh(makeBufferRingGeometry(HALF, CORE_HALF, y), bufferFillMat);
+  fill.renderOrder = 1;
+  bufferGroup.add(fill);
+  addGuidePolyline(squareLoop(CORE_HALF, y), 0.85, groundBoundaryMat, false, bufferGroup);
+  addGuidePolyline(squareLoop(HALF, y), 0.70, bufferFrameMat, false, bufferGroup);
+}
+
 function buildHeightGuides() {
   heightGuideGroup.clear();
-  const guideHalf = HEIGHT_GUIDE_DOMAIN / 2;
-  const groundY = Math.max(0.22, terrainVisualHeight(0, 0) + 0.22);
-  const groundPts = [
-    new THREE.Vector3(-guideHalf, groundY, -guideHalf),
-    new THREE.Vector3(guideHalf, groundY, -guideHalf),
-    new THREE.Vector3(guideHalf, groundY, guideHalf),
-    new THREE.Vector3(-guideHalf, groundY, guideHalf),
-    new THREE.Vector3(-guideHalf, groundY, -guideHalf),
-  ];
-  addGuidePolyline(groundPts, 0.75, groundBoundaryMat, false);
-  for (const alt of [60, 120]) {
-    const pts = [
-      new THREE.Vector3(-guideHalf, alt, -guideHalf),
-      new THREE.Vector3(guideHalf, alt, -guideHalf),
-      new THREE.Vector3(guideHalf, alt, guideHalf),
-      new THREE.Vector3(-guideHalf, alt, guideHalf),
-      new THREE.Vector3(-guideHalf, alt, -guideHalf),
-    ];
-    addGuidePolyline(pts, 0.65, heightGuideMat, true);
-  }
+  const y60 = 60;
+  const y120 = 120;
+  addGuidePolyline(squareLoop(HALF, y60), 0.55, heightGuideMat, true);
+  addGuidePolyline(squareLoop(HALF, y120), 0.55, heightGuideMat, true);
+  addGuidePolyline(squareLoop(CORE_HALF, y60), 0.45, groundBoundaryMat, true);
   heightGuideGroup.visible = heightGuidesVisible;
 }
 
-function loadPreset(name) {
+async function loadPreset(name) {
+  const token = ++presetLoadToken;
   currentPreset = name;
   currentBlock = BLOCKS.find(b => b.name === name) || BLOCKS[0];
   clearNoiseLayer();
   clearFlyableVolume();
+  disposeNoiseV2Mesh();
   buildingGroup.clear();
   buildings = [];
   obstacleBuildings = [];
   nextId = 1;
+  if (NOISE_V2_FILES[currentBlock.id]) {
+    const busy = $('busy');
+    if (busy && currentBlock.noiseV2) {
+      busy.classList.add('on');
+      busy.textContent = '加载噪声 v2 面片...';
+    }
+    try {
+      await ensureNoiseV2(currentBlock.id);
+    } catch (err) {
+      console.warn(err);
+      noiseV2 = null;
+    }
+    if (token !== presetLoadToken) return;
+  } else {
+    noiseV2 = null;
+  }
+  if (PRECOMPUTED_FILES[currentBlock.id]) {
+    routeSource = 'capacity';
+    const cap = document.querySelector('input[name="routeSource"][value="capacity"]');
+    if (cap) cap.checked = true;
+  } else {
+    routeSource = 'probe';
+    const probe = document.querySelector('input[name="routeSource"][value="probe"]');
+    if (probe) probe.checked = true;
+  }
+  syncChannelUI();
   buildTerrain();
+  buildBufferRings();
   buildHeightGuides();
-  obstacleBuildings = currentBlock.buildings.map(raw => makeBuilding(raw, false));
-  currentBlock.buildings.forEach(raw => buildings.push(makeBuilding(raw, true)));
+  const rawBuildings = currentBlock.buildings || [];
+  obstacleBuildings = rawBuildings.map(raw => makeBuilding(raw, false));
+  rawBuildings.forEach(raw => buildings.push(makeBuilding(raw, true)));
+  if (noiseV2) ensureNoiseV2Mesh();
   if (typeof clearProbeFacade === 'function') clearProbeFacade();  // 换街区→立面缓存失效
   applyAuxiliaryBuildingVisibility();
   rebuildFlyableVolume();
@@ -759,6 +944,10 @@ function loadPreset(name) {
 }
 
 async function rasterize(version) {
+  if (currentBlock?.noiseV2 && noiseV2?.height?.obstacle) {
+    heightField.set(noiseV2.height.obstacle);
+    return version === computeVersion;
+  }
   for (let j = 0; j < N; j++) {
     for (let i = 0; i < N; i++) heightField[idx(i, j)] = terrainHeight(gx(i), iToZ(j)) + 1;
     if (j % 8 === 7) {
@@ -937,6 +1126,9 @@ function edgeOf(k) {
 
 function allowedPair(a, b) {
   const ea = edgeOf(a), eb = edgeOf(b);
+  // OPPOSITE edges only = pure pass-through transit (top<->bottom, left<->right).
+  // Adjacent-edge (corner) pairs are short corner-clips that bundle at the corners
+  // and produce edge/caustic artifacts; excluded so the transit field stays clean.
   return (ea === 'top' && eb === 'bottom') || (ea === 'bottom' && eb === 'top') ||
     (ea === 'left' && eb === 'right') || (ea === 'right' && eb === 'left');
 }
@@ -1080,7 +1272,42 @@ function makeRouteBandMesh(paths, alt, opacity, flyable) {
   geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geom.setIndex(indices);
   const mat = new THREE.MeshBasicMaterial({
-    color: ROUTE_COLOR,
+    color: altitudeColorHex(alt),
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.Mesh(geom, mat);
+  mesh.renderOrder = 10;
+  return mesh;
+}
+
+function makeWorldRibbonMesh(polylines, opacity, color) {
+  const positions = [];
+  const indices = [];
+  const halfWidth = 1.35;
+  for (const poly of polylines) {
+    for (let p = 0; p < poly.length - 1; p++) {
+      const ax = poly[p][0], ay = poly[p][1], az = poly[p][2];
+      const bx = poly[p + 1][0], by = poly[p + 1][1], bz = poly[p + 1][2];
+      const dx = bx - ax;
+      const dz = bz - az;
+      const len = Math.hypot(dx, dz);
+      if (len < 0.2) continue;
+      const ox = -dz / len * halfWidth;
+      const oz = dx / len * halfWidth;
+      const base = positions.length / 3;
+      positions.push(ax + ox, ay, az + oz, ax - ox, ay, az - oz, bx + ox, by, bz + oz, bx - ox, by, bz - oz);
+      indices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+    }
+  }
+  if (!positions.length) return null;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geom.setIndex(indices);
+  const mat = new THREE.MeshBasicMaterial({
+    color: color || ROUTE_COLOR,
     transparent: true,
     opacity,
     depthWrite: false,
@@ -1198,7 +1425,7 @@ function collectClipperSolids(node, out) {
   }
 }
 
-// 可飞体的外裁剪方形 = 从中心 ±FLYABLE_RANGE_HALF(650m,纳入 halo 环),不再只裁到 core(500m)。
+  // 可飞体的外裁剪方形 = 800 m 缓冲圈外框（含 halo），不再只裁到 core(500 m)。
 function squareClipPath(S) {
   const R = FLYABLE_RANGE_HALF;
   return [[
@@ -1362,7 +1589,7 @@ function drawAnchors(anchors, alt, opacity) {
   anchors.forEach(k => pts.push(gx(k % N), alt + 2.5, iToZ((k / N) | 0)));
   const geom = new THREE.BufferGeometry();
   geom.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-  const mat = new THREE.PointsMaterial({ color: ROUTE_COLOR, transparent: true, opacity, size: 4.8, sizeAttenuation: true, depthWrite: false });
+  const mat = new THREE.PointsMaterial({ color: altitudeColorHex(alt), transparent: true, opacity, size: 4.8, sizeAttenuation: true, depthWrite: false });
   anchorGroup.add(new THREE.Points(geom, mat));
 }
 
@@ -1392,6 +1619,869 @@ function stopRouteWorker() {
   }
 }
 
+function b64ToTyped(b64, Ctor) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Ctor(bytes.buffer);
+}
+
+function decodePrecomputed(raw) {
+  const vs = raw.field.vs || 5;
+  const ix = b64ToTyped(raw.field.ix, Int16Array);
+  const iy = b64ToTyped(raw.field.iy, Int16Array);
+  const iz = b64ToTyped(raw.field.iz, Int16Array);
+  const v = {};
+  for (const k of Object.keys(raw.field.v)) v[k] = b64ToTyped(raw.field.v[k], Float32Array);
+  const pack = (a, b, c) => ((a + 512) << 20) + ((b + 512) << 10) + (c + 512);
+  const map = new Map();
+  for (let i = 0; i < raw.field.n; i++) {
+    map.set(pack(ix[i], iy[i], iz[i]), {
+      noise: v.noise[i],
+      risk: v.risk[i],
+      privacy: v.privacy[i],
+      visual: v.visual[i],
+    });
+  }
+  const ground = { n: raw.ground.n, extent: raw.ground.extent, v: {} };
+  for (const k of Object.keys(raw.ground.v)) ground.v[k] = b64ToTyped(raw.ground.v[k], Float32Array);
+  return { raw, vs, map, pack, ground };
+}
+
+function usingCapacity() {
+  return routeSource === 'capacity' && capacityField && precomputed?.raw?.id === currentBlock?.id;
+}
+
+function usingNoiseV2() {
+  return Boolean(noiseV2 && currentBlock && NOISE_V2_FILES[currentBlock.id]);
+}
+
+function sampleNoiseV2Grid(arr, x, z) {
+  if (!arr || !noiseV2?.height) return null;
+  const n = noiseV2.height.n;
+  const half = noiseV2.height.half;
+  const cell = noiseV2.height.cell;
+  const u = (x + half) / cell - 0.5;
+  const v = (z + half) / cell - 0.5;
+  if (u < 0 || v < 0 || u > n - 1 || v > n - 1) return 0;
+  const i0 = Math.floor(u);
+  const j0 = Math.floor(v);
+  const i1 = Math.min(n - 1, i0 + 1);
+  const j1 = Math.min(n - 1, j0 + 1);
+  const fu = u - i0;
+  const fv = v - j0;
+  const a = arr[j0 * n + i0];
+  const b = arr[j0 * n + i1];
+  const c = arr[j1 * n + i0];
+  const d = arr[j1 * n + i1];
+  return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
+}
+
+function decodeNoiseV2(raw) {
+  const laeq = {};
+  for (const t of Object.keys(NOISE_V2_TIERS)) laeq[t] = b64ToTyped(raw.laeq[t], Float32Array);
+  return {
+    raw,
+    pos: b64ToTyped(raw.positions, Float32Array),
+    idx: b64ToTyped(raw.indices, Uint32Array),
+    centers: b64ToTyped(raw.centers, Float32Array),
+    surface: b64ToTyped(raw.surface, Uint8Array),
+    laeq,
+    height: {
+      n: raw.height.n,
+      cell: raw.height.cell,
+      half: raw.height.half,
+      obstacle: b64ToTyped(raw.height.obstacle, Float32Array),
+      terrain: b64ToTyped(raw.height.terrain, Float32Array),
+    },
+  };
+}
+
+async function ensureNoiseV2(blockId) {
+  const url = NOISE_V2_FILES[blockId];
+  if (!url) return null;
+  if (!noiseV2Cache[blockId]) {
+    const res = await fetch(url);
+    if (!res.ok) {
+      noiseV2 = null;
+      return null;
+    }
+    noiseV2Cache[blockId] = decodeNoiseV2(await res.json());
+  }
+  noiseV2 = noiseV2Cache[blockId];
+  return noiseV2;
+}
+
+function disposeNoiseV2Mesh() {
+  while (noiseV2Group.children.length) {
+    const child = noiseV2Group.children[0];
+    child.geometry?.dispose();
+    if (child.material && child.material !== noiseV2Mat) child.material.dispose();
+    noiseV2Group.remove(child);
+  }
+  noiseV2Mesh = null;
+}
+
+function colorNoiseV2Mesh(useLaeq) {
+  if (!noiseV2Mesh || !noiseV2) return;
+  const colors = noiseV2Mesh.geometry.getAttribute('color');
+  const n = noiseV2.raw.n;
+  const L = noiseV2.laeq[noiseV2Tier] || noiseV2.laeq.refl;
+  const lo = noiseV2.raw.vp5;
+  const hi = noiseV2.raw.vp95;
+  const gray = [0.76, 0.76, 0.745];
+  for (let i = 0; i < n; i++) {
+    let rgb = gray;
+    if (useLaeq) {
+      const t = clamp01((L[i] - lo) / (hi - lo || 1));
+      rgb = colorRamp(t, 'coolwarm');
+    }
+    for (let k = 0; k < 4; k++) colors.setXYZ(i * 4 + k, rgb[0], rgb[1], rgb[2]);
+  }
+  colors.needsUpdate = true;
+}
+
+function ensureNoiseV2Mesh() {
+  disposeNoiseV2Mesh();
+  if (!noiseV2) return;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(noiseV2.pos), 3));
+  geom.setIndex(new THREE.BufferAttribute(new Uint32Array(noiseV2.idx), 1));
+  geom.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(noiseV2.raw.n * 4 * 3), 3));
+  geom.computeVertexNormals();
+  noiseV2Mesh = new THREE.Mesh(geom, noiseV2Mat);
+  noiseV2Mesh.castShadow = shadowsEnabled;
+  noiseV2Mesh.receiveShadow = shadowsEnabled;
+  noiseV2Mesh.renderOrder = 2;
+  noiseV2Group.add(noiseV2Mesh);
+  colorNoiseV2Mesh(noiseEnabled);
+  applyNoiseV2Visibility();
+}
+
+function nearestNoiseV2Facet(x, y, z) {
+  if (!noiseV2) return null;
+  const c = noiseV2.centers;
+  let best = 0;
+  let bestD = Infinity;
+  for (let i = 0; i < noiseV2.raw.n; i++) {
+    const dx = c[i * 3] - x;
+    const dy = c[i * 3 + 1] - y;
+    const dz = c[i * 3 + 2] - z;
+    const d = dx * dx + dy * dy + dz * dz;
+    if (d < bestD) {
+      bestD = d;
+      best = i;
+    }
+  }
+  const L = noiseV2.laeq[noiseV2Tier] || noiseV2.laeq.refl;
+  return {
+    i: best,
+    L: L[best],
+    surface: SURFACE_NAMES[noiseV2.surface[best]] || 'facet',
+    d: Math.sqrt(bestD),
+  };
+}
+
+function applyNoiseV2Visibility() {
+  if (!noiseV2Mesh) return;
+  noiseV2Mesh.visible = buildingsVisible || noiseEnabled;
+  colorNoiseV2Mesh(noiseEnabled);
+}
+
+function syncChannelUI() {
+  const v2 = usingNoiseV2() || Boolean(currentBlock?.noiseV2);
+  const wrapV2 = $('noiseV2Wrap');
+  const wrapFour = $('channelFourWrap');
+  if (wrapV2) wrapV2.style.display = v2 ? '' : 'none';
+  if (wrapFour) wrapFour.style.display = v2 ? 'none' : '';
+  if (v2 && noiseV2) {
+    $('channelV').textContent = NOISE_V2_TIERS[noiseV2Tier] || 'refl';
+    if ($('laeqMin')) $('laeqMin').textContent = `${noiseV2.raw.vp5.toFixed(1)} dB`;
+    if ($('laeqMax')) $('laeqMax').textContent = `${noiseV2.raw.vp95.toFixed(1)} dB`;
+    const st = noiseV2.raw.tiers?.[noiseV2Tier] || {};
+    const share = st.path_energy_share || {};
+    if ($('noiseV2Stats')) {
+      $('noiseV2Stats').textContent =
+        `面积加权 L_Aeq ${Number(st.LAeq_area_weighted_dB || 0).toFixed(2)} dB · Gini ${Number(st.gini || 0).toFixed(3)}` +
+        (noiseV2Tier === 'refl'
+          ? ` · 直达 ${(share.direct * 100).toFixed(0)}% / 反射 ${(share.reflected * 100).toFixed(0)}% / 绕射 ${(share.diffraction * 100).toFixed(0)}%`
+          : '');
+    }
+  } else {
+    $('channelV').textContent = (CHANNELS[externalityChannel] || CHANNELS.noise).label;
+  }
+}
+
+async function ensurePrecomputed(blockId) {
+  const url = PRECOMPUTED_FILES[blockId];
+  if (!url) return null;
+  if (!precomputedCache[blockId]) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`precomputed ${url} ${res.status}`);
+    precomputedCache[blockId] = decodePrecomputed(await res.json());
+  }
+  return precomputedCache[blockId];
+}
+
+function flightCumlen(pts) {
+  const c = [0];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    c.push(c[i - 1] + Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]));
+  }
+  return c;
+}
+
+function prepareFlightRoutes(raw) {
+  return (raw.routes || []).map(r => {
+    const p = r.p || [];
+    const c = flightCumlen(p);
+    const h = Math.round(r.h);
+    return { p, c, L: c[c.length - 1] || 1, h, col: altitudeColorHex(h), od: r.od, id: r.id };
+  });
+}
+
+function atFlightRoute(route, u) {
+  const d = u * route.L;
+  const c = route.c;
+  const p = route.p;
+  let i = 1;
+  while (i < c.length && c[i] < d) i++;
+  const i0 = Math.max(0, i - 1);
+  const i1 = Math.min(p.length - 1, i);
+  const span = Math.max(1e-6, c[i1] - c[i0]);
+  const t = (d - c[i0]) / span;
+  return [
+    p[i0][0] + (p[i1][0] - p[i0][0]) * t,
+    p[i0][1] + (p[i1][1] - p[i0][1]) * t,
+    p[i0][2] + (p[i1][2] - p[i0][2]) * t,
+  ];
+}
+
+async function ensureFlights(blockId) {
+  const url = FLIGHT_FILES[blockId];
+  if (!url) {
+    flightData = null;
+    flightRoutes = null;
+    return null;
+  }
+  if (flightBlockId !== blockId) {
+    flightBlockId = blockId;
+    pinnedRoutes = new Set();
+    playOdSet = null;
+    playAltSet = null;
+  }
+  if (!flightCache[blockId]) {
+    const res = await fetch(url);
+    if (!res.ok) {
+      flightData = null;
+      flightRoutes = null;
+      return null;
+    }
+    const raw = await res.json();
+    flightCache[blockId] = { raw, routes: prepareFlightRoutes(raw) };
+  }
+  flightData = flightCache[blockId].raw;
+  flightRoutes = flightCache[blockId].routes;
+  return flightData;
+}
+
+function mergePlaybackDroneParts(parts) {
+  const positions = [];
+  const normals = [];
+  for (const source of parts) {
+    const geo = source.index ? source.toNonIndexed() : source;
+    const pos = geo.getAttribute('position');
+    const normal = geo.getAttribute('normal');
+    for (let i = 0; i < pos.count; i++) {
+      positions.push(pos.getX(i), pos.getY(i), pos.getZ(i));
+      normals.push(normal.getX(i), normal.getY(i), normal.getZ(i));
+    }
+    if (geo !== source) geo.dispose();
+    source.dispose();
+  }
+  const merged = new THREE.BufferGeometry();
+  merged.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  merged.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  merged.computeBoundingSphere();
+  return merged;
+}
+
+// 与点位探针同构的低面数 3D 四旋翼，合并后再实例化数百架。
+function makePlaybackDroneGeometry() {
+  const parts = [];
+  parts.push(new THREE.CylinderGeometry(3.5, 4.3, 2.4, 10));
+  for (const [x, z] of [[6.2, 6.2], [6.2, -6.2], [-6.2, 6.2], [-6.2, -6.2]]) {
+    const len = Math.hypot(x, z);
+    const arm = new THREE.BoxGeometry(len, 0.8, 0.8);
+    arm.rotateY(-Math.atan2(z, x));
+    arm.translate(x * 0.5, 0, z * 0.5);
+    parts.push(arm);
+
+    const motor = new THREE.CylinderGeometry(1.15, 1.15, 1.8, 10);
+    motor.translate(x, 0.75, z);
+    parts.push(motor);
+
+    const rotor = new THREE.CylinderGeometry(3.5, 3.5, 0.22, 16);
+    rotor.translate(x, 1.72, z);
+    parts.push(rotor);
+
+    const leg = new THREE.CylinderGeometry(0.34, 0.34, 3.1, 6);
+    leg.translate(x * 0.48, -2.0, z * 0.48);
+    parts.push(leg);
+  }
+  for (const z of [-3.4, 3.4]) {
+    const skid = new THREE.BoxGeometry(10.6, 0.55, 0.55);
+    skid.translate(0, -3.55, z);
+    parts.push(skid);
+  }
+  return mergePlaybackDroneParts(parts);
+}
+
+function makePlaybackDroneAccentGeometry() {
+  const parts = [];
+  const dome = new THREE.SphereGeometry(2.45, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+  dome.translate(0, 1.15, 0);
+  parts.push(dome);
+
+  const nose = new THREE.ConeGeometry(1.25, 3.2, 8);
+  nose.rotateZ(-Math.PI / 2);
+  nose.translate(4.8, 0.15, 0);
+  parts.push(nose);
+
+  for (const z of [-6.2, 6.2]) {
+    const cap = new THREE.CylinderGeometry(1.3, 1.3, 0.5, 10);
+    cap.translate(6.2, 1.92, z);
+    parts.push(cap);
+  }
+  return mergePlaybackDroneParts(parts);
+}
+
+function ensureDroneMesh() {
+  if (droneMesh) return;
+  const bodyMat = new THREE.MeshPhongMaterial({ color: 0x323a43, shininess: 38, flatShading: true, transparent: true, opacity: 0.92 });
+  const accentMat = new THREE.MeshPhongMaterial({ color: 0xffffff, shininess: 76, flatShading: true });
+  droneMesh = new THREE.InstancedMesh(makePlaybackDroneGeometry(), bodyMat, MAX_DRONES);
+  droneAccentMesh = new THREE.InstancedMesh(makePlaybackDroneAccentGeometry(), accentMat, MAX_DRONES);
+  if (THREE.DynamicDrawUsage) droneMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  if (THREE.DynamicDrawUsage) droneAccentMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  droneMesh.castShadow = false;
+  droneMesh.receiveShadow = false;
+  droneMesh.renderOrder = 12;
+  droneMesh.frustumCulled = false;
+  droneAccentMesh.castShadow = false;
+  droneAccentMesh.receiveShadow = false;
+  droneAccentMesh.renderOrder = 13;
+  droneAccentMesh.frustumCulled = false;
+  droneGroup.add(droneMesh);
+  droneGroup.add(droneAccentMesh);
+  droneDummy = new THREE.Object3D();
+  droneHide = new THREE.Matrix4().makeScale(0, 0, 0);
+  droneColor = new THREE.Color();
+  for (let i = 0; i < MAX_DRONES; i++) {
+    droneMesh.setMatrixAt(i, droneHide);
+    droneAccentMesh.setMatrixAt(i, droneHide);
+    if (typeof droneAccentMesh.setColorAt === 'function') droneAccentMesh.setColorAt(i, droneColor.setHex(0xffffff));
+  }
+  droneMesh.instanceMatrix.needsUpdate = true;
+  droneAccentMesh.instanceMatrix.needsUpdate = true;
+  if (droneAccentMesh.instanceColor) droneAccentMesh.instanceColor.needsUpdate = true;
+}
+
+function setsEqual(a, b) {
+  if (a.size !== b.size) return false;
+  for (const x of a) if (!b.has(x)) return false;
+  return true;
+}
+
+function isPlaybackFocused() {
+  return Boolean((playOdSet && playOdSet.size) || (playAltSet && playAltSet.size) || pinnedRoutes.size);
+}
+
+function routeInFilter(route) {
+  if (!route) return false;
+  if (playOdSet && !playOdSet.has(route.od)) return false;
+  if (playAltSet && !playAltSet.has(route.h)) return false;
+  return true;
+}
+
+function routeFocused(ri, route) {
+  if (!routeInFilter(route)) return false;
+  if (pinnedRoutes.size && !pinnedRoutes.has(ri)) return false;
+  return true;
+}
+
+function playbackFilterLabel() {
+  const od = !playOdSet ? '全部方向' : [...playOdSet].join(' · ');
+  const alt = !playAltSet ? '全部高度' : [...playAltSet].map(h => h + ' m').join(' · ');
+  return od + ' · ' + alt;
+}
+
+function disposeFocusRibbons() {
+  for (const child of focusRibbonGroup.children) {
+    child.geometry?.dispose();
+    child.material?.dispose();
+  }
+  focusRibbonGroup.clear();
+}
+
+function rebuildFocusRibbons() {
+  disposeFocusRibbons();
+  if (!flightRoutes || !isPlaybackFocused()) {
+    applyRouteVisibility();
+    return;
+  }
+  const byAlt = new Map();
+  flightRoutes.forEach((route, ri) => {
+    if (!routeFocused(ri, route) || route.p.length < 2) return;
+    if (!byAlt.has(route.h)) byAlt.set(route.h, []);
+    byAlt.get(route.h).push(route.p.map(([e, n, u]) => [e, u, -n]));
+  });
+  for (const [alt, polys] of byAlt) {
+    const mesh = makeWorldRibbonMesh(polys, 0.72, altitudeColorHex(alt));
+    if (mesh) {
+      mesh.renderOrder = 11;
+      focusRibbonGroup.add(mesh);
+    }
+  }
+  applyRouteVisibility();
+}
+
+function ensureTrailLines(n) {
+  while (trailGroup.children.length < n) {
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(TRAIL_STEPS * 3), 3));
+    const line = new THREE.Line(geom, new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.88,
+      depthWrite: false,
+    }));
+    line.frustumCulled = false;
+    line.renderOrder = 13;
+    trailGroup.add(line);
+  }
+  for (let i = 0; i < trailGroup.children.length; i++) trailGroup.children[i].visible = i < n;
+}
+
+function writeTrail(line, route, u, colorHex) {
+  const pos = line.geometry.getAttribute('position');
+  const u0 = Math.max(0, u - TRAIL_U);
+  for (let s = 0; s < TRAIL_STEPS; s++) {
+    const t = TRAIL_STEPS === 1 ? 1 : s / (TRAIL_STEPS - 1);
+    const p = atFlightRoute(route, u0 + (u - u0) * t);
+    pos.setXYZ(s, p[0], p[2], -p[1]);
+  }
+  pos.needsUpdate = true;
+  line.material.color.setHex(colorHex);
+}
+
+function onPlayFilterChange() {
+  rebuildFocusRibbons();
+  syncPlayFilterUI();
+  placeDrones();
+}
+
+function togglePlayOd(od) {
+  if (!playOdSet) playOdSet = new Set([od]);
+  else if (playOdSet.has(od)) {
+    playOdSet.delete(od);
+    if (!playOdSet.size) playOdSet = null;
+  } else playOdSet.add(od);
+  onPlayFilterChange();
+}
+
+function togglePlayAlt(h) {
+  if (!playAltSet) playAltSet = new Set([h]);
+  else if (playAltSet.has(h)) {
+    playAltSet.delete(h);
+    if (!playAltSet.size) playAltSet = null;
+  } else playAltSet.add(h);
+  onPlayFilterChange();
+}
+
+function pinFlightRoute(ri, additive) {
+  if (!additive) pinnedRoutes = new Set();
+  if (ri == null || ri < 0) {
+    pinnedRoutes = new Set();
+  } else if (pinnedRoutes.has(ri) && additive) {
+    pinnedRoutes.delete(ri);
+  } else {
+    pinnedRoutes.add(ri);
+  }
+  onPlayFilterChange();
+}
+
+function buildPlayFilterChips() {
+  const odBox = $('playOdChips');
+  const altBox = $('playAltChips');
+  if (odBox && !odBox.dataset.ready) {
+    odBox.dataset.ready = '1';
+    const add = (label, attrs, onClick) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      Object.entries(attrs).forEach(([k, v]) => { b.dataset[k] = v; });
+      b.addEventListener('click', onClick);
+      odBox.appendChild(b);
+    };
+    add('全部', { role: 'all' }, () => { playOdSet = null; onPlayFilterChange(); });
+    add('对穿', { role: 'opp' }, () => { playOdSet = new Set([...OPPOSITE_OD]); onPlayFilterChange(); });
+    PLAY_ODS.forEach(od => add(od, { od }, () => togglePlayOd(od)));
+  }
+  if (altBox && !altBox.dataset.ready) {
+    altBox.dataset.ready = '1';
+    const add = (label, attrs, onClick) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label;
+      Object.entries(attrs).forEach(([k, v]) => { b.dataset[k] = v; });
+      b.addEventListener('click', onClick);
+      altBox.appendChild(b);
+    };
+    add('全部', { role: 'all' }, () => { playAltSet = null; onPlayFilterChange(); });
+    PLAY_ALTS.forEach(h => add(h + ' m', { alt: String(h) }, () => togglePlayAlt(h)));
+  }
+}
+
+function syncPlayFilterUI() {
+  buildPlayFilterChips();
+  const odBox = $('playOdChips');
+  if (odBox) {
+    const oppOn = playOdSet && setsEqual(playOdSet, OPPOSITE_OD);
+    odBox.querySelectorAll('button').forEach(btn => {
+      const on = btn.dataset.role === 'all' ? !playOdSet
+        : btn.dataset.role === 'opp' ? Boolean(oppOn)
+        : Boolean(playOdSet && playOdSet.has(btn.dataset.od));
+      btn.classList.toggle('on', on);
+    });
+  }
+  const altBox = $('playAltChips');
+  if (altBox) {
+    altBox.querySelectorAll('button').forEach(btn => {
+      const on = btn.dataset.role === 'all' ? !playAltSet
+        : Boolean(playAltSet && playAltSet.has(+btn.dataset.alt));
+      btn.classList.toggle('on', on);
+    });
+  }
+  if ($('playOdV')) $('playOdV').textContent = playOdSet ? [...playOdSet].join(' · ') : '全部';
+  if ($('playAltV')) $('playAltV').textContent = playAltSet ? [...playAltSet].map(h => h + ' m').join(' · ') : '全部';
+  if ($('playPinV')) {
+    if (!pinnedRoutes.size) $('playPinV').textContent = '点击飞机';
+    else if (pinnedRoutes.size === 1) {
+      const ri = [...pinnedRoutes][0];
+      const r = flightRoutes?.[ri];
+      $('playPinV').textContent = r ? `${r.od} @ ${r.h} m` : '1 条';
+    } else $('playPinV').textContent = `${pinnedRoutes.size} 条`;
+  }
+  if ($('playGhost')) $('playGhost').checked = playGhost;
+}
+
+function fmtPlaybackClock(t) {
+  t = Math.max(0, t);
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function setPlaybackPlaying(on) {
+  playbackPlaying = on;
+  const label = on ? '暂停' : '播放';
+  if ($('playBtn')) $('playBtn').textContent = label;
+  if ($('playHudBtn')) $('playHudBtn').textContent = label;
+}
+
+function setPlaybackRate(v) {
+  playbackRate = v;
+  [1, 5, 10, 20].forEach(spd => {
+    const btn = $('spd' + spd);
+    if (btn) btn.classList.toggle('on', spd === v);
+  });
+}
+
+function setPlaybackTime(t) {
+  const tmax = flightData?.t_eval_s || 3600;
+  playbackT = ((t % tmax) + tmax) % tmax;
+  const pct = 100 * playbackT / tmax;
+  if ($('playBar')) {
+    $('playBar').max = tmax;
+    $('playBar').value = playbackT;
+    $('playBar').style.setProperty('--playback-pct', pct + '%');
+  }
+  const clock = fmtPlaybackClock(playbackT) + ' / ' + fmtPlaybackClock(tmax);
+  if ($('playHudClock')) $('playHudClock').textContent = clock;
+}
+
+function placeDrones() {
+  const live = usingCapacity() && flightData && flightRoutes && aircraftVisible;
+  if (droneMesh) droneMesh.visible = Boolean(live);
+  if (droneAccentMesh) droneAccentMesh.visible = Boolean(live);
+  trailGroup.visible = Boolean(live);
+  if (!live || !droneMesh) {
+    ensureTrailLines(0);
+    return;
+  }
+  const fl = flightData.flights || [];
+  const ghostHex = 0xc5cdd6;
+  dronePickMap = [];
+  const trails = [];
+  let n = 0;
+  let nFocus = 0;
+  for (let i = 0; i < fl.length && n < MAX_DRONES; i++) {
+    const ri = fl[i][0];
+    const t0 = fl[i][1];
+    const t1 = fl[i][2];
+    if (playbackT < t0 || playbackT > t1) continue;
+    const route = flightRoutes[ri];
+    if (!route || route.p.length < 2) continue;
+    const focused = routeFocused(ri, route);
+    if (!focused) {
+      if (!playGhost) continue;
+    } else nFocus++;
+    const u = (playbackT - t0) / Math.max(1e-3, t1 - t0);
+    const p = atFlightRoute(route, u);
+    const p0 = atFlightRoute(route, Math.max(0, u - 0.003));
+    const p1 = atFlightRoute(route, Math.min(1, u + 0.003));
+    droneDummy.position.set(p[0], p[2], -p[1]);
+    droneDummy.rotation.set(0, Math.atan2(p1[1] - p0[1], p1[0] - p0[0]), 0);
+    const scale = focused ? (pinnedRoutes.has(ri) ? 0.92 : 0.68) : 0.32;
+    droneDummy.scale.set(scale, scale, scale);
+    droneDummy.updateMatrix();
+    droneMesh.setMatrixAt(n, droneDummy.matrix);
+    droneAccentMesh.setMatrixAt(n, droneDummy.matrix);
+    if (typeof droneAccentMesh.setColorAt === 'function') {
+      droneAccentMesh.setColorAt(n, droneColor.setHex(focused ? route.col : ghostHex));
+    }
+    dronePickMap[n] = ri;
+    if (focused) trails.push({ route, u, col: route.col });
+    n++;
+  }
+  for (let i = n; i < MAX_DRONES; i++) {
+    droneMesh.setMatrixAt(i, droneHide);
+    droneAccentMesh.setMatrixAt(i, droneHide);
+  }
+  droneMesh.count = Math.max(1, n);
+  droneAccentMesh.count = Math.max(1, n);
+  droneMesh.instanceMatrix.needsUpdate = true;
+  droneAccentMesh.instanceMatrix.needsUpdate = true;
+  if (droneAccentMesh.instanceColor) droneAccentMesh.instanceColor.needsUpdate = true;
+  ensureTrailLines(trails.length);
+  trails.forEach((item, i) => writeTrail(trailGroup.children[i], item.route, item.u, item.col));
+  if ($('playHudAir')) $('playHudAir').textContent = isPlaybackFocused() ? `${nFocus} 架` : `空中 ${n}`;
+}
+
+function syncPlaybackUI() {
+  const show = usingCapacity() && Boolean(flightData);
+  if ($('playbackWrap')) $('playbackWrap').style.display = show ? '' : 'none';
+  const hud = $('playHud');
+  if (hud) hud.classList.toggle('on', show);
+  droneGroup.visible = show && aircraftVisible;
+  if (show) {
+    ensureDroneMesh();
+    buildPlayFilterChips();
+    syncPlayFilterUI();
+    rebuildFocusRibbons();
+    setPlaybackTime(playbackT);
+    placeDrones();
+    const nFlights = flightData.n_flights || (flightData.flights || []).length;
+    if ($('playbackNote')) {
+      $('playbackNote').textContent =
+        `真实一小时排班，共 ${nFlights.toLocaleString()} 架次。点方向/高度只看几条走廊；再点一架飞机钉住那条航线。Shift+点击可钉多条。`;
+    }
+  } else {
+    if (droneMesh) droneMesh.visible = false;
+    if (droneAccentMesh) droneAccentMesh.visible = false;
+    disposeFocusRibbons();
+    ensureTrailLines(0);
+  }
+}
+
+function sampleCapacityGround(x, z, channel) {
+  const g = capacityField.ground;
+  const n = g.n;
+  const half = g.extent / 2;
+  const u = (x + half) / g.extent * (n - 1);
+  const vv = (z + half) / g.extent * (n - 1);
+  if (u < 0 || vv < 0 || u > n - 1 || vv > n - 1) return 0;
+  const arr = g.v[channel] || g.v.noise;
+  const i0 = Math.floor(u);
+  const j0 = Math.floor(vv);
+  const i1 = Math.min(n - 1, i0 + 1);
+  const j1 = Math.min(n - 1, j0 + 1);
+  const fu = u - i0;
+  const fv = vv - j0;
+  const a = arr[j0 * n + i0];
+  const b = arr[j0 * n + i1];
+  const c = arr[j1 * n + i0];
+  const d = arr[j1 * n + i1];
+  return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
+}
+
+function sampleCapacityField(x, y, z, channel) {
+  const vs = capacityField.vs;
+  const ix = Math.round(x / vs);
+  const iy = Math.round((-z) / vs);
+  const iz = Math.round(y / vs);
+  let best = 0;
+  for (let di = -1; di <= 1; di++) {
+    for (let dj = -1; dj <= 1; dj++) {
+      for (let dk = -1; dk <= 1; dk++) {
+        const rec = capacityField.map.get(capacityField.pack(ix + di, iy + dj, iz + dk));
+        if (!rec) continue;
+        const val = rec[channel] || 0;
+        if (val > best) best = val;
+      }
+    }
+  }
+  return best;
+}
+
+function syncRouteSourceUI() {
+  const capOn = usingCapacity();
+  const generation = $('routeGenerationWrap');
+  if (generation) generation.style.display = capOn ? 'none' : '';
+  const density = $('density');
+  if (density) {
+    density.disabled = capOn;
+    if (capOn) {
+      density.value = 2;
+      $('densityV').textContent = 2;
+    } else {
+      density.value = entriesPerEdge;
+      $('densityV').textContent = entriesPerEdge;
+    }
+  }
+  const gap = $('heightGapV');
+  if (gap) gap.textContent = capOn ? '20 m' : '10 m';
+  const note = $('routeSourceNote');
+  const sub = $('sandboxSub');
+  if (routeSource === 'capacity' && currentBlock && !PRECOMPUTED_FILES[currentBlock.id]) {
+    if (note) note.textContent = '当前场景没有排班数据，已使用浏览器探针。';
+    if (sub) sub.textContent = '500 m 研究区 · 800 m halo';
+  } else if (capOn) {
+    if (note) {
+      note.textContent = usingNoiseV2()
+        ? '真实一小时容量排班；右下角控制回放。噪声为预计算面片 L_Aeq。'
+        : '容量排班仅保留东西 / 南北对向航线。';
+    }
+    if (sub) {
+      sub.textContent = usingNoiseV2()
+        ? 'Hong Kong OH 15_0 · 容量排班 + 噪声 v2'
+        : '容量排班 · 对向航线';
+    }
+  } else if (usingNoiseV2()) {
+    if (note) note.textContent = '从 800 m halo 对边生成探针航线；噪声为预计算面片 L_Aeq。';
+    if (sub) sub.textContent = 'Hong Kong 54_29 · 实景噪声 v2';
+  } else {
+    if (note) note.textContent = '从 800 m halo 对边生成航线。';
+    if (sub) sub.textContent = '500 m 研究区 · 800 m halo';
+  }
+}
+
+function restoreProbeAltitudes() {
+  altitudes = buildAltitudes(HEIGHT_GAP);
+  maxHeightWeight = Math.max(...altitudes.map(heightWeight));
+  buildMapTiles();
+}
+
+function computeFlyableAt(alt) {
+  const fly = new Uint8Array(N * N);
+  let count = 0;
+  let coreCount = 0;
+  for (let k = 0; k < N * N; k++) {
+    fly[k] = heightField[k] + SAFETY_M < alt ? 1 : 0;
+    count += fly[k];
+    const i = k % N;
+    const j = (k / N) | 0;
+    if (isCoreCell(i, j)) coreCount += fly[k];
+  }
+  return {
+    flyable: fly,
+    flyPct: { all: count / (N * N), core: coreCount / (CORE_N * CORE_N) },
+  };
+}
+
+async function drawCapacityRoutes(version) {
+  const byAlt = new Map();
+  for (const r of precomputed.raw.routes) {
+    if (r.od && !OPPOSITE_OD.has(r.od)) continue;
+    const alt = r.h;
+    if (!byAlt.has(alt)) byAlt.set(alt, []);
+    byAlt.get(alt).push(r.p.map(([e, n, u]) => [e, u, -n]));
+  }
+  altitudes = [...byAlt.keys()].sort((a, b) => a - b);
+  maxHeightWeight = Math.max(...altitudes.map(heightWeight));
+  buildMapTiles();
+  for (const alt of altitudes) {
+    if (version !== computeVersion) return false;
+    const polys = byAlt.get(alt);
+    const { flyable: fly, flyPct } = computeFlyableAt(alt);
+    const weight = heightWeight(alt) / maxHeightWeight;
+    const routeOpacity = Math.min(0.55, (0.010 + 0.070 * weight) * routeOpacityScale);
+    const mesh = makeWorldRibbonMesh(polys, routeOpacity, altitudeColorHex(alt));
+    if (mesh) routeGroup.add(mesh);
+    totalRoutes += polys.length;
+    routeSummaries.push({
+      alt,
+      weight,
+      flyPct,
+      flyable: fly,
+      paths: [],
+      worldPaths: polys.map(poly => poly.map(p => [p[0], p[2]])),
+      pathCount: polys.length,
+      anchors: [],
+    });
+    await nextFrame();
+  }
+  applyRouteVisibility();
+  return true;
+}
+
+function startProbeWorker(version, resolve) {
+  activeComputeDone = resolve;
+  routeWorker = new Worker('route-worker.js?v=' + Date.now());  // cache-bust: always load latest worker
+  routeWorker.onmessage = event => {
+    const { type, result, version: msgVersion } = event.data;
+    if (msgVersion !== computeVersion || msgVersion !== version) return;
+    if (type === 'altResult') {
+      routeDrawChain = routeDrawChain.then(() => drawAltitudeResult(result, version));
+    } else if (type === 'done') {
+      routeDrawChain.then(() => {
+        if (version !== computeVersion) return resolve(false);
+        routeWorker?.terminate();
+        routeWorker = null;
+        activeComputeDone = null;
+        routeSummaries.sort((a, b) => a.alt - b.alt);
+        updateMetrics();
+        drawMiniMap();
+        rebuildFlyableVolume();
+        if (noiseEnabled) scheduleExternalityLayer();
+        resolve(true);
+      });
+    }
+  };
+  routeWorker.onerror = error => {
+    console.error(error);
+    routeWorker?.terminate();
+    routeWorker = null;
+    activeComputeDone = null;
+    resolve(false);
+  };
+  const heightFieldBuffer = heightField.slice().buffer;
+  routeWorker.postMessage({
+    type: 'compute',
+    version,
+    N,
+    CORE_N,
+    CORE_OFFSET,
+    entriesPerEdge,
+    maxHeightWeight,
+    altitudes: altitudes.slice(),
+    heightFieldBuffer,
+  }, [heightFieldBuffer]);
+}
+
 async function recompute(version) {
   const rasterReady = await rasterize(version);
   if (!rasterReady || version !== computeVersion) return false;
@@ -1402,60 +2492,64 @@ async function recompute(version) {
   totalRoutes = 0;
   routeSummaries = [];
   routeDrawChain = Promise.resolve();
+  precomputed = null;
+  capacityField = null;
 
-  return new Promise(resolve => {
-    activeComputeDone = resolve;
-    routeWorker = new Worker('route-worker.js');
-    routeWorker.onmessage = event => {
-      const { type, result, version: msgVersion } = event.data;
-      if (msgVersion !== computeVersion || msgVersion !== version) return;
-      if (type === 'altResult') {
-        routeDrawChain = routeDrawChain.then(() => drawAltitudeResult(result, version));
-      } else if (type === 'done') {
-        routeDrawChain.then(() => {
-          if (version !== computeVersion) return resolve(false);
-          routeWorker?.terminate();
-          routeWorker = null;
-          activeComputeDone = null;
-          routeSummaries.sort((a, b) => a.alt - b.alt);
-          updateMetrics();
-          drawMiniMap();
-          rebuildFlyableVolume();
-          if (noiseEnabled) scheduleExternalityLayer();
-          resolve(true);
-        });
-      }
-    };
-    routeWorker.onerror = error => {
-      console.error(error);
-      routeWorker?.terminate();
-      routeWorker = null;
-      activeComputeDone = null;
-      resolve(false);
-    };
-    const heightFieldBuffer = heightField.slice().buffer;
-    routeWorker.postMessage({
-      type: 'compute',
-      version,
-      N,
-      CORE_N,
-      CORE_OFFSET,
-      entriesPerEdge,
-      maxHeightWeight,
-      altitudes: altitudes.slice(),
-      heightFieldBuffer,
-    }, [heightFieldBuffer]);
-  });
+  if (routeSource === 'capacity') {
+    try {
+      const [pc] = await Promise.all([
+        ensurePrecomputed(currentBlock?.id),
+        ensureFlights(currentBlock?.id),
+      ]);
+      precomputed = pc;
+    } catch (err) {
+      console.warn(err);
+      precomputed = null;
+    }
+    if (precomputed) capacityField = precomputed;
+    if (usingCapacity()) {
+      const busy = $('busy');
+      if (busy) busy.textContent = '加载容量航线与 SZU 噪声...';
+      const ok = await drawCapacityRoutes(version);
+      if (!ok || version !== computeVersion) return false;
+      updateMetrics();
+      drawMiniMap();
+      rebuildFlyableVolume();
+      if (noiseEnabled) scheduleExternalityLayer();
+      syncRouteSourceUI();
+      syncPlaybackUI();
+      return true;
+    }
+  }
+
+  flightData = null;
+  flightRoutes = null;
+  restoreProbeAltitudes();
+  syncRouteSourceUI();
+  syncChannelUI();
+  syncPlaybackUI();
+  const busy = $('busy');
+  if (busy) busy.textContent = '计算多高度航线...';
+
+  return new Promise(resolve => startProbeWorker(version, resolve));
 }
 
 function updateMetrics() {
   const legend = $('altLegend');
   legend.innerHTML = '';
+  if (usingCapacity()) {
+    const s = precomputed.raw.source || {};
+    const cap = s.summary?.capacity_stable_hour;
+    const row = document.createElement('div');
+    row.className = 'alt';
+    row.innerHTML = `<span class="sw altCmapSw"></span><span>容量排班</span><span style="margin-left:auto">${cap} /时 · ${s.n_flights} 架</span>`;
+    legend.appendChild(row);
+  }
   routeSummaries.forEach((s, i) => {
     const row = document.createElement('div');
     row.className = 'alt';
     const pct = Math.round(s.flyPct.core * 100);
-    row.innerHTML = `<span class="sw" style="background:${ROUTE_COLOR};opacity:${Math.min(1, (0.18 + 0.75 * s.weight) * routeOpacityScale).toFixed(2)}"></span><span>${s.alt} m</span><span style="margin-left:auto">W ${(s.weight).toFixed(2)} · ${s.pathCount || s.paths.length} 条 · ${pct}%</span>`;
+    row.innerHTML = `<span class="sw" style="background:${altitudeColorCss(s.alt)};opacity:${Math.min(1, (0.30 + 0.70 * s.weight) * routeOpacityScale).toFixed(2)}"></span><span>${s.alt} m</span><span style="margin-left:auto">W ${(s.weight).toFixed(2)} · ${s.pathCount || s.paths.length} 条 · ${pct}%</span>`;
     legend.appendChild(row);
   });
 }
@@ -1469,57 +2563,84 @@ function drawMiniMap() {
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-  const img = ctx.createImageData(CORE_N, CORE_N);
-  for (let cj = 0; cj < CORE_N; cj++) {
-    for (let ci = 0; ci < CORE_N; ci++) {
-      const i = ci + CORE_OFFSET;
-      const j = cj + CORE_OFFSET;
-      const k = idx(i, j);
-      const p = ((CORE_N - 1 - cj) * CORE_N + ci) * 4;
-      if (s.flyable[k]) {
-        img.data[p] = 245; img.data[p + 1] = 247; img.data[p + 2] = 246; img.data[p + 3] = 255;
-      } else {
-        img.data[p] = 42; img.data[p + 1] = 47; img.data[p + 2] = 54; img.data[p + 3] = 255;
-      }
-    }
-  }
-  const tmp = document.createElement('canvas');
-  tmp.width = tmp.height = CORE_N;
-  tmp.getContext('2d').putImageData(img, 0, 0);
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(tmp, 0, 0, W, H);
-  ctx.lineWidth = 2.4;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = ROUTE_COLOR;
-  ctx.globalAlpha = Math.min(0.95, (0.10 + 0.52 * s.weight) * routeOpacityScale);
-  for (const path of s.paths) {
-    let drawing = false;
-    ctx.beginPath();
-    for (const k of path) {
-      const i = k % N;
-      const j = (k / N) | 0;
-      if (!isCoreCell(i, j)) {
-        if (drawing) {
-          ctx.stroke();
-          ctx.beginPath();
-          drawing = false;
+    const img = ctx.createImageData(N, N);
+    for (let j = 0; j < N; j++) {
+      for (let i = 0; i < N; i++) {
+        const k = idx(i, j);
+        const p = ((N - 1 - j) * N + i) * 4;
+        if (s.flyable[k]) {
+          img.data[p] = 245; img.data[p + 1] = 247; img.data[p + 2] = 246; img.data[p + 3] = 255;
+        } else {
+          img.data[p] = 42; img.data[p + 1] = 47; img.data[p + 2] = 54; img.data[p + 3] = 255;
         }
-        continue;
-      }
-      const x = (i - CORE_OFFSET + 0.5) / CORE_N * W;
-      const y = H - (j - CORE_OFFSET + 0.5) / CORE_N * H;
-      if (!drawing) {
-        ctx.moveTo(x, y);
-        drawing = true;
-      } else {
-        ctx.lineTo(x, y);
       }
     }
-    if (drawing) ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
+    const tmp = document.createElement('canvas');
+    tmp.width = tmp.height = N;
+    tmp.getContext('2d').putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(tmp, 0, 0, W, H);
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = altitudeColorCss(s.alt);
+    ctx.globalAlpha = Math.min(0.95, (0.10 + 0.52 * s.weight) * routeOpacityScale);
+    const toX = wx => (wx + HALF) / DOMAIN * W;
+    const toY = wz => H - (wz + HALF) / DOMAIN * H;
+    if (s.worldPaths) {
+      for (const path of s.worldPaths) {
+        let drawing = false;
+        ctx.beginPath();
+        for (const [wx, wz] of path) {
+          if (Math.abs(wx) > HALF || Math.abs(wz) > HALF) {
+            if (drawing) {
+              ctx.stroke();
+              ctx.beginPath();
+              drawing = false;
+            }
+            continue;
+          }
+          const x = toX(wx);
+          const y = toY(wz);
+          if (!drawing) {
+            ctx.moveTo(x, y);
+            drawing = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        if (drawing) ctx.stroke();
+      }
+    } else {
+      for (const path of s.paths) {
+        let drawing = false;
+        ctx.beginPath();
+        for (const k of path) {
+          const i = k % N;
+          const j = (k / N) | 0;
+          const x = (i + 0.5) / N * W;
+          const y = H - (j + 0.5) / N * H;
+          if (!drawing) {
+            ctx.moveTo(x, y);
+            drawing = true;
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        if (drawing) ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+    const x0 = CORE_OFFSET / N * W;
+    const x1 = (CORE_OFFSET + CORE_N) / N * W;
+    const yTop = H - (CORE_OFFSET + CORE_N) / N * H;
+    const yBot = H - CORE_OFFSET / N * H;
+    ctx.strokeStyle = '#17191c';
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(x0, yTop, x1 - x0, yBot - yTop);
+    ctx.strokeStyle = '#1677ff';
+    ctx.strokeRect(1, 1, W - 2, H - 2);
     const cap = $(`mapCap-${si}`);
     if (cap) cap.textContent = `${s.pathCount || s.paths.length} 条 · ${Math.round(s.flyPct.core * 100)}%`;
   });
@@ -1650,6 +2771,7 @@ function clearNoiseLayer() {
 function setNoiseLayerVisible(visible) {
   if (noiseGroundMesh) noiseGroundMesh.visible = visible;
   for (const item of noiseOverlays) item.mesh.visible = visible;
+  if (usingNoiseV2()) applyNoiseV2Visibility();
 }
 
 function scheduleExternalityLayer() {
@@ -1665,9 +2787,16 @@ function scheduleExternalityLayer() {
 
 async function buildNoiseLayer(version) {
   clearNoiseLayer();
-  const segments = collectNoiseSegments();
-  if (!segments.length) return;
+  if (usingNoiseV2()) {
+    colorNoiseV2Mesh(noiseEnabled);
+    applyNoiseV2Visibility();
+    return;
+  }
+  const capOn = usingCapacity();
+  const segments = capOn ? [] : collectNoiseSegments();
+  if (!capOn && !segments.length) return;
   const channel = CHANNELS[externalityChannel] || CHANNELS.noise;
+  const chKey = externalityChannel;
 
   const groundPositions = [];
   const groundIndices = [];
@@ -1678,7 +2807,10 @@ async function buildNoiseLayer(version) {
       const z = -CORE_HALF + CORE_DOMAIN * j / NOISE_GRID;
       const y = terrainVisualHeight(x, z) + 0.42;
       groundPositions.push(x, y, z);
-      groundValues.push(channel.ground ? noiseAt(x, y, z, segments) * channel.ground : 0);
+      const raw = capOn
+        ? sampleCapacityGround(x, z, chKey)
+        : noiseAt(x, y, z, segments);
+      groundValues.push(channel.ground ? raw * channel.ground : 0);
     }
     if (j % 5 === 4) {
       if (version !== externalityVersion) return;
@@ -1701,7 +2833,11 @@ async function buildNoiseLayer(version) {
     geom.computeVertexNormals();
     const pos = geom.getAttribute('position');
     for (let i = 0; i < pos.count; i += Math.max(1, Math.floor(pos.count / 24))) {
-      probeValues.push(noiseAt(pos.getX(i) + b.group.position.x, pos.getY(i) + b.group.position.y, pos.getZ(i) + b.group.position.z, segments) * channel.facade);
+      const wx = pos.getX(i) + b.group.position.x;
+      const wy = pos.getY(i) + b.group.position.y;
+      const wz = pos.getZ(i) + b.group.position.z;
+      const raw = capOn ? sampleCapacityField(wx, wy, wz, chKey) : noiseAt(wx, wy, wz, segments);
+      probeValues.push(raw * channel.facade);
     }
     overlayGeoms.push({ b, geom });
     if (overlayGeoms.length % 8 === 0) {
@@ -1739,7 +2875,7 @@ async function buildNoiseLayer(version) {
       const wx = pos.getX(i) + b.group.position.x;
       const wy = pos.getY(i) + b.group.position.y;
       const wz = pos.getZ(i) + b.group.position.z;
-      const value = noiseAt(wx, wy, wz, segments) * channel.facade;
+      const value = (capOn ? sampleCapacityField(wx, wy, wz, chKey) : noiseAt(wx, wy, wz, segments)) * channel.facade;
       const rawHot = Math.log1p(value / norm * 3.2) / Math.log1p(3.2);
       const hot = 0.10 + 0.90 * rawHot;
       const c = colorRamp(hot, channel.palette);
@@ -1778,20 +2914,30 @@ function buildMapTiles() {
 }
 
 function applyRouteVisibility() {
-  routeGroup.visible = routesVisible;
-  anchorGroup.visible = routesVisible;
+  const focused = usingCapacity() && Boolean(flightData) && isPlaybackFocused();
+  routeGroup.visible = routesVisible && !focused;
+  anchorGroup.visible = routesVisible && !focused;
+  focusRibbonGroup.visible = routesVisible && focused;
+  droneGroup.visible = usingCapacity() && Boolean(flightData) && aircraftVisible;
 }
 
 function applyAuxiliaryBuildingVisibility() {
+  const hideCoreForMesh = usingNoiseV2() && !currentBlock?.noiseV2 && noiseEnabled;
   for (const b of buildings) {
     if (!b.group) continue;
+    if (hideCoreForMesh && !b.isHalo) {
+      b.group.visible = false;
+      continue;
+    }
     b.group.visible = buildingsVisible && (!b.isHalo || haloBuildingsVisible);
   }
+  applyNoiseV2Visibility();
 }
 
 function applyTerrainMode() {
   clearNoiseLayer();
   buildTerrain();
+  buildBufferRings();
   buildHeightGuides();
   buildings.forEach(syncBuilding);
   applyAuxiliaryBuildingVisibility();
@@ -1908,13 +3054,22 @@ document.querySelectorAll('.tabBtn').forEach(btn => {
   btn.addEventListener('click', () => activatePanelTab(btn.dataset.tab));
 });
 
-activatePanelTab(document.querySelector('.tabBtn.active')?.dataset.tab || 'view');
+activatePanelTab(document.querySelector('.tabBtn.active')?.dataset.tab || 'routes');
 
 $('presets').addEventListener('change', e => {
   loadPreset(e.target.value);
 });
 
+document.querySelectorAll('input[name="routeSource"]').forEach(input => {
+  input.addEventListener('change', e => {
+    if (!e.target.checked) return;
+    routeSource = e.target.value;
+    scheduleCompute();
+  });
+});
+
 $('density').addEventListener('input', e => {
+  if (e.target.disabled) return;
   entriesPerEdge = +e.target.value;
   $('densityV').textContent = entriesPerEdge;
   scheduleCompute();
@@ -1969,8 +3124,46 @@ $('routeToggle').addEventListener('change', e => {
   applyRouteVisibility();
 });
 
+if ($('aircraftToggle')) {
+  $('aircraftToggle').addEventListener('change', e => {
+    aircraftVisible = e.target.checked;
+    applyRouteVisibility();
+    placeDrones();
+  });
+}
+
+function bindPlaybackControls() {
+  if ($('playBtn')) $('playBtn').addEventListener('click', () => setPlaybackPlaying(!playbackPlaying));
+  if ($('playHudBtn')) $('playHudBtn').addEventListener('click', () => setPlaybackPlaying(!playbackPlaying));
+  [1, 5, 10, 20].forEach(spd => {
+    const btn = $('spd' + spd);
+    if (btn) btn.addEventListener('click', () => setPlaybackRate(spd));
+  });
+  if ($('playBar')) {
+    $('playBar').addEventListener('input', e => {
+      if (!flightData) return;
+      setPlaybackTime(+e.currentTarget.value);
+      placeDrones();
+    });
+  }
+  if ($('playGhost')) {
+    $('playGhost').addEventListener('change', e => {
+      playGhost = e.target.checked;
+      placeDrones();
+    });
+  }
+  if ($('playPinClear')) {
+    $('playPinClear').addEventListener('click', () => pinFlightRoute(null, false));
+  }
+}
+bindPlaybackControls();
+
 $('noiseToggle').addEventListener('change', e => {
   noiseEnabled = e.target.checked;
+  if (usingNoiseV2()) {
+    applyNoiseV2Visibility();
+    return;
+  }
   if (noiseEnabled) {
     scheduleExternalityLayer();
   } else {
@@ -1993,6 +3186,16 @@ document.querySelectorAll('input[name="externalityChannel"]').forEach(input => {
     if (noiseEnabled) {
       scheduleExternalityLayer();
     }
+    if (probeMode) rebuildProbe();
+  });
+});
+
+document.querySelectorAll('input[name="noiseV2Tier"]').forEach(input => {
+  input.addEventListener('change', e => {
+    if (!e.target.checked) return;
+    noiseV2Tier = e.target.value;
+    syncChannelUI();
+    if (usingNoiseV2()) colorNoiseV2Mesh(noiseEnabled);
     if (probeMode) rebuildProbe();
   });
 });
@@ -2134,10 +3337,26 @@ function rebuildProbe() {
   probeGroup.visible = probeMode;
   probeFacadeGroup.visible = false;
   if (!probeMode || !probePos) return;
-  const ch = externalityChannel;
   const x = probePos.x, z = probePos.z, alt = probeAlt;
   const hr = probeHeadingDeg * Math.PI / 180;
   const hx = Math.cos(hr), hz = Math.sin(hr);
+  if (usingNoiseV2()) {
+    const drone = makeDroneIcon(hr);
+    drone.position.set(x, alt, z);
+    probeGroup.add(drone);
+    probeGroup.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, alt, z), new THREE.Vector3(x, terrainVisualHeight(x, z), z)]),
+      new THREE.LineBasicMaterial({ color: '#d94841', transparent: true, opacity: 0.5 })));
+    probeGroup.add(new THREE.ArrowHelper(new THREE.Vector3(hx, 0, hz), new THREE.Vector3(x, alt, z), 34, '#1677ff', 10, 6));
+    const hit = nearestNoiseV2Facet(x, alt, z);
+    const ro = $('probeReadout');
+    if (ro && hit) {
+      ro.innerHTML = `噪声 v2 <b>${NOISE_V2_TIERS[noiseV2Tier]}</b> · 高度 <b>${alt} m</b><br>` +
+        `最近面片 ${hit.surface} · L<sub>Aeq</sub> <b>${hit.L.toFixed(2)} dB</b> · ${hit.d.toFixed(1)} m`;
+    }
+    return;
+  }
+  const ch = externalityChannel;
   // 单源 = 一小段沿航向的航段,amp=1(单位流量)
   const seg = {
     a: new THREE.Vector3(x - hx * 10, alt, z - hz * 10),
@@ -2155,7 +3374,9 @@ function rebuildProbe() {
       const cz = z - W + (2 * W) * j / G;
       const cy = terrainVisualHeight(cx, cz) + 0.5;
       positions.push(cx, cy, cz);
-      values.push(noiseAt(cx, cy, cz, segs, ch));
+      values.push(usingCapacity()
+        ? (cy < 8 ? sampleCapacityGround(cx, cz, ch) : sampleCapacityField(cx, cy, cz, ch))
+        : noiseAt(cx, cy, cz, segs, ch));
     }
   }
   // 立面采样(复用缓存的世界坐标),和地面共用同一峰值刻度
@@ -2163,7 +3384,9 @@ function rebuildProbe() {
   for (const f of probeFacade) {
     f.vals = new Float32Array(f.count);
     for (let i = 0; i < f.count; i++) {
-      f.vals[i] = noiseAt(f.world[i * 3], f.world[i * 3 + 1], f.world[i * 3 + 2], segs, ch);
+      f.vals[i] = usingCapacity()
+        ? sampleCapacityField(f.world[i * 3], f.world[i * 3 + 1], f.world[i * 3 + 2], ch)
+        : noiseAt(f.world[i * 3], f.world[i * 3 + 1], f.world[i * 3 + 2], segs, ch);
     }
   }
   // 99 分位做色标:既不被源正下方的单点尖峰拉爆(max 太钝),又比 95 分位少饱和(团内仍有梯度)
@@ -2221,33 +3444,23 @@ function rebuildProbe() {
   const ro = $('probeReadout');
   if (ro) {
     const sl = (30 + alt * 0.45).toFixed(0), scc = (20 + alt * 0.25).toFixed(0);
-    const extra = ch === 'risk'
-      ? `前甩落点 <b>${fwd.toFixed(0)} m</b> · 落区 σ∥×σ⊥ <b>${sl}×${scc} m</b><br>`
-      : '';
+    const extra = usingCapacity()
+      ? '叠加 = SZU 四通道受体场<br>'
+      : (ch === 'risk'
+        ? `前甩落点 <b>${fwd.toFixed(0)} m</b> · 落区 σ∥×σ⊥ <b>${sl}×${scc} m</b><br>`
+        : '');
     ro.innerHTML = `通道 <b>${(CHANNELS[ch] || CHANNELS.noise).label}</b> · 高度 <b>${alt} m</b><br>${extra}峰值(相对) <b>${peak.toExponential(2)}</b> · 拖高度看变化`;
   }
 }
 
 (function setupProbeUI() {
-  const panel = document.createElement('div');
-  panel.id = 'probePanel';
-  panel.className = 'panel';
-  panel.style.cssText = 'right:18px;bottom:18px;width:300px;padding:14px;z-index:6';
-  panel.innerHTML =
-    '<div class="row" style="margin-bottom:10px"><span class="lbl" style="margin:0">空中探针</span>' +
-    '<button id="probeToggle" style="min-height:28px;padding:4px 14px">关</button></div>' +
-    '<div class="row"><span class="k">高度</span><span class="v"><span id="probeAltV">60</span> m</span></div>' +
-    '<input type="range" id="probeAlt" min="10" max="120" value="60" style="margin-bottom:8px">' +
-    '<div class="row"><span class="k">航向</span><span class="v"><span id="probeHeadV">0</span>°</span></div>' +
-    '<input type="range" id="probeHead" min="0" max="359" value="0">' +
-    '<div id="probeReadout" class="sub" style="margin-top:10px">开启后点击地面放置无人机</div>';
-  document.body.appendChild(panel);
+  if (!$('probeToggle')) return;
   $('probeToggle').addEventListener('click', () => {
     probeMode = !probeMode;
     $('probeToggle').textContent = probeMode ? '开' : '关';
     $('probeToggle').classList.toggle('active', probeMode);
     if (probeMode) {
-      setNoiseLayerVisible(false);     // 探针时只是隐藏全局负担层(不销毁),避免叠色
+      if (!usingNoiseV2()) setNoiseLayerVisible(false);
       rebuildProbe();
     } else {
       clearProbe();
@@ -2263,13 +3476,35 @@ let probePointerDown = null;
 renderer.domElement.addEventListener('pointerdown', e => { probePointerDown = { x: e.clientX, y: e.clientY }; });
 renderer.domElement.addEventListener('pointerup', e => {
   const dn = probePointerDown; probePointerDown = null;
-  if (!probeMode || !dn) return;
-  if (Math.hypot(e.clientX - dn.x, e.clientY - dn.y) > 6) return; // 拖拽=转视角,忽略
+  if (!dn) return;
+  if (Math.hypot(e.clientX - dn.x, e.clientY - dn.y) > 6) return;
   const rect = renderer.domElement.getBoundingClientRect();
   const ndc = new THREE.Vector2(
     ((e.clientX - rect.left) / rect.width) * 2 - 1,
     -((e.clientY - rect.top) / rect.height) * 2 + 1);
   probeRaycaster.setFromCamera(ndc, camera);
+  if (!probeMode && usingCapacity() && aircraftVisible && droneMesh && droneMesh.visible) {
+    const hits = probeRaycaster.intersectObject(droneMesh);
+    if (hits.length && hits[0].instanceId != null) {
+      const ri = dronePickMap[hits[0].instanceId];
+      if (ri != null) {
+        pinFlightRoute(ri, e.shiftKey);
+        return;
+      }
+    } else if (pinnedRoutes.size && !e.shiftKey) {
+      pinFlightRoute(null, false);
+      return;
+    }
+  }
+  if (!probeMode) return;
+  if (usingNoiseV2() && noiseV2Mesh) {
+    const hits = probeRaycaster.intersectObject(noiseV2Mesh);
+    if (hits.length) {
+      probePos = { x: hits[0].point.x, z: hits[0].point.z };
+      rebuildProbe();
+      return;
+    }
+  }
   const hit = new THREE.Vector3();
   if (probeRaycaster.ray.intersectPlane(probeGroundPlane, hit)) {
     probePos = { x: hit.x, z: hit.z };
@@ -2297,6 +3532,12 @@ function applyCameraCompositionOffset(width) {
 
 function animate(t) {
   requestAnimationFrame(animate);
+  const dt = lastAnimMs == null ? 0 : Math.min(0.1, (t - lastAnimMs) / 1000);
+  lastAnimMs = t;
+  if (playbackPlaying && usingCapacity() && flightData) {
+    setPlaybackTime(playbackT + dt * playbackRate);
+    placeDrones();
+  }
   flushCompute();
   controls.target.copy(ORBIT_TARGET);
   controls.update();
@@ -2311,7 +3552,7 @@ updateSunDirection();
 updateBuildingAppearance();
 applyShadowMode();
 applyCameraAngles();
-currentPreset = BLOCKS[0].name;
+currentPreset = (BLOCKS.find(b => b.id === 'rep-oh-hongkong') || BLOCKS.find(b => b.id === 'hk-54-29-noisev2') || BLOCKS[0]).name;
 loadPreset(currentPreset);
 onResize();
 animate(0);
