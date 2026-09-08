@@ -195,7 +195,7 @@
   #sceneLegendScale{display:flex;justify-content:space-between;color:#6d747c;font-size:10px;margin-top:3px}
   #sceneScope{border-top:1px solid var(--line);padding-top:7px}
   .playHud{left:calc(var(--scene-left) + 16px);right:18px;width:auto;max-width:520px;margin-left:auto;font-size:12px}
-  body:not([data-view="routes"]) .playHud{display:none}
+  body:not([data-view="routes"]):not([data-view="view"]) .playHud{display:none}
   #filterSummary{margin:0 0 8px;color:#475569;font-size:11px}
   #clearFilters{width:100%;margin:0 0 8px;min-height:28px;font-size:11px}
   #busy{top:55%;left:calc(var(--scene-left) + (100% - var(--scene-left))/2);pointer-events:none}
@@ -249,7 +249,7 @@
   .panelHeader .sub{font-size:10px;min-height:28px;margin-bottom:0}
   .sceneBlock{margin-top:10px;flex:none}.sceneBlock select{height:32px;font-size:12px}
   .fieldHead{margin-bottom:5px}.fieldMeta{font-size:8px}
-  .tabBar{position:static;grid-template-columns:repeat(4,1fr);flex:none;margin-top:14px;box-shadow:none}
+  .tabBar{position:static;grid-template-columns:repeat(2,1fr);flex:none;margin-top:14px;box-shadow:none}
   .tabBtn{font-size:12px;min-height:32px}
   #sheetNav{display:flex;gap:16px;min-height:36px;align-items:stretch;flex:none;border-bottom:1px solid #e8edf0;margin-bottom:12px}
   #sheetNav button{background:none;border:0;border-bottom:2px solid transparent;border-radius:0;padding:0 1px;
@@ -265,7 +265,6 @@
   .deckSheet .row{margin-bottom:4px}.deckSheet .k,.deckSheet .v{font-size:12px}
   .deckSheet .controlGroup{margin:0;padding:10px}.deckSheet .radioChip{font-size:11px;min-height:32px;padding:6px}
   #playOdChips{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0}
-  #playAltChips{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0}
   .chipRow button{font-size:11px;min-height:26px;padding:3px 2px}
   #clearFilters{order:20;margin-top:auto;margin-bottom:0}
   .deckSheet .routeFocus{margin:0;padding:0;border:0}
@@ -302,6 +301,78 @@
     .kernelSketch{height:56px}.focusHelp,.focusState,.focusTips{font-size:10px;line-height:1.5}
     #panelFooter{margin-top:4px;padding-top:4px}.settingsGrid .slider{padding:5px}
   }
+
+  #panelShell{height:min(760px,calc(100dvh - 36px))}
+  #globalRouteMode{flex:none;margin:10px 0 0;padding:10px 0 0;border:0;border-top:1px solid #e8edf0;border-radius:0;background:none}
+  #globalRouteMode>.lbl{font-size:10px;margin-bottom:5px}
+  #globalRouteMode .radioChip{font-size:11px;min-height:30px;padding:5px 6px}
+  #routeSourceNote{font-size:10px;line-height:1.4;min-height:28px;margin:5px 0 0!important}
+  #sheetNav.singleSection{display:none}
+  #panelDeck:has([data-panel="routes"].active [data-sheet="generation"].sheetActive){margin-top:12px}
+  #heightOverview,#heightSingle{min-height:0}
+  #mapsGrid.allHeights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(var(--height-rows),minmax(0,1fr));gap:9px 6px;flex:1;min-height:0}
+  #mapsGrid.allHeights .mapTile{height:auto;min-height:0;padding:4px;border:1px solid #e3e9ed;border-radius:6px;cursor:pointer;overflow:hidden}
+  #mapsGrid.allHeights .mapTile:hover{border-color:#6396aa;background:#f5fafc}
+  #mapsGrid.allHeights .mapCap{display:block;margin:0 0 3px;line-height:1.3}
+  #mapsGrid.allHeights .mapCap b{display:block;font-size:11px}
+  #mapsGrid.allHeights .mapCap span{font-size:9px;white-space:nowrap;letter-spacing:-.25px}
+  #mapsGrid.allHeights canvas{width:100%;min-height:0;object-fit:contain;flex:1}
+  #heightNotes{flex:none;font-size:10px;line-height:1.5;color:#627481}
+  #heightNotes p{margin:4px 0 0}#heightDetail{color:#354c59}#heightNotes .heightKey{font-size:9px;color:#8a969f}
+  #capacityPending[hidden]{display:none}
+  @media(max-height:720px){#globalRouteMode{margin-top:6px;padding-top:6px}#routeSourceNote{font-size:9px;min-height:0}
+    #globalRouteMode>.lbl{display:none}#mapsGrid.allHeights{gap:4px}#mapsGrid.allHeights .mapTile{padding:2px}
+    #heightNotes .heightKey{display:none}}
+#mapsGrid.allHeights .mapTile.heightSelected{border-color:#2877c9;background:#edf5ff}
+
+  #heightOverview,#heightSingle{display:flex;flex:1;flex-direction:column;gap:6px;overflow:hidden}
+  #heightOverview[hidden],#heightSingle[hidden]{display:none}
+
+  .workspaceTools{left:auto;width:300px;max-width:calc(100vw - 36px);flex-direction:column;align-items:stretch;gap:10px}
+  #viewPanel{pointer-events:auto;background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 22px #19232d0c;overflow:hidden}
+  .viewPanelHeader{display:flex;align-items:center;gap:8px;padding:6px}
+  .viewPanelHeader .viewTools{flex:1;gap:2px}
+  .viewPanelHeader button{flex:1;border:0;background:none;min-height:30px;padding:4px 7px;font-size:11px}
+  .viewPanelHeader button:hover{background:#eef3f6}
+  #viewSettingsToggle{flex:none;border-left:1px solid #e5ebef;border-radius:0;padding-left:12px;color:#354c59}
+  #viewSettingsToggle span{display:inline-block;transition:transform 260ms ease}
+  #viewPanel.expanded #viewSettingsToggle span{transform:rotate(180deg)}
+  #viewSettingsBody{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows 300ms cubic-bezier(.22,1,.36,1),opacity 200ms,visibility 300ms}
+  #viewPanel.expanded #viewSettingsBody{grid-template-rows:1fr;opacity:1;visibility:visible}
+  .viewSettingsInner{min-height:0;overflow:hidden}
+  .viewSettingsNav{display:flex;gap:8px;margin:0 12px 10px;border-top:1px solid #edf0f2;border-bottom:1px solid #edf0f2}
+  .viewSettingsNav button{flex:1;border:0;border-bottom:2px solid transparent;border-radius:0;background:none;font-size:11px;min-height:32px}
+  .viewSettingsNav button.active{border-bottom-color:#354c59;color:#354c59;font-weight:600}
+  .viewSettingsDeck{padding:0 12px 12px}
+  .viewSettingsPage{margin:0!important;padding:0!important;border:0!important;background:none!important}
+  .viewSettingsPage[hidden]{display:none!important}
+  .viewSettingsPage .layerList{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .viewSettingsPage .layerRow{padding:6px;gap:5px;min-height:32px}
+  .viewSettingsPage .layerMark{display:none}.viewSettingsPage .layerText{font-size:10px}
+  .viewSettingsPage>.lbl{display:none}
+  .viewSettingsPage>.slider{margin:0 0 10px;padding:0 0 10px;border-bottom:1px solid #edf0f2}
+  .viewSettingsPage .row{margin-bottom:5px}.viewSettingsPage .k,.viewSettingsPage .v{font-size:11px}
+  .viewSettingsPage .settingsGrid .slider{padding:10px 7px}
+  .workspaceTools .sceneLegend{position:static;width:100%;max-width:none;box-sizing:border-box}
+  @media(max-height:640px){.viewSettingsPage .layerRow{padding:3px;min-height:25px}.viewSettingsDeck{padding-bottom:8px}.workspaceTools:has(#viewPanel.expanded) .sceneLegend{display:none}}
+
+  #sandboxSub,#routeSourceNote,#playbackNote,#sceneLegendNote,#sceneScope,.sceneHint,
+  #noiseV2Note,#channelFourWrap>.sub{display:none!important}
+  #playPinV:empty{display:none}
+  [data-sheet="model"]>.lbl,[data-sheet="model"]>.row:has(#channelV),#noiseV2Wrap>.laeqBar,#noiseV2Wrap>.laeqBarRow{display:none}
+  .panelHeader{padding:0}.panelHeader h1{font-size:14px;margin:0}
+  .sceneBlock{margin-top:12px}
+  #mapsGrid.allHeights .mapCap span{font-size:8px;letter-spacing:-.4px}
+
+  #heightPage>#playbackWrap{flex:none;margin:8px 0 0;padding:8px 0 0;border:0;border-top:1px solid #e5ebef;border-radius:0;background:none}
+  #heightPage #playOdChips{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  #heightPage #playOdChips button{font-size:10px;min-height:24px}
+  #heightPage #playbackWrap .row{margin-bottom:6px}
+  #clearFilters[hidden]{display:none}
+  #panelDeck:has([data-panel="routes"].active){margin-top:10px}
+
+  #heightBack{align-self:flex-start;flex:none;background:none;border:0;border-radius:5px;padding:2px 6px 4px 0;min-height:26px;font-size:12px;color:#4c6574}
+  #heightBack:hover{color:#1677db;background:#f0f5f8}
 </style>
 </head>
 <body>
@@ -337,53 +408,35 @@
     <button id="panelToggle" type="button" aria-label="收起控制面板" title="收起控制面板" aria-expanded="true" aria-controls="controlPanel"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg></button>
   <div id="controlPanel" class="panel">
     <div class="panelHeader">
-      <div class="eyebrow">URBAN AIRSPACE LAB</div>
-      <h1>低空空域形态与外部性沙盘</h1>
+
+      <h1>低空沙盘</h1>
       <p class="sub" id="sandboxSub">500 m 研究区 · 800 m halo</p>
     </div>
 
     <div class="sceneBlock">
-      <div class="fieldHead"><label class="lbl" for="presets">选择街区</label><span class="fieldMeta">500 m CORE + 800 m HALO</span></div>
+      <div class="fieldHead"><label class="lbl" for="presets">选择街区</label></div>
       <select class="presets" id="presets"></select>
     </div>
 
     <div class="controlGroup">
       <label class="lbl">航线模式</label>
       <div class="radioGrid" id="routeSourceRadios">
-        <label class="radioChip"><input type="radio" name="routeSource" value="probe" checked>浏览器探针</label>
+        <label class="radioChip"><input type="radio" name="routeSource" value="probe" checked>交互航线</label>
         <label class="radioChip"><input type="radio" name="routeSource" value="capacity">容量排班</label>
       </div>
       <p class="sub" id="routeSourceNote" style="margin-top:8px">从 800 m halo 对边生成航线。</p>
     </div>
 
     <div class="tabBar" id="tabBar">
-      <button class="tabBtn" data-tab="view" type="button">空间</button>
       <button class="tabBtn active" data-tab="routes" type="button">航线</button>
       <button class="tabBtn" data-tab="analysis" type="button">影响</button>
-      <button class="tabBtn" data-tab="settings" type="button">设置</button>
     </div>
 
     <div class="tabPanel active" data-panel="routes">
       <div id="playbackWrap" class="controlGroup" style="display:none">
-        <label class="lbl">排班航线筛选 · 可多选</label><button id="clearFilters" type="button">重置筛选与聚焦</button>
+        <button id="clearFilters" type="button" hidden>清除方向</button>
         <div class="row"><span class="k">方向</span><span class="v" id="playOdV">全部</span></div>
         <div class="chipRow" id="playOdChips"></div>
-        <div class="row"><span class="k">高度</span><span class="v" id="playAltV">全部</span></div>
-        <div class="chipRow" id="playAltChips"></div>
-        <label class="layerRow" style="margin:4px 0 8px">
-          <span class="layerMark aircraft"></span>
-          <span class="layerText">其余淡出</span>
-          <input type="checkbox" id="playGhost" checked>
-          <span class="toggle"></span>
-        </label>
-        <div class="routeFocus">
-          <label class="lbl" for="focusRouteSelect">航线聚焦 <span class="optional">可选</span></label>
-          <p class="focusHelp" id="focusHelp">选择一条航线，高亮完整路径和沿线飞机，方便持续观察。</p>
-          <select id="focusRouteSelect" aria-describedby="focusHelp"><option value="">选择一条航线…</option></select>
-          <p id="playPinV" class="focusState" role="status">未聚焦 · 显示符合筛选的航线</p>
-          <button type="button" id="playPinClear" hidden>退出聚焦</button>
-          <details class="focusTips"><summary>也可以直接点击飞机</summary><p>点击飞机聚焦其航线；Shift + 点击可多选。点击画布空白处或「退出聚焦」可恢复。暂时没有飞机时，完整航线仍会显示。</p></details>
-        </div>
         <p class="sub" id="playbackNote">真实一小时排班。无人机顶色按巡航高度映射；含转弯方向。</p>
       </div>
       <div class="controlGroup" id="routeGenerationWrap">
@@ -409,7 +462,7 @@
           <label class="layerRow"><span class="layerMark building"></span><span class="layerText">建筑</span><input type="checkbox" id="buildingToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark shadow"></span><span class="layerText">阴影</span><input type="checkbox" id="shadowToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark halo"></span><span class="layerText">辅助建筑</span><input type="checkbox" id="haloToggle" checked><span class="toggle"></span></label>
-          <label class="layerRow"><span class="layerMark guide"></span><span class="layerText">高度边界</span><input type="checkbox" id="heightGuideToggle" checked><span class="toggle"></span></label>
+          <label class="layerRow"><span class="layerMark guide"></span><span class="layerText">高度边界</span><input type="checkbox" id="heightGuideToggle"><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark volume"></span><span class="layerText">可飞体块</span><input type="checkbox" id="flyableVolumeToggle"><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark terrain"></span><span class="layerText">高度尺</span><input type="checkbox" id="heightScaleToggle" checked><span class="toggle"></span></label>
         </div>
@@ -419,8 +472,8 @@
         <div class="detailsBody">
           <div class="controlGrid" style="margin-top:10px">
             <div class="slider span2">
-              <div class="row"><span class="k">航线透明度</span><span class="v"><span id="opacityV">100</span>%</span></div>
-              <input type="range" id="routeOpacity" min="20" max="400" step="10" value="100">
+              <div class="row"><span class="k">航线透明度</span><span class="v"><span id="opacityV">400</span>%</span></div>
+              <input type="range" id="routeOpacity" min="20" max="400" step="10" value="400">
             </div>
             <div class="slider">
               <div class="row"><span class="k">水平角</span><span class="v"><span id="azimuthV">-46</span>°</span></div>
@@ -454,13 +507,13 @@
     <div class="tabPanel" data-panel="analysis">
       <div class="controlGroup">
         <label class="lbl">影响分析</label><label class="layerRow"><span class="layerText">显示影响着色</span><input type="checkbox" id="impactToggle"><span class="toggle"></span></label>
-        <div class="row"><span class="k">当前内核</span><span class="v" id="channelV">噪声</span></div>
+        <div class="row"><span class="k">模型</span><span class="v" id="channelV">噪声</span></div>
         <div id="noiseV2Wrap" style="display:none">
-          <p class="sub" id="noiseV2Note" style="margin:0 0 8px">整小时预计算面片声级 L<sub>Aeq</sub>。时间回放、航线筛选和探针密度不会重算这张噪声图。</p>
+          <p class="sub" id="noiseV2Note" style="margin:0 0 8px">整小时预计算面片声级 L<sub>Aeq</sub>。时间回放、航线筛选和入口密度不会重算这张噪声图。</p>
           <div class="radioGrid" id="noiseV2Radios">
-            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="iso">iso 各向同性</label>
-            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="dir">dir 指向性</label>
-            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="refl" checked>refl 反射+绕射</label>
+            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="iso">各向同性</label>
+            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="dir">指向性</label>
+            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="refl" checked>反射与绕射</label>
           </div>
           <div class="laeqBar" id="laeqBar" aria-hidden="true"></div>
           <div class="laeqBarRow"><span id="laeqMin">— dB</span><span>L<sub>Aeq</sub></span><span id="laeqMax">— dB</span></div>
@@ -502,7 +555,7 @@
         <summary>空中点位探针</summary>
         <div class="detailsBody">
           <div class="row" style="margin:10px 0">
-            <span class="k">点击场景取样外部性</span>
+            <span class="k">点位取样</span>
             <button id="probeToggle" type="button" style="min-height:28px;padding:4px 14px">关</button>
           </div>
           <div class="slider">
@@ -526,6 +579,6 @@
 <script src="vendor/OrbitControls.js"></script>
 <script src="vendor/clipper.js"></script>
 <script src="data/city-blocks.js"></script>
-<script src="app.js?v=ux-18"></script>
+<script src="app.js?v=ux-30"></script>
 </body>
 </html>
