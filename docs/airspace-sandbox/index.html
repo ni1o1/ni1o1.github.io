@@ -173,12 +173,147 @@
     .playSpeedGroup{flex-wrap:wrap}
     .playSpeedGroup button{flex:1 0 22%}
   }
+
+  /* A compact instrument panel beside a dedicated scene viewport. */
+  :root{--panel-width:320px;--scene-left:350px}
+  #controlPanel{width:var(--panel-width);padding:16px;top:66px;max-height:calc(100vh - 84px)}
+  h1{font-size:16px} .eyebrow{font-size:9px} .fieldMeta{font-size:9px}
+  .panelHeader .sub{min-height:32px}
+  .tabBtn{padding:0 4px;font-size:12px}
+  .controlGrid{gap:6px} .layerList{grid-template-columns:1fr 1fr}
+  .layerRow{padding:7px 5px;grid-template-columns:1fr auto;gap:4px}
+  .layerMark{display:none}.layerText{font-size:11px}.toggle{width:32px;height:20px}
+  .toggle:before{width:14px;height:14px}
+  .layerRow input:checked + .toggle:before{transform:translateX(12px)}
+  #mapsGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .workspaceTools{position:absolute;z-index:7;top:16px;left:18px;right:18px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+  .workspaceTools button{pointer-events:auto;background:#fff;min-height:34px;font-size:12px}
+  .viewTools{display:flex;gap:4px}
+  .sceneLegend{position:absolute;z-index:4;top:66px;right:18px;width:250px;max-width:calc(100vw - var(--scene-left) - 36px);padding:12px;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:8px;pointer-events:none;font-size:11px;line-height:1.5}
+  .sceneLegend strong{font-size:12px}.sceneLegend p{margin:5px 0 0;color:#596570}
+  #sceneLegendBar{height:7px;margin-top:8px;border-radius:4px}
+  #sceneLegendScale{display:flex;justify-content:space-between;color:#6d747c;font-size:10px;margin-top:3px}
+  #sceneScope{border-top:1px solid var(--line);padding-top:7px}
+  .playHud{left:calc(var(--scene-left) + 16px);right:18px;width:auto;max-width:520px;margin-left:auto;font-size:12px}
+  body:not([data-view="routes"]) .playHud{display:none}
+  #filterSummary{margin:0 0 8px;color:#475569;font-size:11px}
+  #clearFilters{width:100%;margin:0 0 8px;min-height:28px;font-size:11px}
+  #busy{top:55%;left:calc(var(--scene-left) + (100% - var(--scene-left))/2);pointer-events:none}
+  .sceneHint{position:absolute;bottom:128px;left:calc(var(--scene-left) + 18px);font-size:10px;color:#7d8791;pointer-events:none}
+  body.panelCollapsed #controlPanel{display:none}
+  body.panelCollapsed{--scene-left:0px}
+  button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid #1677ff;outline-offset:3px}
+  .layerRow:focus-within{outline:2px solid #1677ff}
+  .laeqBar{background:linear-gradient(90deg,#3b4cc0 0%,#6888ee 18%,#aac6fd 36%,#f2f2f2 50%,#fcbea1 64%,#db5e4b 82%,#b40426 100%)}
+  @media(max-width:850px){:root{--panel-width:286px;--scene-left:316px}.sceneLegend{width:218px}.playSpeedLabel{display:none}}
+  @media(max-width:600px){:root{--scene-left:0px;--panel-width:min(320px,calc(100vw - 36px))}#controlPanel{z-index:8;background:#fff;max-height:calc(100vh - 84px)}.sceneLegend{max-width:calc(100vw - 36px)}.sceneHint{display:none}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  #panelShell{position:absolute;z-index:7;left:18px;top:18px;width:var(--panel-width)}
+  #controlPanel{position:relative;left:0;top:0;width:100%;max-height:calc(100vh - 36px)}
+  .panelHeader{padding-right:26px}
+  #panelToggle{position:absolute;right:8px;top:8px;z-index:9;min-height:28px;width:28px;padding:0;
+    border:0;background:transparent;color:#67737d;font-size:25px;line-height:28px;border-radius:5px;cursor:pointer}
+  #panelToggle:hover{background:#edf1f4;color:#17191c}
+  body.panelCollapsed #panelShell{left:0;width:0}
+  body.panelCollapsed #panelToggle{left:0;right:auto;top:0;width:auto;white-space:nowrap;padding:9px 12px;
+    border:1px solid var(--line);border-left:0;border-radius:0 8px 8px 0;background:var(--paper);font-size:12px;line-height:20px;
+    box-shadow:0 4px 14px rgba(25,30,35,.08)}
+  .workspaceTools{justify-content:flex-end}
+  .routeFocus{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+  .routeFocus .lbl{display:flex;justify-content:space-between;margin-bottom:6px}
+  .optional{font-size:10px;font-weight:400;color:#8a929c}
+  .focusHelp,.focusState{font-size:11px;line-height:1.6;margin:0 0 8px;color:#66737e}
+  .focusState{margin:8px 0;color:#697780}
+  .routeFocus.focused .focusState{color:#146887;font-weight:600}
+  #playPinClear{width:100%;min-height:28px;font-size:11px;padding:4px 8px;margin-bottom:8px}
+  #playPinClear[hidden]{display:none}
+  .focusTips{font-size:10px;color:#78838b;line-height:1.6}
+  .focusTips summary{cursor:pointer}.focusTips p{margin:6px 0 0}
+
+  /* A paged instrument drawer: the content changes, its frame stays still. */
+  :root{--panel-width:324px}
+  #panelShell{left:18px;top:18px;width:var(--panel-width);height:min(680px,calc(100dvh - 36px));
+    transform:translateX(0);transition:transform 420ms cubic-bezier(.22,1,.36,1);will-change:transform}
+  #controlPanel,body.panelCollapsed #controlPanel{display:flex;flex-direction:column;height:100%;max-height:none;
+    padding:18px 16px 12px;overflow:hidden;border-radius:14px;background:rgba(255,255,255,.96);box-shadow:0 8px 30px rgba(25,30,35,.07)}
+  body.panelCollapsed #panelShell{left:18px;width:var(--panel-width);transform:translateX(calc(-100% - 18px))}
+  #panelToggle,body.panelCollapsed #panelToggle{left:auto;right:-23px;top:44px;width:24px;height:52px;min-height:0;
+    padding:5px;border:1px solid var(--line);border-left:0;border-radius:0 9px 9px 0;background:#fff;
+    display:grid;place-items:center;box-shadow:7px 2px 12px rgba(25,30,35,.03);font-size:0;line-height:1}
+  #panelToggle svg{width:14px;height:14px;fill:none;stroke:#667780;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+    transition:transform 420ms cubic-bezier(.22,1,.36,1)}
+  body.panelCollapsed #panelToggle svg{transform:rotate(180deg)}
+  #panelToggle:hover{background:#f3f7f9} .panelHeader{padding:0;flex:none}
+  h1{font-size:15px}.eyebrow{font-size:8px;letter-spacing:1.8px}
+  .panelHeader .sub{font-size:10px;min-height:28px;margin-bottom:0}
+  .sceneBlock{margin-top:10px;flex:none}.sceneBlock select{height:32px;font-size:12px}
+  .fieldHead{margin-bottom:5px}.fieldMeta{font-size:8px}
+  .tabBar{position:static;grid-template-columns:repeat(4,1fr);flex:none;margin-top:14px;box-shadow:none}
+  .tabBtn{font-size:12px;min-height:32px}
+  #sheetNav{display:flex;gap:16px;min-height:36px;align-items:stretch;flex:none;border-bottom:1px solid #e8edf0;margin-bottom:12px}
+  #sheetNav button{background:none;border:0;border-bottom:2px solid transparent;border-radius:0;padding:0 1px;
+    font-size:11px;min-height:32px;color:#8a949c}
+  #sheetNav button.active{border-bottom-color:#253f4d;color:#253f4d;font-weight:650}
+  #panelDeck{flex:1;min-height:0;position:relative;overflow:hidden}
+  #panelDeck .tabPanel{height:100%;animation:none}
+  #panelDeck .tabPanel.active{display:flex;flex-direction:column;min-height:0}
+  .deckSheet{display:none!important;height:100%;margin:0!important;padding:0!important;border:0!important;background:transparent!important;min-height:0}
+  .deckSheet.sheetActive{display:flex!important;flex:1;height:auto;flex-direction:column;gap:8px;animation:sheetEnter 180ms ease-out}
+  @keyframes sheetEnter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+  .deckSheet>.lbl{margin-bottom:2px}.deckSheet .sub{font-size:11px;line-height:1.5;margin-top:0}
+  .deckSheet .row{margin-bottom:4px}.deckSheet .k,.deckSheet .v{font-size:12px}
+  .deckSheet .controlGroup{margin:0;padding:10px}.deckSheet .radioChip{font-size:11px;min-height:32px;padding:6px}
+  #playOdChips{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0}
+  #playAltChips{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0}
+  .chipRow button{font-size:11px;min-height:26px;padding:3px 2px}
+  #clearFilters{order:20;margin-top:auto;margin-bottom:0}
+  .deckSheet .routeFocus{margin:0;padding:0;border:0}
+  .focusHelp{font-size:12px;line-height:1.7}.focusTips{font-size:11px}
+  .focusTips summary{display:none}.focusTips p{margin-top:8px}
+  .focusState{font-size:12px}#playbackNote{font-size:10px;margin-top:auto}
+  .heightNav{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+  .heightNav button{min-height:28px;padding:3px 10px;font-size:14px}.heightNav select{height:30px;font-size:12px}
+  #mapsGrid{display:block;min-height:0;flex:1;position:relative}
+  .mapTile{display:none;height:100%}.mapTile.mapActive{display:flex;flex-direction:column}
+  .mapTile canvas{width:100%;height:auto;min-height:0;flex:1;object-fit:contain;aspect-ratio:auto;border:0;border-radius:0;background:transparent}
+  .mapCap{flex:none}.mapCap b{font-size:13px}.mapCap span{font-size:11px}
+  #heightFootnote{font-size:10px;color:#829099;line-height:1.5;margin:3px 0 0}
+  #heightMetrics .alt{font-size:12px;padding:8px 0;line-height:1.6;border-bottom:1px solid var(--line)}
+  #heightMetrics .alt span:last-child{margin-left:8px!important}
+  .settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .settingsGrid .slider{margin:0;padding:12px 8px;border:1px solid #e7ecef;border-radius:8px}
+  .settingsGrid .span2{grid-column:1/-1}
+  #probeReadout{font-size:11px;line-height:1.5}
+  .kernelSketch{height:100px;margin:4px 0}.deckSheet .layerList{gap:8px}
+  #panelFooter{flex:none;display:flex;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid #edf0f2;font-size:9px;letter-spacing:.3px;color:#8f9aa2}
+  @media(max-height:720px){#controlPanel,body.panelCollapsed #controlPanel{padding:12px}.panelHeader .sub{min-height:0}.eyebrow{display:none}
+    .sceneBlock{margin-top:8px}.tabBar{margin-top:10px}#sheetNav{margin-bottom:8px;min-height:30px}#sheetNav button{min-height:28px}
+    .deckSheet.sheetActive{gap:5px}.chipRow button{min-height:24px}.kernelSketch{height:72px}#panelFooter{margin-top:6px;padding-top:6px}
+    .focusHelp,.focusState{font-size:11px}.deckSheet .sub{font-size:10px}.settingsGrid .slider{padding:8px}}
+  @media(max-width:600px){:root{--panel-width:min(324px,calc(100vw - 50px))}}
+
+  @media(max-height:620px){
+    #controlPanel,body.panelCollapsed #controlPanel{padding:10px 12px}
+    .panelHeader .sub{display:none}.sceneBlock{margin-top:6px}.tabBar{margin-top:8px}
+    .deckSheet.sheetActive{gap:3px}#sheetNav{min-height:28px;margin-bottom:6px}
+    .deckSheet .row{margin-bottom:2px}.chipRow button{min-height:22px}
+    .deckSheet .radioChip{min-height:28px;padding:4px}.deckSheet .layerRow{padding:5px}
+    .kernelSketch{height:56px}.focusHelp,.focusState,.focusTips{font-size:10px;line-height:1.5}
+    #panelFooter{margin-top:4px;padding-top:4px}.settingsGrid .slider{padding:5px}
+  }
 </style>
 </head>
 <body>
 <div id="stage">
+  <div class="workspaceTools">
+    <div class="viewTools" aria-label="视角快捷操作"><button id="viewReset" type="button">复位</button><button id="viewTop" type="button">俯视</button><button id="viewSide" type="button">侧视</button></div>
+  </div>
+  <aside class="sceneLegend" aria-label="当前图例与结果口径"><strong id="sceneLegendTitle">航线 · 巡航高度</strong><div id="sceneLegendBar"></div><div id="sceneLegendScale"></div><p id="sceneLegendNote"></p><p id="sceneScope"></p></aside>
+  <div class="sceneHint">拖动旋转 · 滚轮缩放 · 黑框为 500 m 研究区</div>
   <div id="busy">计算多高度航线...</div>
   <div id="playHud" class="playHud" aria-label="排班回放">
+    <p id="filterSummary">全部方向 · 全部高度</p>
     <div class="playHudTop">
       <span id="playHudClock" class="playHudClock">00:00 / 60:00</span>
       <span id="playHudAir" class="playHudAir">空中 0</span>
@@ -198,6 +333,8 @@
     </div>
   </div>
 
+  <div id="panelShell">
+    <button id="panelToggle" type="button" aria-label="收起控制面板" title="收起控制面板" aria-expanded="true" aria-controls="controlPanel"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg></button>
   <div id="controlPanel" class="panel">
     <div class="panelHeader">
       <div class="eyebrow">URBAN AIRSPACE LAB</div>
@@ -206,7 +343,7 @@
     </div>
 
     <div class="sceneBlock">
-      <div class="fieldHead"><label class="lbl">场景</label><span class="fieldMeta">500 m CORE + 800 m HALO</span></div>
+      <div class="fieldHead"><label class="lbl" for="presets">选择街区</label><span class="fieldMeta">500 m CORE + 800 m HALO</span></div>
       <select class="presets" id="presets"></select>
     </div>
 
@@ -220,14 +357,15 @@
     </div>
 
     <div class="tabBar" id="tabBar">
+      <button class="tabBtn" data-tab="view" type="button">空间</button>
       <button class="tabBtn active" data-tab="routes" type="button">航线</button>
-      <button class="tabBtn" data-tab="view" type="button">图层</button>
-      <button class="tabBtn" data-tab="analysis" type="button">分析</button>
+      <button class="tabBtn" data-tab="analysis" type="button">影响</button>
+      <button class="tabBtn" data-tab="settings" type="button">设置</button>
     </div>
 
     <div class="tabPanel active" data-panel="routes">
       <div id="playbackWrap" class="controlGroup" style="display:none">
-        <label class="lbl">排班航线筛选</label>
+        <label class="lbl">排班航线筛选 · 可多选</label><button id="clearFilters" type="button">重置筛选与聚焦</button>
         <div class="row"><span class="k">方向</span><span class="v" id="playOdV">全部</span></div>
         <div class="chipRow" id="playOdChips"></div>
         <div class="row"><span class="k">高度</span><span class="v" id="playAltV">全部</span></div>
@@ -238,8 +376,14 @@
           <input type="checkbox" id="playGhost" checked>
           <span class="toggle"></span>
         </label>
-        <div class="row"><span class="k">钉住航线</span><span class="v" id="playPinV">点击飞机</span></div>
-        <button type="button" id="playPinClear" style="width:100%;min-height:28px;margin-bottom:6px">清除钉住</button>
+        <div class="routeFocus">
+          <label class="lbl" for="focusRouteSelect">航线聚焦 <span class="optional">可选</span></label>
+          <p class="focusHelp" id="focusHelp">选择一条航线，高亮完整路径和沿线飞机，方便持续观察。</p>
+          <select id="focusRouteSelect" aria-describedby="focusHelp"><option value="">选择一条航线…</option></select>
+          <p id="playPinV" class="focusState" role="status">未聚焦 · 显示符合筛选的航线</p>
+          <button type="button" id="playPinClear" hidden>退出聚焦</button>
+          <details class="focusTips"><summary>也可以直接点击飞机</summary><p>点击飞机聚焦其航线；Shift + 点击可多选。点击画布空白处或「退出聚焦」可恢复。暂时没有飞机时，完整航线仍会显示。</p></details>
+        </div>
         <p class="sub" id="playbackNote">真实一小时排班。无人机顶色按巡航高度映射；含转弯方向。</p>
       </div>
       <div class="controlGroup" id="routeGenerationWrap">
@@ -256,11 +400,11 @@
 
     <div class="tabPanel" data-panel="view">
       <div class="controlGroup">
-        <label class="lbl">显示图层</label>
+        <label class="lbl">自定义图层</label>
         <div class="layerList">
           <label class="layerRow"><span class="layerMark route"></span><span class="layerText">航线</span><input type="checkbox" id="routeToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark aircraft"></span><span class="layerText">排班飞机</span><input type="checkbox" id="aircraftToggle" checked><span class="toggle"></span></label>
-          <label class="layerRow"><span class="layerMark burden"></span><span class="layerText">外部性叠加</span><input type="checkbox" id="noiseToggle" checked><span class="toggle"></span></label>
+          <label class="layerRow"><span class="layerMark burden"></span><span class="layerText">外部性叠加</span><input type="checkbox" id="noiseToggle"><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark terrain"></span><span class="layerText">DEM 地形</span><input type="checkbox" id="demToggle"><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark building"></span><span class="layerText">建筑</span><input type="checkbox" id="buildingToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark shadow"></span><span class="layerText">阴影</span><input type="checkbox" id="shadowToggle" checked><span class="toggle"></span></label>
@@ -309,10 +453,10 @@
 
     <div class="tabPanel" data-panel="analysis">
       <div class="controlGroup">
-        <label class="lbl">外部性</label>
+        <label class="lbl">影响分析</label><label class="layerRow"><span class="layerText">显示影响着色</span><input type="checkbox" id="impactToggle"><span class="toggle"></span></label>
         <div class="row"><span class="k">当前内核</span><span class="v" id="channelV">噪声</span></div>
         <div id="noiseV2Wrap" style="display:none">
-          <p class="sub" id="noiseV2Note" style="margin:0 0 8px">预计算噪声 v2：面片 <i>L</i><sub>Aeq</sub>（不是页内简化核，也不是四通道 DDA）。</p>
+          <p class="sub" id="noiseV2Note" style="margin:0 0 8px">整小时预计算面片声级 L<sub>Aeq</sub>。时间回放、航线筛选和探针密度不会重算这张噪声图。</p>
           <div class="radioGrid" id="noiseV2Radios">
             <label class="radioChip"><input type="radio" name="noiseV2Tier" value="iso">iso 各向同性</label>
             <label class="radioChip"><input type="radio" name="noiseV2Tier" value="dir">dir 指向性</label>
@@ -322,7 +466,7 @@
           <div class="laeqBarRow"><span id="laeqMin">— dB</span><span>L<sub>Aeq</sub></span><span id="laeqMax">— dB</span></div>
           <p class="sub" id="noiseV2Stats" style="margin-top:8px"></p>
         </div>
-        <div id="channelFourWrap">
+        <div id="channelFourWrap"><p class="sub">浏览器简化估算，用于交互探索，不作为论文定量结果。</p>
           <div class="kernelSketch" id="kernelSketch" data-channel="noise" aria-label="外部性影响范围示意">
             <svg viewBox="0 0 420 150" aria-hidden="true">
               <line class="sketchGround" x1="26" y1="104" x2="394" y2="104"/>
@@ -341,10 +485,10 @@
           </div>
         </div>
       </div>
-      <div class="controlGroup">
-        <label class="lbl">可飞地图</label>
+      <div class="controlGroup" id="spaceMaps">
+        <label class="lbl">分高度可飞空间</label>
         <div id="mapsGrid"></div>
-        <p class="sub">浅色=可飞。外蓝框=800 m 缓冲圈，内黑框=500 m 研究区。航线颜色=巡航高度。</p>
+        <p class="sub">浅色=可飞，百分比为核心区可飞面积比例，条数为航线数。外蓝框=800 m 缓冲圈，内黑框=500 m 研究区。航线颜色=巡航高度。</p>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e7ebef">
           <label class="lbl">巡航高度</label>
           <div class="altCmap" aria-label="巡航高度色带">
@@ -376,10 +520,12 @@
   </div>
 </div>
 
+</div>
+
 <script src="vendor/three.min.js"></script>
 <script src="vendor/OrbitControls.js"></script>
 <script src="vendor/clipper.js"></script>
 <script src="data/city-blocks.js"></script>
-<script src="app.js?v=nv2-15"></script>
+<script src="app.js?v=ux-18"></script>
 </body>
 </html>

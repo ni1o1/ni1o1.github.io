@@ -55,7 +55,7 @@ let maxHeightWeight = Math.max(...altitudes.map(heightWeight));
 let entriesPerEdge = 6;
 let routeOpacityScale = 1;
 let routesVisible = true;
-let noiseEnabled = true;
+let noiseEnabled = false;
 let demEnabled = false;
 let buildingsVisible = true;
 let shadowsEnabled = true;
@@ -894,8 +894,18 @@ function buildHeightGuides() {
 
 async function loadPreset(name) {
   const token = ++presetLoadToken;
+  computeVersion++; externalityVersion++;
+  stopRouteWorker(); needsCompute = false; computing = false;
+  routeSummaries = []; totalRoutes = 0;
+  buildMapTiles(); $('altLegend').textContent = '正在准备当前街区…';
   currentPreset = name;
   currentBlock = BLOCKS.find(b => b.name === name) || BLOCKS[0];
+  noiseV2 = null; precomputed = null; capacityField = null;
+  flightData = null; flightRoutes = null;
+  playOdSet = null; playAltSet = null; pinnedRoutes.clear();
+  $('sandboxSub').textContent = `${currentBlock.name} · 加载中`;
+  $('routeSourceNote').textContent = '正在准备当前街区数据…';
+  syncPlaybackUI(); syncSceneLegend();
   clearNoiseLayer();
   clearFlyableVolume();
   disposeNoiseV2Mesh();
@@ -910,7 +920,9 @@ async function loadPreset(name) {
       busy.textContent = '加载噪声 v2 面片...';
     }
     try {
-      await ensureNoiseV2(currentBlock.id);
+      const loadedNoise = await ensureNoiseV2(currentBlock.id);
+      if (token !== presetLoadToken) return;
+      noiseV2 = loadedNoise;
     } catch (err) {
       console.warn(err);
       noiseV2 = null;
@@ -940,6 +952,8 @@ async function loadPreset(name) {
   applyAuxiliaryBuildingVisibility();
   rebuildFlyableVolume();
   if ($('presets').value !== currentBlock.name) $('presets').value = currentBlock.name;
+  syncRouteSourceUI();
+  syncSceneLegend();
   scheduleCompute();
 }
 
@@ -1708,8 +1722,7 @@ async function ensureNoiseV2(blockId) {
     }
     noiseV2Cache[blockId] = decodeNoiseV2(await res.json());
   }
-  noiseV2 = noiseV2Cache[blockId];
-  return noiseV2;
+  return noiseV2Cache[blockId];
 }
 
 function disposeNoiseV2Mesh() {
@@ -1789,6 +1802,7 @@ function applyNoiseV2Visibility() {
 }
 
 function syncChannelUI() {
+  syncSceneLegend();
   const v2 = usingNoiseV2() || Boolean(currentBlock?.noiseV2);
   const wrapV2 = $('noiseV2Wrap');
   const wrapFour = $('channelFourWrap');
@@ -2012,8 +2026,10 @@ function routeFocused(ri, route) {
   return true;
 }
 
+function odLabel(od) { return od.replace(/[EWNS]/g, c => ({E:'东',W:'西',N:'北',S:'南'})[c]).replace('>', '→'); }
+
 function playbackFilterLabel() {
-  const od = !playOdSet ? '全部方向' : [...playOdSet].join(' · ');
+  const od = !playOdSet ? '全部方向' : [...playOdSet].map(odLabel).join(' · ');
   const alt = !playAltSet ? '全部高度' : [...playAltSet].map(h => h + ' m').join(' · ');
   return od + ' · ' + alt;
 }
@@ -2078,6 +2094,8 @@ function writeTrail(line, route, u, colorHex) {
 }
 
 function onPlayFilterChange() {
+  // A focus outside the new direction/height filter must not leave an empty scene.
+  for (const ri of pinnedRoutes) if (!routeInFilter(flightRoutes?.[ri])) pinnedRoutes.delete(ri);
   rebuildFocusRibbons();
   syncPlayFilterUI();
   placeDrones();
@@ -2128,7 +2146,7 @@ function buildPlayFilterChips() {
     };
     add('全部', { role: 'all' }, () => { playOdSet = null; onPlayFilterChange(); });
     add('对穿', { role: 'opp' }, () => { playOdSet = new Set([...OPPOSITE_OD]); onPlayFilterChange(); });
-    PLAY_ODS.forEach(od => add(od, { od }, () => togglePlayOd(od)));
+    PLAY_ODS.forEach(od => add(odLabel(od), { od }, () => togglePlayOd(od)));
   }
   if (altBox && !altBox.dataset.ready) {
     altBox.dataset.ready = '1';
@@ -2165,17 +2183,25 @@ function syncPlayFilterUI() {
       btn.classList.toggle('on', on);
     });
   }
-  if ($('playOdV')) $('playOdV').textContent = playOdSet ? [...playOdSet].join(' · ') : '全部';
+  if ($('playOdV')) $('playOdV').textContent = playOdSet ? [...playOdSet].map(odLabel).join(' · ') : '全部';
   if ($('playAltV')) $('playAltV').textContent = playAltSet ? [...playAltSet].map(h => h + ' m').join(' · ') : '全部';
-  if ($('playPinV')) {
-    if (!pinnedRoutes.size) $('playPinV').textContent = '点击飞机';
-    else if (pinnedRoutes.size === 1) {
-      const ri = [...pinnedRoutes][0];
-      const r = flightRoutes?.[ri];
-      $('playPinV').textContent = r ? `${r.od} @ ${r.h} m` : '1 条';
-    } else $('playPinV').textContent = `${pinnedRoutes.size} 条`;
-  }
+  const select = $('focusRouteSelect');
+  select.replaceChildren(new Option(pinnedRoutes.size > 1 ? `已聚焦 ${pinnedRoutes.size} 条航线` : '选择一条航线…', ''));
+  (flightRoutes || []).forEach((route, ri) => {
+    if (!routeInFilter(route)) return;
+    select.add(new Option(`${odLabel(route.od)} · ${route.h} m · 航线 ${ri + 1}`, String(ri)));
+  });
+  select.value = pinnedRoutes.size === 1 ? String([...pinnedRoutes][0]) : '';
+  select.disabled = select.options.length <= 1;
+  const labels = [...pinnedRoutes].map(ri => {
+    const route = flightRoutes?.[ri];
+    return route ? `${odLabel(route.od)} · ${route.h} m · 航线 ${ri + 1}` : '航线';
+  });
+  $('playPinV').textContent = labels.length ? `正在聚焦：${labels.join('；')}` : '未聚焦 · 显示符合筛选的航线';
+  $('playPinClear').hidden = !pinnedRoutes.size;
+  select.closest('.routeFocus').classList.toggle('focused', Boolean(pinnedRoutes.size));
   if ($('playGhost')) $('playGhost').checked = playGhost;
+  $('filterSummary').textContent = playbackFilterLabel() + (pinnedRoutes.size ? ` · 聚焦 ${pinnedRoutes.size} 条航线` : '');
 }
 
 function fmtPlaybackClock(t) {
@@ -2268,10 +2294,11 @@ function placeDrones() {
   if (droneAccentMesh.instanceColor) droneAccentMesh.instanceColor.needsUpdate = true;
   ensureTrailLines(trails.length);
   trails.forEach((item, i) => writeTrail(trailGroup.children[i], item.route, item.u, item.col));
-  if ($('playHudAir')) $('playHudAir').textContent = isPlaybackFocused() ? `${nFocus} 架` : `空中 ${n}`;
+  if ($('playHudAir')) $('playHudAir').textContent = isPlaybackFocused() ? `筛选内 ${nFocus} 架 / 空中共 ${n} 架` : `当前空中 ${n} 架`;
 }
 
 function syncPlaybackUI() {
+  syncSheetNavigation();
   const show = usingCapacity() && Boolean(flightData);
   if ($('playbackWrap')) $('playbackWrap').style.display = show ? '' : 'none';
   const hud = $('playHud');
@@ -2287,7 +2314,7 @@ function syncPlaybackUI() {
     const nFlights = flightData.n_flights || (flightData.flights || []).length;
     if ($('playbackNote')) {
       $('playbackNote').textContent =
-        `真实一小时排班，共 ${nFlights.toLocaleString()} 架次。点方向/高度只看几条走廊；再点一架飞机钉住那条航线。Shift+点击可钉多条。`;
+        `真实一小时排班，共 ${nFlights.toLocaleString()} 架次。方向和高度用于筛选；航线聚焦用于持续观察单条路径。`;
     }
   } else {
     if (droneMesh) droneMesh.visible = false;
@@ -2354,15 +2381,21 @@ function syncRouteSourceUI() {
   }
   const gap = $('heightGapV');
   if (gap) gap.textContent = capOn ? '20 m' : '10 m';
+  const capInput = document.querySelector('input[name="routeSource"][value="capacity"]');
+  capInput.disabled = !PRECOMPUTED_FILES[currentBlock?.id];
+  capInput.parentElement.title = capInput.disabled ? '当前街区没有预计算排班数据' : '';
   const note = $('routeSourceNote');
   const sub = $('sandboxSub');
   if (routeSource === 'capacity' && currentBlock && !PRECOMPUTED_FILES[currentBlock.id]) {
     if (note) note.textContent = '当前场景没有排班数据，已使用浏览器探针。';
     if (sub) sub.textContent = '500 m 研究区 · 800 m halo';
+  } else if (routeSource === 'capacity' && !capOn) {
+    if (note) note.textContent = '正在加载当前街区的容量排班…';
+    if (sub) sub.textContent = `${currentBlock.name} · 排班加载中`;
   } else if (capOn) {
     if (note) {
       note.textContent = usingNoiseV2()
-        ? '真实一小时容量排班；右下角控制回放。噪声为预计算面片 L_Aeq。'
+        ? '真实一小时容量排班；在「航线」视图回放。噪声为预计算面片 L_Aeq。'
         : '容量排班仅保留东西 / 南北对向航线。';
     }
     if (sub) {
@@ -2371,8 +2404,8 @@ function syncRouteSourceUI() {
         : '容量排班 · 对向航线';
     }
   } else if (usingNoiseV2()) {
-    if (note) note.textContent = '从 800 m halo 对边生成探针航线；噪声为预计算面片 L_Aeq。';
-    if (sub) sub.textContent = 'Hong Kong 54_29 · 实景噪声 v2';
+    if (note) note.textContent = '探针航线可交互调整；噪声沿用原始预计算情景，不随探针重算。';
+    if (sub) sub.textContent = currentBlock.id === 'rep-oh-hongkong' ? 'Hong Kong OH 15_0 · 白模 / 探针航线' : `${currentBlock.name} · 探针航线`;
   } else {
     if (note) note.textContent = '从 800 m halo 对边生成航线。';
     if (sub) sub.textContent = '500 m 研究区 · 800 m halo';
@@ -2501,6 +2534,7 @@ async function recompute(version) {
         ensurePrecomputed(currentBlock?.id),
         ensureFlights(currentBlock?.id),
       ]);
+      if (version !== computeVersion) return false;
       precomputed = pc;
     } catch (err) {
       console.warn(err);
@@ -2518,6 +2552,7 @@ async function recompute(version) {
       if (noiseEnabled) scheduleExternalityLayer();
       syncRouteSourceUI();
       syncPlaybackUI();
+      syncSceneLegend();
       return true;
     }
   }
@@ -2528,6 +2563,7 @@ async function recompute(version) {
   syncRouteSourceUI();
   syncChannelUI();
   syncPlaybackUI();
+  syncSceneLegend();
   const busy = $('busy');
   if (busy) busy.textContent = '计算多高度航线...';
 
@@ -2542,7 +2578,7 @@ function updateMetrics() {
     const cap = s.summary?.capacity_stable_hour;
     const row = document.createElement('div');
     row.className = 'alt';
-    row.innerHTML = `<span class="sw altCmapSw"></span><span>容量排班</span><span style="margin-left:auto">${cap} /时 · ${s.n_flights} 架</span>`;
+    row.innerHTML = `<span class="sw altCmapSw"></span><span>容量排班</span><span style="margin-left:auto">稳定容量 ${cap} 架次/时 · 排班记录 ${s.n_flights} 架次</span>`;
     legend.appendChild(row);
   }
   routeSummaries.forEach((s, i) => {
@@ -2555,6 +2591,7 @@ function updateMetrics() {
 }
 
 function drawMiniMap() {
+  syncHeightPage();
   const grid = $('mapsGrid');
   if (!grid.children.length) buildMapTiles();
   routeSummaries.forEach((s, si) => {
@@ -2908,9 +2945,10 @@ function buildMapTiles() {
   altitudes.forEach((alt, i) => {
     const tile = document.createElement('div');
     tile.className = 'mapTile';
-    tile.innerHTML = `<div class="mapCap"><b>${alt} m</b><span id="mapCap-${i}">-</span></div><canvas id="mapCanvas-${i}" width="192" height="192"></canvas>`;
+    tile.innerHTML = `<div class="mapCap"><b>${alt} m</b><span id="mapCap-${i}">-</span></div><canvas id="mapCanvas-${i}" width="384" height="384"></canvas>`;
     grid.appendChild(tile);
   });
+  syncHeightPage();
 }
 
 function applyRouteVisibility() {
@@ -3042,16 +3080,19 @@ BLOCKS.forEach(block => {
 });
 
 function activatePanelTab(tab) {
+  document.body.dataset.view = tab;
   document.querySelectorAll('.tabBtn').forEach(item => {
     item.classList.toggle('active', item.dataset.tab === tab);
+    item.setAttribute('aria-pressed', String(item.dataset.tab === tab));
   });
   document.querySelectorAll('.tabPanel').forEach(panel => {
     panel.classList.toggle('active', panel.dataset.panel === tab);
   });
+  syncSheetNavigation();
 }
 
 document.querySelectorAll('.tabBtn').forEach(btn => {
-  btn.addEventListener('click', () => activatePanelTab(btn.dataset.tab));
+  btn.addEventListener('click', () => { activatePanelTab(btn.dataset.tab); applyDisplayPreset(btn.dataset.tab); });
 });
 
 activatePanelTab(document.querySelector('.tabBtn.active')?.dataset.tab || 'routes');
@@ -3064,6 +3105,8 @@ document.querySelectorAll('input[name="routeSource"]').forEach(input => {
   input.addEventListener('change', e => {
     if (!e.target.checked) return;
     routeSource = e.target.value;
+    syncRouteSourceUI(); syncPlaybackUI(); syncSceneLegend();
+    routeSummaries = []; buildMapTiles(); $('altLegend').textContent = '正在更新航线…';
     scheduleCompute();
   });
 });
@@ -3512,23 +3555,183 @@ renderer.domElement.addEventListener('pointerup', e => {
   }
 });
 
+let drawerMotionUntil = 0;
 function onResize() {
-  const w = stage.clientWidth, h = stage.clientHeight;
+  const panelRight = window.innerWidth <= 600 ? 0 : Math.max(0, $('controlPanel').getBoundingClientRect().right + 30);
+  // Measure the translated edge while the drawer moves, including its handle.
+  const w = Math.max(1, stage.clientWidth - panelRight), h = stage.clientHeight;
+  renderer.domElement.style.position = 'absolute';
+  renderer.domElement.style.left = panelRight + 'px';
+  renderer.domElement.style.top = '0';
+  document.body.style.setProperty('--scene-left', panelRight + 'px');
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  applyCameraCompositionOffset(w);
   renderer.setSize(w, h);
+  fitScene();
 }
 window.addEventListener('resize', onResize);
 
-function applyCameraCompositionOffset(width) {
-  const panel = $('controlPanel');
-  const panelRight = panel ? panel.getBoundingClientRect().right + PANEL_GAP : 0;
-  const visualCenter = panelRight + Math.max(0, width - panelRight) / 2;
-  const shiftPx = Math.max(0, visualCenter - width / 2);
-  camera.projectionMatrix.elements[8] = -2 * shiftPx / width;
-  camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+function fitScene() {
+  // Fit the 500 m core, leaving room for the legend and playback controls.
+  const distance = Math.max(1550, 490 / (Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect));
+  const direction = camera.position.clone().sub(ORBIT_TARGET).normalize();
+  camera.position.copy(ORBIT_TARGET).addScaledVector(direction, Math.min(distance, 2900));
+  controls.update();
 }
+
+function syncSceneLegend() {
+  if (!$('sceneLegendTitle')) return;
+  const v2 = usingNoiseV2();
+  const title = $('sceneLegendTitle'), bar = $('sceneLegendBar'), scale = $('sceneLegendScale');
+  if (noiseEnabled) {
+    title.textContent = v2 ? `噪声 · ${NOISE_V2_TIERS[noiseV2Tier]}` : `${(CHANNELS[externalityChannel] || CHANNELS.noise).label} · 浏览器估算`;
+    bar.style.background = 'linear-gradient(90deg,#3b4cc0 0%,#6888ee 18%,#aac6fd 36%,#f2f2f2 50%,#fcbea1 64%,#db5e4b 82%,#b40426 100%)';
+    scale.textContent = v2 ? `${noiseV2.raw.vp5.toFixed(1)} — ${noiseV2.raw.vp95.toFixed(1)} dB · L_Aeq` : '低 ← 相对影响 → 高';
+    $('sceneLegendNote').textContent = v2 ? '色带按 P5–P95 截断；端点外数值使用边界颜色。' : '仅用于比较空间分布，不作为论文定量结果。';
+  } else {
+    const routesOn = $('routeToggle').checked;
+    title.textContent = routesOn ? '航线 · 巡航高度' : '街区形态 · 可飞空间';
+    bar.style.background = routesOn ? 'linear-gradient(90deg,#440154,#3b528b,#21918c,#5ec962,#fde725)' : '#d8dde1';
+    scale.textContent = routesOn ? `${Math.min(...altitudes)} m — ${Math.max(...altitudes)} m` : '黑框：500 m 核心区 · 外围：缓冲区';
+    $('sceneLegendNote').textContent = routesOn ? (usingCapacity() ? '方向和高度可多选；在面板选择航线，或点击飞机聚焦。' : '探针连接缓冲区对边；颜色表示巡航高度。') : '左侧查看各高度切片，浅色表示可飞空间。';
+  }
+  $('sceneScope').textContent = v2 ? '噪声为原情景整小时预计算结果。播放、筛选及探针调整仅改变航线显示，噪声不重算。' : '当前为浏览器形态探针，非正式计算结果。';
+  $('impactToggle').checked = noiseEnabled;
+}
+
+function setLayer(id, checked) {
+  const input = $(id);
+  if (input.checked !== checked) { input.checked = checked; input.dispatchEvent(new Event('change')); }
+}
+
+function applyDisplayPreset(tab) {
+  if (tab === 'settings') return;
+  setLayer('routeToggle', tab === 'routes');
+  setLayer('aircraftToggle', tab === 'routes');
+  setLayer('noiseToggle', tab === 'analysis');
+  setLayer('buildingToggle', true);
+  setLayer('heightGuideToggle', tab === 'view');
+  syncSceneLegend();
+}
+
+function syncPanelHandle() {
+  const collapsed = document.body.classList.contains('panelCollapsed');
+  $('controlPanel').inert = collapsed;
+  $('panelToggle').setAttribute('aria-expanded', String(!collapsed));
+  $('panelToggle').setAttribute('aria-label', collapsed ? '展开控制面板' : '收起控制面板');
+  $('panelToggle').title = collapsed ? '展开控制面板' : '收起控制面板';
+}
+$('panelToggle').addEventListener('click', () => {
+  document.body.classList.toggle('panelCollapsed');
+  syncPanelHandle();
+  drawerMotionUntil = performance.now() + (matchMedia('(prefers-reduced-motion: reduce)').matches ? 50 : 480);
+});
+$('focusRouteSelect').addEventListener('change', e => {
+  pinFlightRoute(e.target.value === '' ? null : Number(e.target.value), false);
+});
+[['viewReset', -46, 35], ['viewTop', 0, 80], ['viewSide', 0, 8]].forEach(([id, az, pitch]) => {
+  $(id).addEventListener('click', () => { cameraAzimuthDeg = az; cameraPitchDeg = pitch; applyCameraAngles(); fitScene(); syncCameraControls(); });
+});
+$('clearFilters').addEventListener('click', () => { playOdSet = null; playAltSet = null; pinnedRoutes.clear(); onPlayFilterChange(); });
+$('impactToggle').addEventListener('change', e => setLayer('noiseToggle', e.target.checked));
+// Keep controls in small, named pages instead of stacking a scrolling form.
+const sheetSelections = {view:'height',routes:'filter',analysis:'model',settings:'layers'};
+let selectedHeightIndex = 0;
+let sheetRegistry = {};
+function syncSheetNavigation() {
+  if (!$('sheetNav')) return;
+  const tab = document.body.dataset.view || 'routes';
+  const pages = (sheetRegistry[tab] || []).filter(p => !p.capacity || usingCapacity());
+  const selected = pages.find(p => p.id === sheetSelections[tab]) || pages[0];
+  $('sheetNav').replaceChildren();
+  Object.values(sheetRegistry).flat().forEach(p => p.node.classList.toggle('sheetActive', p === selected));
+  pages.forEach(p => {
+    const button = document.createElement('button');
+    button.type = 'button'; button.textContent = p.label;
+    button.classList.toggle('active', p === selected);
+    button.setAttribute('aria-pressed', String(p === selected));
+    button.addEventListener('click', () => { sheetSelections[tab] = p.id; syncSheetNavigation(); });
+    $('sheetNav').appendChild(button);
+  });
+  $('pageContext').textContent = selected ? selected.label : '准备数据';
+  $('heightPageCount').style.visibility = tab === 'view' ? 'visible' : 'hidden';
+  syncHeightPage();
+}
+function syncHeightPage() {
+  if (!$('heightSelect')) return;
+  selectedHeightIndex = Math.max(0, Math.min(selectedHeightIndex, altitudes.length - 1));
+  const picker = $('heightSelect');
+  if (picker.dataset.heights !== altitudes.join(',')) {
+    picker.replaceChildren(...altitudes.map((h,i) => new Option(`${h} m`, String(i))));
+    picker.dataset.heights = altitudes.join(',');
+  }
+  picker.value = String(selectedHeightIndex);
+  [...$('mapsGrid').children].forEach((el,i) => el.classList.toggle('mapActive', i === selectedHeightIndex));
+  const metrics = [...$('altLegend').children];
+  metrics.forEach((row,i) => {
+    row.style.display = (usingCapacity() && i === 0) || i === selectedHeightIndex + (usingCapacity() ? 1 : 0) ? '' : 'none';
+  });
+  $('heightPrev').disabled = selectedHeightIndex === 0;
+  $('heightNext').disabled = selectedHeightIndex === altitudes.length - 1;
+  $('heightPageCount').textContent = `${selectedHeightIndex + 1} / ${altitudes.length} 个高度`;
+}
+function organizePanelPages() {
+  const panel = $('controlPanel');
+  const routePanel = document.querySelector('[data-panel="routes"]');
+  const spatial = document.querySelector('[data-panel="view"]');
+  const analysis = document.querySelector('[data-panel="analysis"]');
+  const settings = document.createElement('div');settings.className = 'tabPanel';settings.dataset.panel = 'settings';panel.appendChild(settings);
+  const mode = $('routeSourceRadios').closest('.controlGroup');
+  mode.appendChild($('routeGenerationWrap'));
+  const focus = document.querySelector('.routeFocus');
+  focus.querySelector('details').open = true;
+  focus.appendChild($('playbackNote'));
+  const layers = document.querySelector('.layerList').closest('.controlGroup');
+  const settingsSource = spatial.querySelector('details');
+  const settingsFields = [...settingsSource.querySelector('.controlGrid').children];
+  const cameraPage = document.createElement('div'), lightPage = document.createElement('div');
+  cameraPage.innerHTML = '<p class="sub">细调观察角度；快速复位、俯视和侧视也可直接使用画布右上角按钮。</p><div class="settingsGrid"></div>';
+  lightPage.innerHTML = '<p class="sub">调整建筑外观、光线方向与阴影。</p><div class="settingsGrid"></div>';
+  settingsFields.forEach((field,i) => (i < 3 ? cameraPage : lightPage).querySelector('.settingsGrid').appendChild(field));
+  settingsSource.remove();
+  const probeDetails = analysis.querySelector('details');
+  const probe = probeDetails.querySelector('.detailsBody');probeDetails.replaceWith(probe);
+  const model = $('noiseV2Wrap').closest('.controlGroup');
+  const maps = $('spaceMaps');
+  const metricPage = document.createElement('div'); metricPage.id='heightMetrics';
+  metricPage.innerHTML = '<p class="sub">当前高度的航线数量与可飞面积比例。切换高度可比较不同切片。</p>';
+  metricPage.appendChild($('altLegend'));
+  maps.querySelector('div[style]').remove();
+  maps.querySelector('.sub').id='heightFootnote';
+  maps.querySelector('.lbl').remove();
+  const heightNav = document.createElement('div');heightNav.className='heightNav';
+  heightNav.innerHTML = '<button id="heightPrev" aria-label="上一个高度">‹</button><select id="heightSelect" aria-label="查看高度"></select><button id="heightNext" aria-label="下一个高度">›</button>';
+  const heightFooter = document.createElement('span');heightFooter.id='heightPageCount';
+  function add(tab,id,label,node,capacity=false) {
+    node.classList.add('deckSheet');node.dataset.sheet=id;
+    (sheetRegistry[tab] ||= []).push({id,label,node,capacity});
+    document.querySelector(`[data-panel="${tab}"]`).appendChild(node);
+  }
+  add('view','height','高度切片',maps);add('view','metrics','高度指标',metricPage);
+  add('routes','filter','方向 / 高度',$('playbackWrap'),true);
+  add('routes','focus','航线聚焦',focus,true);add('routes','mode','航线模式',mode);
+  add('analysis','model','影响模型',model);add('analysis','probe','点位取样',probe);
+  add('settings','layers','图层',layers);add('settings','camera','视角',cameraPage);add('settings','light','光照',lightPage);
+  spatial.prepend(heightNav);
+  const nav=document.createElement('nav');nav.id='sheetNav';nav.setAttribute('aria-label','面板分区');
+  $('tabBar').after(nav);
+  const deck=document.createElement('div');deck.id='panelDeck';nav.after(deck);
+  document.querySelectorAll('.tabPanel').forEach(p => deck.appendChild(p));
+  const footer=document.createElement('div');footer.id='panelFooter';footer.innerHTML='<span id="pageContext"></span>';footer.appendChild(heightFooter);panel.appendChild(footer);
+  $('heightSelect').addEventListener('change',e => {selectedHeightIndex=+e.target.value;syncHeightPage();});
+  $('heightPrev').addEventListener('click',()=>{selectedHeightIndex--;syncHeightPage();});
+  $('heightNext').addEventListener('click',()=>{selectedHeightIndex++;syncHeightPage();});
+  syncSheetNavigation();
+}
+organizePanelPages();
+document.querySelectorAll('#controlPanel input').forEach(input => input.addEventListener('change', syncSceneLegend));
+if (window.innerWidth <= 600) document.body.classList.add('panelCollapsed');
+syncPanelHandle();
 
 function animate(t) {
   requestAnimationFrame(animate);
@@ -3538,6 +3741,7 @@ function animate(t) {
     setPlaybackTime(playbackT + dt * playbackRate);
     placeDrones();
   }
+  if (drawerMotionUntil) { onResize(); if (t >= drawerMotionUntil) drawerMotionUntil = 0; }
   flushCompute();
   controls.target.copy(ORBIT_TARGET);
   controls.update();
