@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>为什么航线会穿墙</title>
+<style>
+  :root{
+    --ink:#17191c; --muted:#6d747c; --line:#d9dee4; --soft:#eef1f4;
+    --accent:#1677ff; --danger:#d94841; --ok:#0f9d58; --paper:#fff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#f6f7f8;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  body{min-height:100vh}
+  a{color:#0c63d4;text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 48px}
+  .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-bottom:10px}
+  .back{font-size:12px;color:var(--muted);font-weight:650}
+  h1{font-size:26px;line-height:1.25;margin:0 0 6px;letter-spacing:-.02em}
+  .lede{font-size:15px;line-height:1.55;color:#3b4046;margin:0 0 18px;max-width:40em}
+  .stage{
+    background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  }
+  canvas{display:block;width:100%;height:auto;background:#fff}
+  .caption{
+    padding:16px 18px 6px;border-top:1px solid var(--soft);min-height:96px;
+  }
+  .caption b{display:block;font-size:16px;margin:0 0 4px}
+  .caption p{margin:0;font-size:13px;line-height:1.5;color:var(--muted)}
+  .steps{display:flex;gap:6px;flex-wrap:wrap;padding:10px 18px 0}
+  .steps button{
+    appearance:none;border:1px solid var(--line);background:#fff;border-radius:999px;
+    min-height:28px;padding:3px 10px;font-size:12px;cursor:pointer;color:#3b4046;
+  }
+  .steps button.on{background:#17191c;border-color:#17191c;color:#fff;font-weight:700}
+  .controls{display:flex;gap:8px;align-items:center;padding:12px 18px 16px}
+  .controls button{
+    appearance:none;border:1px solid var(--line);background:#fff;border-radius:8px;
+    min-height:34px;padding:6px 12px;font-size:13px;cursor:pointer;
+  }
+  .controls button.primary{background:#17191c;color:#fff;border-color:#17191c}
+  .bar{flex:1;height:6px;background:#eef1f4;border-radius:99px;overflow:hidden;cursor:pointer}
+  .fill{height:100%;width:0;background:var(--accent);border-radius:99px}
+  .legend{display:flex;flex-wrap:wrap;gap:14px 18px;padding:0 2px 8px;font-size:12px;color:var(--muted)}
+  .legend i{display:inline-block;width:18px;height:8px;border-radius:99px;margin-right:6px;vertical-align:middle}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+  @media (max-width:720px){.two{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h2{font-size:14px;margin:0 0 8px}
+  .card p{font-size:13px;line-height:1.55;color:#3b4046;margin:0 0 8px}
+  .card p:last-child{margin:0}
+  .en{font-size:12px;color:var(--muted);line-height:1.5;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="./">← 返回沙盘</a>
+    <span class="back">Hong Kong OH 15_0 · 容量航线</span>
+  </div>
+  <h1>飞机为什么会穿墙？</h1>
+  <p class="lede">
+    不是无人机钻了墙。是规划器先在格子上绕开建筑，再把路拉直；
+    拉直时它问的是「格子中心能不能飞」，不是「这条线有没有碰到楼」。
+    新方法改问第二句，所以会把捷径退回去。
+  </p>
+
+  <div class="stage">
+    <canvas id="c" width="900" height="520"></canvas>
+    <div class="steps" id="steps"></div>
+    <div class="caption">
+      <b id="capZh"></b>
+      <p id="capEn"></p>
+    </div>
+    <div class="controls">
+      <button type="button" class="primary" id="playBtn">暂停</button>
+      <button type="button" id="replayBtn">重播</button>
+      <div class="bar" id="bar"><div class="fill" id="fill"></div></div>
+    </div>
+  </div>
+
+  <div class="legend" style="margin-top:12px">
+    <span><i style="background:#c5ccd4"></i>建筑轮廓（墙）</span>
+    <span><i style="background:#9aa7b5"></i>程序认的实心格（中心在楼里）</span>
+    <span><i style="background:#1677ff"></i>格子路</span>
+    <span><i style="background:#d94841"></i>拉直捷径</span>
+    <span><i style="background:#0f9d58"></i>格子中心</span>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h2>旧检查在问什么</h2>
+      <p>沿直线每隔几米取一个点，看这个点落进哪一格，再看<strong>那一格的中心</strong>离建筑够不够远。格子中心在街上，就当这段能飞。</p>
+      <p>墙角、端口接到楼里的那一截，直线已经在墙里面，抽到的点却仍落在「中心在街」的格子里，于是放行。</p>
+      <p class="en">The checker asks about cell centres, not whether the segment intersects the footprint.</p>
+    </div>
+    <div class="card">
+      <h2>新检查为什么能拦住</h2>
+      <p>改问：这条线段有没有碰到建筑多边形。碰到就丢掉捷径，在可飞格子上重新绕，或留下更多拐点。楼里的端口先挪到最近的可飞点，再接线。</p>
+      <p>沙盘里 85 / 240 条穿墙航线因此变成 0。容量和噪声数字若要一致，还得在规划器里用同一规则重跑。</p>
+      <p class="en">Test the line against the building outline; snap ports out of solids; then re-route.</p>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const CELL = 56;
+  const COLS = 11;
+  const ROWS = 8;
+  const OX = 78;
+  const OY = 42;
+
+  const B = { x0: 3.62, y0: 2.58, x1: 7.52, y1: 6.42 };
+  const gridPath = [
+    [1, 2], [1, 3], [1, 4], [1, 5], [1, 6], [1, 7],
+    [2, 7], [3, 7], [4, 7], [5, 7], [6, 7], [7, 7], [8, 7], [9, 7],
+    [9, 6], [9, 5], [9, 4], [9, 3], [9, 2],
+  ];
+  const S = [1.5, 2.5];
+  const E = [9.5, 2.88];
+  const PORT = [4.35, 4.2];
+  const PORT_SNAP = [3.5, 2.5];
+
+  const STEPS = [
+    {
+      id: 'grid', dur: 5200,
+      zh: '① 格子路其实是绕开的',
+      en: 'The planner first walks on 5 m cells. That path already goes around the building.',
+    },
+    {
+      id: 'pull', dur: 3800,
+      zh: '② 为了去掉锯齿，它把路拉直',
+      en: 'String-pull drops the detour and keeps a shortcut between two waypoints.',
+    },
+    {
+      id: 'check', dur: 7200,
+      zh: '③ 检查问的是格子中心，不是这根线',
+      en: 'Yellow/red = sample on the line. Green tick = that cell’s centre is in the street, so the shortcut passes.',
+    },
+    {
+      id: 'fail', dur: 4800,
+      zh: '④ 所以会放行：线在墙里，绿点在街上',
+      en: 'The red segment is already inside the wall. The program never asked the wall.',
+    },
+    {
+      id: 'port', dur: 5200,
+      zh: '⑤ 还有一刀：地块边上的端口可能已经在楼里',
+      en: 'The schedule then glues the geometric port onto the path, even if that point sits inside a building.',
+    },
+    {
+      id: 'fix', dur: 5600,
+      zh: '⑥ 新规则：碰到墙就否，端口搬出楼',
+      en: 'Reject any chord that hits the footprint. Move the port to the nearest flyable cell, then re-route.',
+    },
+    {
+      id: 'done', dur: 5600,
+      zh: '⑦ 留下绕行。飞机走墙外，不再穿楼',
+      en: 'The new path is a little longer, and it stays in the street. That is why the sandbox routes no longer clip walls.',
+    },
+  ];
+
+  const stepsEl = document.getElementById('steps');
+  STEPS.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = ['① 绕行', '② 拉直', '③ 查错', '④ 放行', '⑤ 端口', '⑥ 新规', '⑦ 绕回'][i];
+    b.addEventListener('click', () => jumpTo(i));
+    stepsEl.appendChild(b);
+  });
+
+  function cx(x) { return OX + x * CELL; }
+  function cy(y) { return OY + y * CELL; }
+  function center(i, j) { return [i + 0.5, j + 0.5]; }
+  function occupied(i, j) {
+    const [x, y] = center(i, j);
+    return x > B.x0 && x < B.x1 && y > B.y0 && y < B.y1;
+  }
+  function inBldg(x, y) {
+    return x > B.x0 && x < B.x1 && y > B.y0 && y < B.y1;
+  }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  function polyLen(pts) {
+    let L = 0;
+    for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    return L || 1;
+  }
+  function atPoly(pts, u) {
+    const d = clamp(u, 0, 1) * polyLen(pts);
+    let acc = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const seg = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+      if (acc + seg >= d || i === pts.length - 1) {
+        const t = seg < 1e-6 ? 0 : (d - acc) / seg;
+        return [
+          lerp(pts[i - 1][0], pts[i][0], t),
+          lerp(pts[i - 1][1], pts[i][1], t),
+        ];
+      }
+      acc += seg;
+    }
+    return pts[pts.length - 1];
+  }
+  function resample(pts, n) {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(atPoly(pts, i / (n - 1)));
+    return out;
+  }
+  function morph(a, b, t) {
+    const n = 40;
+    const A = resample(a, n), B = resample(b, n);
+    return A.map((p, i) => [lerp(p[0], B[i][0], t), lerp(p[1], B[i][1], t)]);
+  }
+
+  const around = gridPath.map(([i, j]) => center(i, j));
+  const shortcut = [S, E];
+  const repaired = [
+    [1.5, 2.5], [1.5, 6.5], [9.5, 6.5], [9.5, 2.88],
+  ];
+
+  function chordSamples() {
+    const n = 9;
+    const pts = [];
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      const x = lerp(S[0], E[0], t);
+      const y = lerp(S[1], E[1], t);
+      const ci = Math.floor(x);
+      const cj = Math.floor(y);
+      pts.push({ x, y, ci, cj, cx: ci + 0.5, cy: cj + 0.5, inside: inBldg(x, y), occ: occupied(ci, cj) });
+    }
+    return pts;
+  }
+  const SAMPLES = chordSamples();
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawGrid() {
+    ctx.strokeStyle = '#e6eaee';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= COLS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(cx(i), cy(0));
+      ctx.lineTo(cx(i), cy(ROWS));
+      ctx.stroke();
+    }
+    for (let j = 0; j <= ROWS; j++) {
+      ctx.beginPath();
+      ctx.moveTo(cx(0), cy(j));
+      ctx.lineTo(cx(COLS), cy(j));
+      ctx.stroke();
+    }
+    for (let j = 0; j < ROWS; j++) {
+      for (let i = 0; i < COLS; i++) {
+        if (!occupied(i, j)) continue;
+        ctx.fillStyle = 'rgba(154,167,181,.35)';
+        ctx.fillRect(cx(i), cy(j), CELL, CELL);
+      }
+    }
+  }
+
+  function drawBuilding() {
+    ctx.fillStyle = 'rgba(70,78,88,.22)';
+    ctx.strokeStyle = 'rgba(50,56,64,.75)';
+    ctx.lineWidth = 2;
+    roundRect(cx(B.x0), cy(B.y0), cx(B.x1) - cx(B.x0), cy(B.y1) - cy(B.y0), 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#3d444c';
+    ctx.font = '700 13px "PingFang SC","Hiragino Sans GB",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('建筑', (cx(B.x0) + cx(B.x1)) / 2, (cy(B.y0) + cy(B.y1)) / 2 + 5);
+  }
+
+  function drawCenters(alpha) {
+    ctx.globalAlpha = alpha;
+    for (let j = 0; j < ROWS; j++) {
+      for (let i = 0; i < COLS; i++) {
+        const x = cx(i + 0.5), y = cy(j + 0.5);
+        ctx.beginPath();
+        ctx.arc(x, y, occupied(i, j) ? 2.2 : 2.6, 0, Math.PI * 2);
+        ctx.fillStyle = occupied(i, j) ? '#8b949e' : '#0f9d58';
+        ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPath(pts, color, width, dash) {
+    if (pts.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(cx(pts[0][0]), cy(pts[0][1]));
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(cx(pts[i][0]), cy(pts[i][1]));
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.setLineDash(dash || []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function drawDot(p, color, r, label) {
+    ctx.beginPath();
+    ctx.arc(cx(p[0]), cy(p[1]), r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    if (label) {
+      ctx.fillStyle = '#17191c';
+      ctx.font = '700 12px "PingFang SC",sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, cx(p[0]), cy(p[1]) - 12);
+    }
+  }
+
+  function drawDrone(p, heading, color) {
+    const x = cx(p[0]), y = cy(p[1]);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(heading);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(11, 0);
+    ctx.lineTo(-8, 7);
+    ctx.lineTo(-4, 0);
+    ctx.lineTo(-8, -7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function headingOf(pts, u) {
+    const a = atPoly(pts, Math.max(0, u - 0.02));
+    const b = atPoly(pts, Math.min(1, u + 0.02));
+    return Math.atan2(cy(b[1]) - cy(a[1]), cx(b[0]) - cx(a[0]));
+  }
+
+  function drawStamp(x, y, ok) {
+    ctx.beginPath();
+    ctx.arc(x, y, 8, 0, Math.PI * 2);
+    ctx.fillStyle = ok ? '#0f9d58' : '#d94841';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    if (ok) {
+      ctx.beginPath();
+      ctx.moveTo(x - 3.5, y);
+      ctx.lineTo(x - 0.5, y + 3);
+      ctx.lineTo(x + 4, y - 3);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(x - 3, y - 3);
+      ctx.lineTo(x + 3, y + 3);
+      ctx.moveTo(x + 3, y - 3);
+      ctx.lineTo(x - 3, y + 3);
+      ctx.stroke();
+    }
+  }
+
+  function clipSegment() {
+    const hits = [];
+    for (let i = 0; i <= 40; i++) {
+      const t = i / 40;
+      const x = lerp(S[0], E[0], t);
+      const y = lerp(S[1], E[1], t);
+      if (inBldg(x, y)) hits.push([x, y]);
+    }
+    return hits;
+  }
+
+  function drawScene(step, local) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawBuilding();
+    const centerAlpha = step.id === 'grid' ? 0.35 : 0.7;
+    drawCenters(centerAlpha);
+
+    let path = around;
+    let pathColor = '#1677ff';
+    let droneU = null;
+    const t = clamp(local, 0, 1);
+
+    if (step.id === 'grid') {
+      path = around;
+      droneU = ease(t);
+    } else if (step.id === 'pull') {
+      path = morph(around, shortcut, ease(t));
+      pathColor = t > 0.55 ? '#d94841' : '#1677ff';
+    } else if (step.id === 'check' || step.id === 'fail') {
+      path = shortcut;
+      pathColor = '#d94841';
+    } else if (step.id === 'port') {
+      path = shortcut;
+      pathColor = '#d94841';
+    } else if (step.id === 'fix') {
+      path = shortcut;
+      pathColor = '#d94841';
+    } else if (step.id === 'done') {
+      path = morph(shortcut, repaired, ease(Math.min(1, t * 1.15)));
+      pathColor = t > 0.45 ? '#1677ff' : '#d94841';
+      if (t > 0.5) droneU = (t - 0.5) / 0.5;
+    }
+
+    if (step.id === 'fail' || step.id === 'fix') {
+      const hits = clipSegment();
+      if (hits.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(cx(hits[0][0]), cy(hits[0][1]));
+        hits.forEach(p => ctx.lineTo(cx(p[0]), cy(p[1])));
+        ctx.strokeStyle = 'rgba(217,72,65,.95)';
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+      }
+    }
+
+    drawPath(path, pathColor, 4);
+    drawDot(S, '#1677ff', 5.5, '起点');
+    drawDot(E, '#1677ff', 5.5, '终点');
+
+    if (step.id === 'check') {
+      const nShow = Math.floor(ease(t) * SAMPLES.length);
+      SAMPLES.forEach((s, i) => {
+        if (i >= nShow) return;
+        if (!s.inside && i !== 0 && i !== SAMPLES.length - 1) return;
+        const px = cx(s.x), py = cy(s.y);
+        const qx = cx(s.cx), qy = cy(s.cy);
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = 'rgba(15,157,88,.7)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(qx, qy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = s.inside ? '#d94841' : '#f59f00';
+        ctx.beginPath();
+        ctx.arc(px, py, 4.2, 0, Math.PI * 2);
+        ctx.fill();
+        if (s.inside) {
+          ctx.strokeStyle = 'rgba(15,157,88,.9)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(cx(s.ci) + 3, cy(s.cj) + 3, CELL - 6, CELL - 6);
+          const snap = clamp((t * SAMPLES.length - i) * 1.8, 0, 1);
+          if (snap > 0.35) drawStamp(qx + 14, qy - 14, !s.occ);
+        }
+      });
+    }
+
+    if (step.id === 'fail') {
+      ctx.fillStyle = '#d94841';
+      ctx.font = '700 14px "PingFang SC",sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('这一段已经在墙里', (cx(S[0]) + cx(E[0])) / 2, cy(B.y0) - 10);
+    }
+
+    if (step.id === 'port' || (step.id === 'fix' && t < 0.55)) {
+      const q = step.id === 'fix' ? lerp(1, 0, ease(t / 0.55)) : ease(t);
+      const p = [lerp(S[0], PORT[0], q), lerp(S[1], PORT[1], q)];
+      drawPath([p, S], '#d94841', 3, [6, 4]);
+      drawDot(p, '#d94841', 6, '端口');
+    }
+
+    if (step.id === 'fix') {
+      const hits = clipSegment();
+      if (hits.length) {
+        const mid = hits[Math.floor(hits.length / 2)];
+        drawStamp(cx(mid[0]), cy(mid[1]) - 16, false);
+      }
+      if (t > 0.35) {
+        const u = ease((t - 0.35) / 0.65);
+        const p = [lerp(PORT[0], PORT_SNAP[0], u), lerp(PORT[1], PORT_SNAP[1], u)];
+        drawPath([p, S], '#0f9d58', 3);
+        drawDot(p, '#0f9d58', 6, u > 0.85 ? '移出楼' : '端口');
+        if (u > 0.7) drawStamp(cx(PORT_SNAP[0]) + 14, cy(PORT_SNAP[1]) - 14, true);
+      }
+    }
+
+    if (droneU != null) {
+      const p = atPoly(path, droneU);
+      drawDrone(p, headingOf(path, droneU), pathColor === '#d94841' ? '#d94841' : '#1677ff');
+    }
+  }
+
+  let playing = true;
+  let stepIndex = 0;
+  let elapsed = 0;
+  let last = performance.now();
+
+  function totalDur() { return STEPS.reduce((s, x) => s + x.dur, 0); }
+
+  function globalTime() {
+    let t = 0;
+    for (let i = 0; i < stepIndex; i++) t += STEPS[i].dur;
+    return t + elapsed;
+  }
+
+  function setGlobal(ms) {
+    ms = ((ms % totalDur()) + totalDur()) % totalDur();
+    let acc = 0;
+    for (let i = 0; i < STEPS.length; i++) {
+      if (ms < acc + STEPS[i].dur) {
+        stepIndex = i;
+        elapsed = ms - acc;
+        return;
+      }
+      acc += STEPS[i].dur;
+    }
+    stepIndex = STEPS.length - 1;
+    elapsed = STEPS[stepIndex].dur;
+  }
+
+  function jumpTo(i) {
+    stepIndex = i;
+    elapsed = playing ? 0 : STEPS[i].dur * 0.82;
+    render();
+  }
+
+  function syncUI() {
+    [...stepsEl.children].forEach((b, i) => b.classList.toggle('on', i === stepIndex));
+    document.getElementById('capZh').textContent = STEPS[stepIndex].zh;
+    document.getElementById('capEn').textContent = STEPS[stepIndex].en;
+    document.getElementById('playBtn').textContent = playing ? '暂停' : '播放';
+    document.getElementById('fill').style.width = `${(globalTime() / totalDur()) * 100}%`;
+  }
+
+  function render() {
+    const step = STEPS[stepIndex];
+    drawScene(step, elapsed / step.dur);
+    syncUI();
+  }
+
+  function frame(now) {
+    const dt = now - last;
+    last = now;
+    if (playing) {
+      elapsed += dt;
+      if (elapsed >= STEPS[stepIndex].dur) {
+        elapsed = 0;
+        stepIndex = (stepIndex + 1) % STEPS.length;
+      }
+    }
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  document.getElementById('playBtn').onclick = () => { playing = !playing; syncUI(); };
+  document.getElementById('replayBtn').onclick = () => { stepIndex = 0; elapsed = 0; playing = true; render(); };
+  document.getElementById('bar').onclick = (ev) => {
+    const r = ev.currentTarget.getBoundingClientRect();
+    setGlobal(((ev.clientX - r.left) / r.width) * totalDur());
+    render();
+  };
+
+  render();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

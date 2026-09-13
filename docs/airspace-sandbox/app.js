@@ -80,8 +80,8 @@ let routeDrawChain = Promise.resolve();
 let activeComputeDone = null;
 let routeSourcePreference = 'capacity';
 let routeSource = 'probe'; // 默认：800 m 缓冲圈外缘对边进入；capacity = uavcap
-const PRECOMPUTED_FILES = { 'rep-oh-hongkong': 'data/precomputed/hk15-uavcap.json' };
-const FLIGHT_FILES = { 'rep-oh-hongkong': 'data/precomputed/hk15-flights.json?v=nv2-6' };
+const PRECOMPUTED_FILES = { 'rep-oh-hongkong': 'data/precomputed/hk15-uavcap.json?v=geom1' };
+const FLIGHT_FILES = { 'rep-oh-hongkong': 'data/precomputed/hk15-flights.json?v=geom1' };
 const NOISE_V2_FILES = {
   'hk-54-29-noisev2': 'data/precomputed/hk54-noise-v2.json',
   'rep-oh-hongkong': 'data/precomputed/hk15-noise-v2.json?v=nv2-5',
@@ -2279,7 +2279,7 @@ function syncPlaybackUI() {
     const nFlights = flightData.n_flights || (flightData.flights || []).length;
     if ($('playbackNote')) {
       $('playbackNote').textContent =
-        `真实一小时排班，共 ${nFlights.toLocaleString()} 架次。高度与方向控制当前显示。`;
+        `真实一小时排班，共 ${nFlights.toLocaleString()} 架次。展示折线已绕开建筑（容量/噪声仍用原排班几何）；高度与方向控制当前显示。`;
     }
   } else {
     if (droneMesh) droneMesh.visible = false;

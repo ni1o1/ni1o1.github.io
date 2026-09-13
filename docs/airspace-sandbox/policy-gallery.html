@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>同一套过境规则，四个街区会怎样？</title>
+<style>
+  :root{
+    --bg:#f6f7f8; --paper:#fff; --ink:#17191c; --muted:#6d747c;
+    --line:#d9dee4; --soft:#eef1f4; --accent:#1677ff; --danger:#d94841;
+    --ok:#0f9d58; --warn:#c47d12;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  a{color:#0c63d4;text-decoration:none;font-weight:650}
+  a:hover{text-decoration:underline}
+  .en{font-size:13px;line-height:1.55;color:var(--muted);margin:6px 0 0}
+  body.hide-en .en{display:none}
+  p{font-size:15px;line-height:1.65;margin:0 0 12px;color:#2b3036}
+  .app{display:grid;grid-template-columns:minmax(320px,440px) minmax(0,1fr);min-height:100vh}
+  .story{padding:22px 22px 64px;border-right:1px solid var(--line);background:#fff}
+  .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:8px}
+  .back{font-size:12px;color:var(--muted);font-weight:650}
+  h1{font-size:26px;line-height:1.28;margin:0 0 10px;letter-spacing:-.02em}
+  h2{font-size:16px;margin:28px 0 10px}
+  h3{font-size:14px;margin:0 0 6px}
+  .lede{font-size:16px;line-height:1.6;color:#3b4046;margin:0 0 14px}
+  .start{background:#f4f7fb;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 18px}
+  .start ol{margin:8px 0 0;padding-left:18px}
+  .start li{font-size:14px;line-height:1.55;margin:0 0 6px}
+  .card{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 10px;background:#fff;cursor:pointer}
+  .card:hover{border-color:#b7c0ca}
+  .card.active,.card:has(.active){border-color:#17191c;box-shadow:0 0 0 1px #17191c}
+  .warn{background:#fff8ee;border:1px solid #f0d7a8;border-radius:12px;padding:14px 16px;margin:16px 0}
+  .warn b{display:block;margin-bottom:6px}
+  #stageWrap{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;background:#fff;min-width:0}
+  #stage{flex:1;min-height:280px;position:relative}
+  #stage canvas{display:block;width:100%;height:100%}
+  .hud{border-top:1px solid var(--line);background:rgba(255,255,255,.94);padding:12px 14px 14px;max-height:46vh;overflow:auto}
+  .btns{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+  .btns button,.chipRow button,button{
+    appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);
+    border-radius:8px;min-height:34px;padding:6px 10px;font-size:12px;cursor:pointer;text-align:left}
+  .btns button b{display:block;font-size:12px}
+  .btns button span{display:block;font-size:10px;color:var(--muted);font-weight:500}
+  .btns button.active,button.on{border-color:#17191c;background:#17191c;color:#fff}
+  .btns button.active span,button.on span{color:#d7dce2}
+  .chipRow{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 8px}
+  .chipRow button{min-height:26px;border-radius:999px;padding:3px 10px}
+  .chipRow button:before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--sw,#9aa4af);margin-right:6px;vertical-align:-1px}
+  .chipRow button:first-child:before{display:none}
+  .toggles{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:12px;margin:4px 0 8px}
+  .toggles label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .banner{display:flex;justify-content:space-between;gap:10px;align-items:baseline;padding:8px 10px;border-radius:8px;margin:0 0 8px;border:1px solid var(--line);flex-wrap:wrap}
+  .banner[data-kind="ok"]{background:#eef8f1;border-color:#b7e0c4}
+  .banner[data-kind="blocked"]{background:#fdeeee;border-color:#f0c2be}
+  .banner[data-kind="empty_path"],.banner[data-kind="corners_only"]{background:#fff6e8;border-color:#f0d7a8}
+  .banner b{font-size:14px}
+  .banner .en{margin:0}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 8px}
+  .metric{border:1px solid var(--soft);border-radius:8px;padding:8px}
+  .metric span{display:block;font-size:11px;color:var(--muted)}
+  .metric b{font-size:15px;font-variant-numeric:tabular-nums}
+  #hudZh p,#hudEn p{font-size:13px;line-height:1.55;margin:0 0 8px}
+  #hudEn{margin-top:4px}
+  .lbl{display:block;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:8px 0 6px}
+  #matrix{display:grid;gap:8px;margin:12px 0 8px}
+  .matrixHead,.matrixRow{display:grid;grid-template-columns:minmax(120px,1.15fr) repeat(6,1fr);gap:6px;align-items:stretch}
+  .matrixHead span{font-size:11px;color:var(--muted);text-align:center;font-weight:700}
+  .matrixLab{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:left}
+  .matrixLab b{display:block;font-size:11px}
+  .matrixLab i{display:block;font-size:10px;color:var(--muted);font-style:normal;margin-top:2px}
+  .matrixCell{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;font-size:12px;line-height:1.2}
+  .matrixCell b{font-size:13px}
+  .matrixCell small{color:var(--muted);margin-top:2px}
+  .matrixCell.on{outline:2px solid #17191c}
+  .matrixCell.ok{background:#eef8f1;border:1px solid #b7e0c4}
+  .matrixCell.corners_only,.matrixCell.empty_path{background:#fff6e8;border:1px solid #f0d7a8}
+  .matrixCell.blocked{background:#fdeeee;border:1px solid #f0c2be}
+  .matrixCell.loading{background:#fff}
+  #loadNote{background:#fdeeee;border:1px solid #f0c2be;border-radius:10px;padding:10px 12px;margin:0 0 10px;font-size:13px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 14px;font-size:12px;color:var(--muted);margin:8px 0}
+  .legend i{display:inline-block;width:16px;height:8px;border-radius:99px;margin-right:6px;vertical-align:middle}
+  @media (max-width:1080px){
+    .app{grid-template-columns:1fr}
+    #stageWrap{position:relative;height:auto;order:-1}
+    #stage{height:52vh;min-height:360px;flex:none}
+    .hud{max-height:none}
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    .matrixHead,.matrixRow{grid-template-columns:minmax(90px,.9fr) repeat(6,minmax(52px,1fr));overflow:auto}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="story">
+    <div class="top">
+      <a class="back" href="./">← 返回原来的沙盘</a>
+      <label class="back"><input type="checkbox" id="togEn" checked> 显示英文 / English</label>
+    </div>
+    <h1>同一套过境规则，四个街区会怎样？</h1>
+    <p class="en">What happens when the same through-block rule meets four neighbourhoods?</p>
+    <p class="lede">
+      这不是配送动画，也不是在演示某座城市已经获批可以飞。
+      我们问的是一件更窄、也更容易看懂的事：一架无人机如果必须<strong>保持同一高度</strong>，从 500 米见方街区的一侧进去、对侧出去，六套“离楼 / 离人多远”的规则会不会把它堵住。
+    </p>
+    <p class="en lede">
+      This is not a delivery animation, and it is not a claim that any city has approved this operation.
+      The question is narrower: if a drone must hold a constant height, enter a 500-metre square on one side and leave on the opposite side, do six keep-away rules still leave a path?
+    </p>
+
+    <div class="start">
+      <b>请这样看这一页 / Start here</b>
+      <ol>
+        <li>右边（手机上是上方）是三维模型。拖动可以旋转，滚轮可以拉近。</li>
+        <li>先选一个街区，再选一套规则。彩色带子是航线；粉红色的薄层是“这一高度上离得太近、不能飞”的区域。</li>
+        <li>下面有 4×6 张卡片，覆盖这次算过的全部组合。点任何一张，三维会跳到那一格。</li>
+        <li>绿色数字是“这一小时里模型装进了多少架次”，不是政府批准的容量，也不是明天就能飞的架次。</li>
+      </ol>
+      <p class="en">Pick a neighbourhood, then a rule. Coloured ribbons are paths. Pink is the keep-away band at the height you are looking at. The 4×6 cards are every case we computed. Green numbers are packed trips in one modelled hour, not an official limit.</p>
+    </div>
+
+    <div id="loadNote" hidden></div>
+
+    <h2>我们在看什么飞行？</h2>
+    <p>
+      只看<strong>过境平飞</strong>。飞机从街区北边进、南边出，或从东边进、西边出。飞行过程中高度不变：30 米就是 30 米飞完，不会先爬升再下降去躲楼。
+      我们没有模拟从楼下起飞、送到窗口、再降落。那是另一类问题，需要另外的高度变化规则。
+    </p>
+    <p class="en">
+      This page only shows level through-traffic: in from the north and out to the south, or in from the east and out to the west.
+      Altitude does not change during the crossing. We do not model take-off from the street, a drop at a window, or landing. That would be a different height profile.
+    </p>
+    <p>
+      每个街区是 500 米见方的研究区，外面再围一圈邻楼，免得路刚走到边界就被切掉。黑线方框是研究区。浅色建筑在框外，深色建筑在框内。
+    </p>
+    <p class="en">
+      Each neighbourhood is a 500 m research square, plus neighbouring buildings around it so a path is not cut at the edge.
+      The black square is the study area. Pale buildings sit outside it; darker buildings sit inside.
+    </p>
+
+    <h2>四个街区，故意选得很不一样</h2>
+    <p>
+      它们不是“四个航空业最发达的城市”，而是四种盖法：高而挤、中等但密、高但疏、中等且疏。
+      我们要看的是形态本身，不是某座城市的无人机产业是否成熟。
+    </p>
+    <p class="en">
+      These are four ways of building a city, not a ranking of drone markets: tall-and-tight, mid-and-dense, tall-and-open, mid-and-open.
+    </p>
+    <div id="storyPlaces"></div>
+
+    <h2>六套规则：数字看起来像法规，但这里是研究情景</h2>
+    <p>
+      每一套都来自真实条款的某一小段（离楼 10 米、离楼 30 米、离人 30 米、离建筑 50 米），再接到我们能算的几何上。
+      <strong>页面上的结果不是合规证书</strong>：高度限制、地理围栏、视距、机与机的间隔、审批类别都没有完整做进去。
+      实验室 5 米尤其不是中国或香港的法律。
+    </p>
+    <p class="en">
+      Each package borrows one measurable piece of a real rule and maps it onto geometry we can compute.
+      The pictures are not certificates of compliance. Ceilings, geofences, visual-line-of-sight, aircraft-to-aircraft spacing and approval class are not fully represented.
+      The laboratory 5 m case is not Chinese or Hong Kong law.
+    </p>
+    <div id="storyRules"></div>
+
+    <h2>全部 24 个例子</h2>
+    <p>
+      每张卡片是“一个街区 × 一套规则”。绿色是还能对穿，并写出这一小时装进了多少架次。
+      橙色是：要么只剩下转弯、没有对穿，要么门口看似开着但连不成路。红色是对边门口已经同时打不开。
+      点卡片即可把右边的三维切过去。
+    </p>
+    <p class="en">
+      Each card is one neighbourhood times one rule. Green means through-block paths exist, with the packed trips in that modelled hour.
+      Amber means only corner-turning remains, or a crack that does not become a path. Red means opposite doorways are not open together. Click a card to drive the 3D view.
+    </p>
+    <div class="legend">
+      <span><i style="background:#eef8f1;border:1px solid #b7e0c4"></i>可以对穿</span>
+      <span><i style="background:#fff6e8;border:1px solid #f0d7a8"></i>转弯或路不通</span>
+      <span><i style="background:#fdeeee;border:1px solid #f0c2be"></i>对边过不去</span>
+    </div>
+    <div id="matrix"></div>
+
+    <div class="warn">
+      <b>请不要把香港 338、东京 2,070 当成官方容量</b>
+      同一套实验室 5 米规则下，洛杉矶大约 22,320 架次/小时，上海大约 23,760，东京大约 2,070，香港大约 338。
+      洛杉矶和上海与我们更早的对照更接近；香港和东京这一格明显偏低，而且香港在更严的“水平 10 米、只飞 30 米”情景里反而排出了约 1,035 架次。
+      这不表示香港法例让空域变宽。它表示：这次用的规划器、重建后的地块几何，和旧的公开基线不是同一套装置。页面照实显示数字，但香港 338 与东京 2,070 需要单独复查，不能拿去讲政策故事。
+      <p class="en">
+        Under the same laboratory 5 m rule, Los Angeles is about 22,320 trips/hour and Shanghai about 23,760, while Tokyo is about 2,070 and Hong Kong about 338.
+        LA and Shanghai match earlier checks more closely. Hong Kong and Tokyo look too low, and Hong Kong even packs more trips under the stricter 10 m / 30 m case (~1,035).
+        That is not “Hong Kong law creates more airspace”. It means this planner and rebuilt geometry are not the old published baseline. The numbers are shown honestly; 338 and 2,070 need a separate check before any policy sentence.
+      </p>
+    </div>
+
+    <h2>三维图里的颜色在说什么？</h2>
+    <p>
+      彩色带子是候选航线，颜色表示巡航高度：30 米偏青绿，50 米偏蓝，70 米偏紫，90 米偏粉，110 米偏黄。
+      默认只画<strong>对穿</strong>：北↔南或东↔西。转弯（例如东进北出）可以打开，但那不是“穿过街区”。
+      小球沿着被这一小时真正用到的航线走动，只是为了让路可被看见，不是 2 万架飞机同时在飞。
+    </p>
+    <p class="en">
+      Ribbon colour is cruise height: teal 30 m, blue 50 m, violet 70 m, pink 90 m, yellow 110 m.
+      Through-block paths are on by default. Corner paths can be switched on; they are not a crossing of the block.
+      The moving dots follow routes used in that hour so the path is visible. They are not 20,000 drones at once.
+    </p>
+    <p>
+      粉红色薄层画在你选的高度上，表示“离建筑（或离人行带）太近”。
+      香港风格的水平规则会把楼顶正上方也涂上粉红——因为地图上的侧向距离仍不够。
+      日本风格的直线距离会在你飞得够高时缩小这圈粉红，因为竖直方向已经贡献了距离。
+      “离人 30 米”的粉红在每个高度都在，人行带正上方也不能抄过去。
+    </p>
+    <p class="en">
+      The pink sheet sits at the height you selected and marks air that is too close to buildings, or to the people stand-in.
+      A Hong Kong-style horizontal rule paints the roof as well, because the map gap is still too small.
+      A Japan-style straight-line rule shrinks that pink when you are high enough, because vertical separation already counts.
+      The 30 m people rule stays in force at every height: you cannot overfly the sidewalk stand-in.
+    </p>
+
+    <h2>数字怎么读</h2>
+    <p>
+      <strong>架次/小时</strong>是排班器在一小时里、在机与机还要互相让开的条件下，装进去的行程数。模型里两架飞机的侧向间隔大约 20 米、高度间隔大约 10 米。这个数字包含对穿和转弯。
+    </p>
+    <p class="en">
+      Trips per hour is how many journeys the scheduler packed into one hour while aircraft still keep about 20 m sideways and 10 m vertically from each other. The count includes through-block and corner-turning trips.
+    </p>
+    <p>
+      <strong>完成架次</strong>是这一小时录像里真正飞完的趟数，通常和架次/小时非常接近。
+    </p>
+    <p class="en">Completed trips are the journeys that actually finished in that one-hour tape. They are usually close to the hourly rate.</p>
+    <p>
+      <strong>分贝（A 计权）</strong>是：假如这些飞机真按这一小时飞，建筑表面按面积平均的声音大小。只在对穿或排班成功的格子上才有。没有现场录音，也没有把整座城市的人口加权进去。
+    </p>
+    <p class="en">
+      dB(A) is the area-weighted sound level on building surfaces if those trips really flew for that hour. It exists only for cells that produced a schedule. It is not a field recording, and it is not weighted by city population.
+    </p>
+
+    <h2>“过不去”是什么意思？</h2>
+    <p>
+      它的意思是：在这套规则和这些平飞高度上，不能从街区一侧进、对侧出。
+      不是飞机撞了楼，不是天上没有空气，也不是这座城市永远不能做无人机。
+      换一种获批运行、换一条走廊、或者允许爬升，结论都可以变。我们这一页故意不换那些条件，好让四个街区被同一把尺量。
+    </p>
+    <p class="en">
+      It means: under this rule and these level cruise heights, you cannot enter one side of the block and leave the opposite side.
+      It is not a crash, it is not “no sky”, and it is not a lifetime ban on drones in that city.
+      A different approval class, a dedicated corridor, or a climbing path could change the outcome. This page holds those things fixed on purpose, so the four forms are measured with one ruler.
+    </p>
+    <p>
+      有时对边门口还开着，格子上却连不成线——卡片会写成“路不通”。
+      有时排班器找到了转弯的活，但对穿仍是零——卡片会写成“仅转弯”。这两种都算过境失败，我们把它们留在表里，不删掉。
+    </p>
+    <p class="en">
+      Sometimes opposite doorways still look open, yet the grid has no connecting path — the card says the path does not exist.
+      Sometimes the scheduler finds corner-turning work, but through-block traffic is still zero — the card says corner only.
+      Both count as through-block failure. They stay in the table; they are not dropped.
+    </p>
+
+    <h2>这一页没有做的事</h2>
+    <p>
+      没有从地面起飞和送到阳台。没有真的人行道或人口地图（“离人”只用楼外 8 米环带代替）。
+      没有把整套香港、日本或英国法条逐条判完。没有声称 22,320 架次/小时是任何司法辖区已经批准的运行。
+      原来的沙盘仍在，用来看单块地的交互计算；这一页专门把六套规则和四个例子摊开，让没参加过讨论的人也能把故事看完。
+    </p>
+    <p class="en">
+      No take-off from the ground, no balcony delivery, no real sidewalk or population map (the people rule uses an 8 m belt around buildings), no full legal opinion, and no claim that 22,320 trips/hour is approved anywhere.
+      The original sandbox remains for interactive computation on one block. This page exists so someone who was not in the research conversation can still follow the through-block story.
+    </p>
+  </aside>
+
+  <section id="stageWrap">
+    <div id="stage"></div>
+    <div class="hud">
+      <div class="banner" id="hudBanner" data-kind="loading">
+        <div>
+          <b id="hudBannerZh">载入中</b>
+          <p class="en" id="hudBannerEn">Loading</p>
+        </div>
+        <div class="en" id="hudPlaceEn"></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><span>这一小时装进的架次</span><b id="metricCap">—</b></div>
+        <div class="metric"><span>飞完的趟数</span><b id="metricDone">—</b></div>
+        <div class="metric"><span>建筑表面平均声级</span><b id="metricNoise">—</b></div>
+        <div class="metric"><span>对穿航线 用到 / 候选</span><b id="metricThrough">—</b></div>
+      </div>
+      <span class="lbl">街区</span>
+      <div class="btns" id="placeBtns"></div>
+      <span class="lbl">规则</span>
+      <div class="btns" id="ruleBtns"></div>
+      <span class="lbl">看哪一层高度</span>
+      <div class="chipRow" id="altChips"></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="togKeep" checked>显示不能飞的粉红层</label>
+        <label><input type="checkbox" id="togCorners">也显示转弯航线</label>
+        <label><input type="checkbox" id="togUnused">也显示没排进这一小时的候选</label>
+        <label><input type="checkbox" id="togPlay" checked>小球沿航线走动</label>
+      </div>
+      <div>
+        <b id="hudPlace"></b>
+        <div class="en" id="hudRuleEn"></div>
+        <div id="hudRule" style="font-size:13px;margin:4px 0 8px"></div>
+        <div id="hudZh"></div>
+        <div class="en" id="hudEn"></div>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script src="vendor/clipper.js"></script>
+<script src="policy-gallery.js?v=2"></script>
+</body>
+</html>

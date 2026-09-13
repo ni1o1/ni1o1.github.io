@@ -27,6 +27,8 @@
   .eyebrow{font-size:10px;line-height:1;letter-spacing:1.4px;color:#8a929c;font-weight:800;margin-bottom:8px}
   h1{font-size:18px;line-height:1.25;margin:0;font-weight:700;letter-spacing:0}
   .sub{font-size:12px;color:var(--muted);line-height:1.45;margin:5px 0 0}
+  .sub a{color:#0c63d4;text-decoration:none;font-weight:650}
+  .sub a:hover{text-decoration:underline}
   .sec{margin-top:12px}
   .controlGroup{margin-top:10px;padding:12px;border:1px solid #e7ebef;border-radius:10px;background:rgba(250,251,252,.78)}
   .controlGroup .lbl:last-child{margin-bottom:0}
@@ -411,6 +413,7 @@
 
       <h1>低空沙盘</h1>
       <p class="sub" id="sandboxSub">500 m 研究区 · 800 m halo</p>
+      <p class="sub"><a href="policy-gallery.html">过境规则对照馆</a>：四个街区 × 六套过境规则，给没做过这个项目的人看（不替换本沙盘）。</p>
     </div>
 
     <div class="sceneBlock">
@@ -438,6 +441,7 @@
         <div class="row"><span class="k">方向</span><span class="v" id="playOdV">全部</span></div>
         <div class="chipRow" id="playOdChips"></div>
         <p class="sub" id="playbackNote">真实一小时排班。无人机顶色按巡航高度映射；含转弯方向。</p>
+        <p class="sub" style="margin-top:8px"><a href="why-wall-clip.html">为什么会穿墙？</a> 30 秒动画：格子路、拉直、和新检查。</p>
       </div>
       <div class="controlGroup" id="routeGenerationWrap">
         <label class="lbl">航线生成</label>
@@ -579,6 +583,6 @@
 <script src="vendor/OrbitControls.js"></script>
 <script src="vendor/clipper.js"></script>
 <script src="data/city-blocks.js"></script>
-<script src="app.js?v=ux-31"></script>
+<script src="app.js?v=ux-32"></script>
 </body>
 </html>
