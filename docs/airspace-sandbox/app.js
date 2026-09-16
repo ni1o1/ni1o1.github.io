@@ -1180,33 +1180,66 @@ function snapInward(edge, a) {
   return null;
 }
 
+function collectEdgeGates(edge) {
+  const unique = [];
+  const seen = new Set();
+  const runs = [];
+  let run = [];
+  for (let a = 0; a < N; a++) {
+    const k = snapInward(edge, a);
+    if (k == null) {
+      if (run.length) { runs.push(run); run = []; }
+      continue;
+    }
+    if (seen.has(k)) continue;
+    seen.add(k);
+    const g = { k, a };
+    unique.push(g);
+    run.push(g);
+  }
+  if (run.length) runs.push(run);
+  return { unique, runs };
+}
+
+function nestedGateOrder(unique, runs) {
+  const order = [];
+  const have = new Set();
+  const add = g => {
+    if (!g || have.has(g.k)) return;
+    have.add(g.k);
+    order.push(g);
+  };
+  const byLen = runs.map(r => r).sort((a, b) => b.length - a.length || a[0].a - b[0].a);
+  for (const r of byLen) add(r[(r.length / 2) | 0]);
+  while (order.length < unique.length) {
+    let best = null;
+    let bestScore = -1;
+    for (const g of unique) {
+      if (have.has(g.k)) continue;
+      let minD = Infinity;
+      for (const p of order) {
+        const d = Math.abs(g.a - p.a);
+        if (d < minD) minD = d;
+      }
+      if (minD > bestScore || (minD === bestScore && g.a < (best ? best.a : Infinity))) {
+        bestScore = minD;
+        best = g;
+      }
+    }
+    if (!best) break;
+    add(best);
+  }
+  return order;
+}
+
 function boundaryAnchors() {
   const anchors = [];
   const pick = (edge) => {
-    const runs = [];
-    let run = [];
-    for (let a = 0; a < N; a++) {
-      const k = snapInward(edge, a);
-      if (k != null) run.push(k);
-      else if (run.length) { runs.push(run); run = []; }
-    }
-    if (run.length) runs.push(run);
-    if (!runs.length) return;
-    const total = runs.reduce((s, r) => s + r.length, 0);
-    const want = Math.min(entriesPerEdge, total);
-    const seen = new Set();
-    for (let t = 0; t < want; t++) {
-      let pos = (t + 0.5) / want * total;
-      let acc = 0;
-      for (const r of runs) {
-        if (acc + r.length > pos) {
-          const k = r[Math.min(r.length - 1, Math.floor(pos - acc))];
-          if (!seen.has(k)) { seen.add(k); anchors.push(k); }
-          break;
-        }
-        acc += r.length;
-      }
-    }
+    const { unique, runs } = collectEdgeGates(edge);
+    if (!unique.length) return;
+    const order = nestedGateOrder(unique, runs);
+    const want = Math.min(entriesPerEdge, order.length);
+    for (let i = 0; i < want; i++) anchors.push(order[i].k);
   };
   pick('top');
   pick('bottom');
@@ -2962,7 +2995,7 @@ async function drawCapacityRoutes(version, opts) {
 
 function startProbeWorker(version, resolve) {
   activeComputeDone = resolve;
-  routeWorker = new Worker('route-worker.js?v=ux-38');
+  routeWorker = new Worker('route-worker.js?v=ux-39');
   routeWorker.onmessage = event => {
     const { type, result, version: msgVersion } = event.data;
     if (msgVersion !== computeVersion || msgVersion !== version) return;
@@ -4051,7 +4084,7 @@ function syncSceneLegend() {
       ? '800 m 外缘对穿；颜色表示巡航高度。'
       : '蓝色体块是当前侧向/纵向净空下的可飞空间。';
   }
-  $('sceneScope').textContent = '机间距为任意两机三维距离。入口铺在未挡住的开口上。';
+  $('sceneScope').textContent = '机间距为任意两机三维距离。加入口只加密，不挤掉已有航线。';
   $('impactToggle').checked = noiseEnabled;
 }
 

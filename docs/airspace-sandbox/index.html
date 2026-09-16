@@ -486,7 +486,7 @@
         <div class="row"><span class="k">航线方向</span><span class="v" id="playOdV">全部</span></div>
         <div class="chipRow odFilterChips" id="playOdChips" role="group" aria-label="航线方向"></div>
         <div class="row" style="margin:0"><span class="k">高度间隔</span><span class="v" id="heightGapV">10 m</span></div>
-        <p class="sub" id="policyHint" style="margin-top:8px">侧向 = 离墙要留多远；纵向 = 屋顶上面还要再留多高。机间距是任意两架飞机的三维距离：不同高度、不同航线都算。间距加严时留下的航线是宽松时的子集。入口先找边上没被挡住的口，再均匀铺上去。</p>
+        <p class="sub" id="policyHint" style="margin-top:8px">侧向 = 离墙要留多远；纵向 = 屋顶上面还要再留多高。机间距是任意两架飞机的三维距离：不同高度、不同航线都算。间距加严时留下的航线是宽松时的子集。入口先占每个开口，再填最大空隙；加入口不会把已有航线挤掉。</p>
       </div>
     </div>
 
@@ -548,7 +548,7 @@
         <label class="lbl">影响分析</label><label class="layerRow"><span class="layerText">显示影响着色</span><input type="checkbox" id="impactToggle"><span class="toggle"></span></label>
         <div class="row"><span class="k">模型</span><span class="v" id="channelV">噪声</span></div>
         <div id="noiseV2Wrap" style="display:none"></div>
-          <div id="channelFourWrap"><p class="sub">按当前航线做浏览器粗估，用来看空间分布，不是论文定量结果。噪声通道含一阶地面反射。着色和航线带子可以同时开。</p>
+        <div id="channelFourWrap"><p class="sub">按当前航线做浏览器粗估，用来看空间分布，不是论文定量结果。噪声通道含一阶地面反射。着色和航线带子可以同时开。</p>
           <div class="kernelSketch" id="kernelSketch" data-channel="noise" aria-label="外部性影响范围示意">
             <svg viewBox="0 0 420 150" aria-hidden="true">
               <line class="sketchGround" x1="26" y1="104" x2="394" y2="104"/>

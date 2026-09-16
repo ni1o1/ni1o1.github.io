@@ -9,6 +9,7 @@ let flyable = null;
 let maxHeightWeight = 1;
 let padM = 0;
 let uavSepM = 0;
+let gateRank = new Map();
 
 const NB = [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,Math.SQRT2],[1,-1,Math.SQRT2],[-1,1,Math.SQRT2],[-1,-1,Math.SQRT2]];
 const SAFETY_M = 4;
@@ -16,7 +17,7 @@ const CELL = 10;
 const BOUNDARY_SNAP_M = 60;
 const WEIGHT_CENTER = 65;
 const WEIGHT_SIGMA = 22;
-const MAX_RETURN_PATHS_PER_ALT = 40;
+const MAX_PACK_CANDIDATES = 1200;
 
 const idx = (i, j) => j * N + i;
 const heightWeight = alt => Math.exp(-((alt - WEIGHT_CENTER) ** 2) / (2 * WEIGHT_SIGMA ** 2));
@@ -87,35 +88,74 @@ function snapInward(edge, a) {
   return null;
 }
 
-// 先找出边上所有未被挡住的开口，再把 N 个入口均匀铺到这些开口上。
-// 不要在整条边上均匀取样再往里吸附：那样会把多个被楼挡住的槽位挤进同一个口。
-function boundaryAnchors() {
-  const anchors = [];
-  const pick = (edge) => {
-    const runs = [];
-    let run = [];
-    for (let a = 0; a < N; a++) {
-      const k = snapInward(edge, a);
-      if (k != null) run.push(k);
-      else if (run.length) { runs.push(run); run = []; }
+function collectEdgeGates(edge) {
+  const unique = [];
+  const seen = new Set();
+  const runs = [];
+  let run = [];
+  for (let a = 0; a < N; a++) {
+    const k = snapInward(edge, a);
+    if (k == null) {
+      if (run.length) { runs.push(run); run = []; }
+      continue;
     }
-    if (run.length) runs.push(run);
-    if (!runs.length) return;
-    const total = runs.reduce((s, r) => s + r.length, 0);
-    const want = Math.min(entriesPerEdge, total);
-    const seen = new Set();
-    for (let t = 0; t < want; t++) {
-      let pos = (t + 0.5) / want * total;
-      let acc = 0;
-      for (const r of runs) {
-        if (acc + r.length > pos) {
-          const k = r[Math.min(r.length - 1, Math.floor(pos - acc))];
-          if (!seen.has(k)) { seen.add(k); anchors.push(k); }
-          break;
-        }
-        acc += r.length;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    const g = { k, a };
+    unique.push(g);
+    run.push(g);
+  }
+  if (run.length) runs.push(run);
+  return { unique, runs };
+}
+
+// Nested picks: first one doorway per opening (longest first), then fill the
+// largest remaining gaps. The n-set is always a prefix of the (n+1)-set, so
+// adding entries cannot drop a previously chosen gate.
+function nestedGateOrder(unique, runs) {
+  const order = [];
+  const have = new Set();
+  const add = g => {
+    if (!g || have.has(g.k)) return;
+    have.add(g.k);
+    order.push(g);
+  };
+  const byLen = runs.map(r => r).sort((a, b) => b.length - a.length || a[0].a - b[0].a);
+  for (const r of byLen) add(r[(r.length / 2) | 0]);
+  while (order.length < unique.length) {
+    let best = null;
+    let bestScore = -1;
+    for (const g of unique) {
+      if (have.has(g.k)) continue;
+      let minD = Infinity;
+      for (const p of order) {
+        const d = Math.abs(g.a - p.a);
+        if (d < minD) minD = d;
+      }
+      if (minD > bestScore || (minD === bestScore && g.a < (best ? best.a : Infinity))) {
+        bestScore = minD;
+        best = g;
       }
     }
+    if (!best) break;
+    add(best);
+  }
+  return order;
+}
+
+function boundaryAnchors(alt) {
+  const anchors = [];
+  const pick = (edge) => {
+    const { unique, runs } = collectEdgeGates(edge);
+    if (!unique.length) return;
+    const order = nestedGateOrder(unique, runs);
+    const want = Math.min(entriesPerEdge, order.length);
+    for (let i = 0; i < order.length; i++) {
+      const key = `${alt}:${order[i].k}`;
+      const prev = gateRank.get(key);
+      if (prev == null || i < prev) gateRank.set(key, i);
+    }
+    for (let i = 0; i < want; i++) anchors.push(order[i].k);
   };
   pick('top');
   pick('bottom');
@@ -190,6 +230,23 @@ function samplePathMeters(cells, alt) {
 
 function pathOverlapTooLong(aPts, bPts, sepM) {
   const sep2 = sepM * sepM;
+  let aMinX = Infinity, aMaxX = -Infinity, aMinY = Infinity, aMaxY = -Infinity, aMinZ = Infinity, aMaxZ = -Infinity;
+  for (let i = 0; i < aPts.length; i += 3) {
+    const x = aPts[i], y = aPts[i + 1], z = aPts[i + 2];
+    if (x < aMinX) aMinX = x; if (x > aMaxX) aMaxX = x;
+    if (y < aMinY) aMinY = y; if (y > aMaxY) aMaxY = y;
+    if (z < aMinZ) aMinZ = z; if (z > aMaxZ) aMaxZ = z;
+  }
+  let bMinX = Infinity, bMaxX = -Infinity, bMinY = Infinity, bMaxY = -Infinity, bMinZ = Infinity, bMaxZ = -Infinity;
+  for (let i = 0; i < bPts.length; i += 3) {
+    const x = bPts[i], y = bPts[i + 1], z = bPts[i + 2];
+    if (x < bMinX) bMinX = x; if (x > bMaxX) bMaxX = x;
+    if (y < bMinY) bMinY = y; if (y > bMaxY) bMaxY = y;
+    if (z < bMinZ) bMinZ = z; if (z > bMaxZ) bMaxZ = z;
+  }
+  if (aMaxX < bMinX - sepM || bMaxX < aMinX - sepM ||
+      aMaxY < bMinY - sepM || bMaxY < aMinY - sepM ||
+      aMaxZ < bMinZ - sepM || bMaxZ < aMinZ - sepM) return false;
   const closeFrac = (pts, other) => {
     let close = 0;
     const n = pts.length / 3;
@@ -209,27 +266,36 @@ function pathOverlapTooLong(aPts, bPts, sepM) {
   return closeFrac(aPts, bPts) > 0.22 || closeFrac(bPts, aPts) > 0.22;
 }
 
+function rankOf(alt, k) {
+  const v = gateRank.get(`${alt}:${k}`);
+  return v == null ? 99 : v;
+}
+
+function pathGeneration(alt, cells) {
+  return Math.max(rankOf(alt, cells[0]), rankOf(alt, cells[cells.length - 1]));
+}
+
 function orderCandidates(results) {
-  const ranked = results.slice().sort((a, b) =>
-    Math.abs(a.alt - WEIGHT_CENTER) - Math.abs(b.alt - WEIGHT_CENTER) || a.alt - b.alt);
   const out = [];
-  for (const r of ranked) {
-    const ew = [];
-    const ns = [];
+  for (const r of results) {
     for (const cells of r.paths) {
-      (familyOf(cells) === 'EW' ? ew : ns).push(cells);
+      out.push({
+        alt: r.alt,
+        cells,
+        gen: pathGeneration(r.alt, cells),
+        fam: familyOf(cells),
+      });
     }
-    const byEnds = (a, b) => a[0] - b[0] || a[a.length - 1] - b[b.length - 1] || a.length - b.length;
-    ew.sort(byEnds);
-    ns.sort(byEnds);
-    const mixed = [];
-    for (let i = 0; i < Math.max(ew.length, ns.length); i++) {
-      if (ew[i]) mixed.push(ew[i]);
-      if (ns[i]) mixed.push(ns[i]);
-    }
-    r.orderedPaths = mixed.slice(0, MAX_RETURN_PATHS_PER_ALT);
-    for (const cells of r.orderedPaths) out.push({ alt: r.alt, cells });
   }
+  // Coarse (few-entry) pairs first, then denser ones; within a generation,
+  // prefer the cruise band. Prefix-stable as entriesPerEdge grows.
+  out.sort((a, b) =>
+    a.gen - b.gen ||
+    Math.abs(a.alt - WEIGHT_CENTER) - Math.abs(b.alt - WEIGHT_CENTER) ||
+    a.alt - b.alt ||
+    (a.fam === 'EW' && b.fam !== 'EW' ? -1 : a.fam !== 'EW' && b.fam === 'EW' ? 1 : 0) ||
+    a.cells.length - b.cells.length);
+  if (out.length > MAX_PACK_CANDIDATES) out.length = MAX_PACK_CANDIDATES;
   return out;
 }
 
@@ -261,7 +327,7 @@ function thinAll3D(results, sepM) {
 
 function routePathsForAltitude(alt) {
   const flyPct = computeFlyable(alt);
-  const anchors = boundaryAnchors();
+  const anchors = boundaryAnchors(alt);
   const paths = [];
   const weight = heightWeight(alt) / maxHeightWeight;
   const flyableOut = new Uint8Array(flyable);
@@ -299,6 +365,7 @@ self.onmessage = event => {
   padM = Number.isFinite(data.padM) ? data.padM : SAFETY_M;
   uavSepM = Number.isFinite(data.uavSepM) ? data.uavSepM : 0;
   heightField = new Float32Array(data.heightFieldBuffer);
+  gateRank = new Map();
 
   const results = [];
   for (const alt of data.altitudes) results.push(routePathsForAltitude(alt));
