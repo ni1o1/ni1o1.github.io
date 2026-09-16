@@ -53,7 +53,7 @@ const HEIGHT_GAP = 10;
 let altitudes = buildAltitudes(HEIGHT_GAP);
 let maxHeightWeight = Math.max(...altitudes.map(heightWeight));
 let entriesPerEdge = 6;
-const routeOpacityBySource = { probe: 0.2, capacity: 0.2 };
+const routeOpacityBySource = { probe: 1.2, capacity: 0.2, gallery: 0.2 };
 let routeOpacityScale = routeOpacityBySource.probe;
 let routesVisible = true;
 let noiseEnabled = false;
@@ -64,7 +64,7 @@ let shadowBlurPct = 215;
 let heightScaleVisible = true;
 let haloBuildingsVisible = true;
 let heightGuidesVisible = false;
-let flyableVolumeVisible = false;
+let flyableVolumeVisible = true;
 let externalityChannel = 'noise';
 let heightField = new Float32Array(N * N);
 let flyable = new Uint8Array(N * N);
@@ -78,14 +78,45 @@ let externalityVersion = 0;
 let routeWorker = null;
 let routeDrawChain = Promise.resolve();
 let activeComputeDone = null;
-let routeSourcePreference = 'capacity';
-let routeSource = 'probe'; // 默认：800 m 缓冲圈外缘对边进入；capacity = uavcap
+let routeSourcePreference = 'probe';
+let routeSource = 'probe'; // 统一：800 m 外缘对穿 + 侧向/纵向净空 + 机间距
 const PRECOMPUTED_FILES = { 'rep-oh-hongkong': 'data/precomputed/hk15-uavcap.json?v=geom1' };
 const FLIGHT_FILES = { 'rep-oh-hongkong': 'data/precomputed/hk15-flights.json?v=geom1' };
 const NOISE_V2_FILES = {
   'hk-54-29-noisev2': 'data/precomputed/hk54-noise-v2.json',
   'rep-oh-hongkong': 'data/precomputed/hk15-noise-v2.json?v=nv2-5',
 };
+
+// ---- 净空规则对照（原 policy-gallery 独立页面并入主沙盘）----
+// 四个代表街区已经在主沙盘的 BLOCKS 里，建筑几何与 policy-gallery-blocks.json 相同，无需另一套装载链。
+// 矩阵的六列 = 已在 SZU 上算过排班/容量的六组参数；参数三元组直接取自每格 JSON 的
+// d_obs / building_metric / pedestrian_clearance_m，不在前端另立一份，避免与管线漂移。
+// 文档里“法规→参数”的对照（香港/日本/英国等条款）只保留在 DOC/记录/53，界面一律不出现辖区名。
+const GALLERY_FILE = 'data/precomputed/policy-gallery.json';
+const GALLERY_RING_M = 8; // 人行环宽：管线常量（scripts/policy_sweep_run.py 的 pedestrian_ring_m），JSON 未导出
+const GALLERY_PLACES = [
+  { tag: 'LA815', sandboxId: 'rep-ch-losangeles', label: '洛杉矶' },
+  { tag: 'TK161', sandboxId: 'rep-cm-tokyo', label: '东京' },
+  { tag: 'HK15', sandboxId: 'rep-oh-hongkong', label: '香港' },
+  { tag: 'SH127', sandboxId: 'rep-om-shanghai', label: '上海' },
+];
+const GALLERY_PACKAGES = ['eng_d5', 'hk_A1', 'hk_A2_cruise', 'jp_30', 'people_30', 'uk_a3_bldg50'];
+const GALLERY_BLOCK_IDS = new Set(GALLERY_PLACES.map(p => p.sandboxId));
+const GALLERY_KIND_LABEL = { ok: '可以对穿', corners_only: '仅转弯', empty_path: '缝在，路不通', blocked: '对边封死', loading: '—' };
+const GALLERY_METRIC_LABEL = { euclidean_3d: '三维', horizontal: '水平' };
+let galleryCells = null;       // Map<cellId, cell>；null = 未加载
+let galleryLoading = null;     // 并发去重
+let policyLatM = 5;
+let policyVertM = 5;
+let policyUavSepM = 20;
+let policyComputeTimer = 0;
+let galleryComputeTimer = 0;
+const gallerySliceCache = new Map();
+let galleryParams = { d: 5, metric: 'euclidean_3d', pedestrianM: 0 };
+let galleryKeepVisible = false;
+let flyableVolumeSpec = null;
+let volumeWorker = null;
+let volumeVersion = 0;
 // Viridis 连续高度色带：低空→高空，感知上单调且对色觉差异更友好。
 const ALTITUDE_CMAP = [
   [0.00, [68, 1, 84]],
@@ -94,6 +125,67 @@ const ALTITUDE_CMAP = [
   [0.75, [94, 201, 98]],
   [1.00, [253, 231, 37]],
 ];
+
+function policyRuleText() {
+  return `侧向 ${policyLatM} m · 纵向 ${policyVertM} m · 机间距 ${policyUavSepM} m`;
+}
+
+function policyVolumeSpec() {
+  return {
+    buildings: obstacleBuildings,
+    yMax: ALT_MAX,
+    releaseM: () => policyVertM,
+    radiusM: () => Math.max(policyLatM, 0.5),
+  };
+}
+
+function applyPolicyVolume() {
+  flyableVolumeSpec = obstacleBuildings.length ? policyVolumeSpec() : null;
+  scheduleVolumeRebuild();
+}
+
+function syncPolicyControls() {
+  const lat = $('policyLat'), latV = $('policyLatV');
+  const vert = $('policyVert'), vertV = $('policyVertV');
+  const sep = $('policySep'), sepV = $('policySepV');
+  if (lat) lat.value = String(policyLatM);
+  if (latV) latV.textContent = String(policyLatM);
+  if (vert) vert.value = String(policyVertM);
+  if (vertV) vertV.textContent = String(policyVertM);
+  if (sep) sep.value = String(policyUavSepM);
+  if (sepV) sepV.textContent = String(policyUavSepM);
+  const density = $('density');
+  if (density) {
+    density.value = entriesPerEdge;
+    $('densityV').textContent = entriesPerEdge;
+  }
+  const chips = $('policyPresets');
+  if (chips) {
+    for (const b of chips.querySelectorAll('button[data-lat]')) {
+      b.classList.toggle('on', +b.dataset.lat === policyLatM && +b.dataset.vert === policyVertM);
+    }
+  }
+}
+
+function setPolicyParams(patch, live = false) {
+  const volumeChanged = patch.lat != null || patch.vert != null;
+  if (patch.lat != null) policyLatM = +patch.lat;
+  if (patch.vert != null) policyVertM = +patch.vert;
+  if (patch.uavSep != null) policyUavSepM = +patch.uavSep;
+  syncPolicyControls();
+  syncRouteSourceUI();
+  syncSceneLegend();
+  clearTimeout(policyComputeTimer);
+  if (live) {
+    policyComputeTimer = setTimeout(() => {
+      if (volumeChanged) applyPolicyVolume();
+      scheduleCompute();
+    }, 220);
+    return;
+  }
+  if (volumeChanged) applyPolicyVolume();
+  scheduleCompute();
+}
 
 function altitudeColorRgb(alt) {
   const t = Math.max(0, Math.min(1, (alt - ALT_MIN) / (ALT_MAX - ALT_MIN)));
@@ -136,7 +228,12 @@ let playbackRate = 5;
 let playbackT = 0;
 let lastAnimMs = null;
 let aircraftVisible = true;
-const PLAY_ODS = ['E>W', 'W>E', 'N>S', 'S>N', 'E>N', 'E>S', 'W>N', 'W>S', 'N>E', 'N>W', 'S>E', 'S>W'];
+const PLAY_ODS = ['E>W', 'W>E', 'N>S', 'S>N'];
+const OD_PRESETS = [
+  { role: 'all', label: '全部', ods: null },
+  { role: 'ew', label: '东西向', ods: ['E>W', 'W>E'] },
+  { role: 'ns', label: '南北向', ods: ['N>S', 'S>N'] },
+];
 const TRAIL_STEPS = 10;
 const TRAIL_U = 0.16;
 let playOdSet = null;
@@ -311,13 +408,14 @@ const heightScaleGroup = new THREE.Group();
 const heightGuideGroup = new THREE.Group();
 const bufferGroup = new THREE.Group();
 const flyableVolumeGroup = new THREE.Group();
+const galleryKeepGroup = new THREE.Group();
 const probeGroup = new THREE.Group();
 const noiseV2Group = new THREE.Group();
 const droneGroup = new THREE.Group();
 const focusRibbonGroup = new THREE.Group();
 const trailGroup = new THREE.Group();
 droneGroup.add(trailGroup);
-scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, noiseV2Group, heightScaleGroup, heightGuideGroup, bufferGroup, flyableVolumeGroup, probeGroup, droneGroup, focusRibbonGroup);
+scene.add(buildingGroup, routeGroup, anchorGroup, noiseGroup, noiseV2Group, heightScaleGroup, heightGuideGroup, bufferGroup, flyableVolumeGroup, galleryKeepGroup, probeGroup, droneGroup, focusRibbonGroup);
 
 const buildingMat = new THREE.MeshStandardMaterial({ color: buildingColor, roughness: 0.72, metalness: 0.0, vertexColors: true, side: THREE.DoubleSide });
 const edgeMat = new THREE.LineBasicMaterial({ color: '#67717d', transparent: true, opacity: 0.92, depthWrite: false });
@@ -355,6 +453,14 @@ const bufferFillMat = new THREE.MeshBasicMaterial({
   color: '#1677ff',
   transparent: true,
   opacity: 0.07,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+});
+// 净空禁区层：所有切片共用一份材质，清理时只 dispose 几何，别 dispose 材质
+const galleryKeepMat = new THREE.MeshBasicMaterial({
+  color: '#d94841',
+  transparent: true,
+  opacity: 0.16,
   depthWrite: false,
   side: THREE.DoubleSide,
 });
@@ -893,8 +999,8 @@ function buildHeightGuides() {
 
 async function loadPreset(name) {
   const token = ++presetLoadToken;
-  computeVersion++; externalityVersion++;
-  stopRouteWorker(); needsCompute = false; computing = false;
+  computeVersion++; externalityVersion++; volumeVersion++;
+  stopRouteWorker(); stopVolumeWorker(); needsCompute = false; computing = false;
   routeSummaries = []; totalRoutes = 0;
   buildMapTiles(); $('altLegend').textContent = '正在准备当前街区…';
   currentPreset = name;
@@ -907,6 +1013,8 @@ async function loadPreset(name) {
   syncPlaybackUI(); syncSceneLegend();
   clearNoiseLayer();
   clearFlyableVolume();
+  gallerySliceCache.clear();
+  flyableVolumeSpec = null;
   disposeNoiseV2Mesh();
   buildingGroup.clear();
   buildings = [];
@@ -930,15 +1038,8 @@ async function loadPreset(name) {
   } else {
     noiseV2 = null;
   }
-  if (PRECOMPUTED_FILES[currentBlock.id] && routeSourcePreference === 'capacity') {
-    routeSource = 'capacity';
-    const cap = document.querySelector('input[name="routeSource"][value="capacity"]');
-    if (cap) cap.checked = true;
-  } else {
-    routeSource = 'probe';
-    const probe = document.querySelector('input[name="routeSource"][value="probe"]');
-    if (probe) probe.checked = true;
-  }
+  routeSource = 'probe';
+  routeSourcePreference = 'probe';
   syncChannelUI();
   buildTerrain();
   buildBufferRings();
@@ -949,16 +1050,51 @@ async function loadPreset(name) {
   if (noiseV2) ensureNoiseV2Mesh();
   if (typeof clearProbeFacade === 'function') clearProbeFacade();  // 换街区→立面缓存失效
   applyAuxiliaryBuildingVisibility();
-  rebuildFlyableVolume();
+  applyPolicyVolume();
   if ($('presets').value !== currentBlock.name) $('presets').value = currentBlock.name;
   syncRouteSourceUI();
   syncSceneLegend();
   scheduleCompute();
 }
 
+function inflateHeightFieldByPolicy() {
+  const latM = policyLatM;
+  const vertM = policyVertM;
+  if (!(latM > 0 || vertM > 0)) return;
+  const src = heightField.slice();
+  const nPad = Math.max(0, Math.ceil(latM / CELL));
+  const lat2 = latM * latM;
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      const k = idx(i, j);
+      const ground = terrainHeight(gx(i), iToZ(j)) + 1;
+      const h = src[k];
+      if (h <= ground + 1.5) continue;
+      const blockedUntil = h + vertM;
+      if (blockedUntil > heightField[k]) heightField[k] = blockedUntil;
+      if (nPad <= 0) continue;
+      const i0 = Math.max(0, i - nPad);
+      const i1 = Math.min(N - 1, i + nPad);
+      const j0 = Math.max(0, j - nPad);
+      const j1 = Math.min(N - 1, j + nPad);
+      for (let jj = j0; jj <= j1; jj++) {
+        for (let ii = i0; ii <= i1; ii++) {
+          if (ii === i && jj === j) continue;
+          const dx = (ii - i) * CELL;
+          const dz = (jj - j) * CELL;
+          if (dx * dx + dz * dz > lat2) continue;
+          const kk = idx(ii, jj);
+          if (blockedUntil > heightField[kk]) heightField[kk] = blockedUntil;
+        }
+      }
+    }
+  }
+}
+
 async function rasterize(version) {
   if (currentBlock?.noiseV2 && noiseV2?.height?.obstacle) {
     heightField.set(noiseV2.height.obstacle);
+    inflateHeightFieldByPolicy();
     return version === computeVersion;
   }
   for (let j = 0; j < N; j++) {
@@ -976,17 +1112,17 @@ async function rasterize(version) {
       minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]);
       minZ = Math.min(minZ, p[1]); maxZ = Math.max(maxZ, p[1]);
     }
-    const i0 = Math.max(0, Math.floor((minX - SAFETY_M + HALF) / CELL));
-    const i1 = Math.min(N - 1, Math.floor((maxX + SAFETY_M + HALF) / CELL));
-    const j0 = Math.max(0, Math.floor((minZ - SAFETY_M + HALF) / CELL));
-    const j1 = Math.min(N - 1, Math.floor((maxZ + SAFETY_M + HALF) / CELL));
-    const top = terrainHeight(b.x, b.z) + b.h;
+    const i0 = Math.max(0, Math.floor((minX - policyLatM + HALF) / CELL));
+    const i1 = Math.min(N - 1, Math.floor((maxX + policyLatM + HALF) / CELL));
+    const j0 = Math.max(0, Math.floor((minZ - policyLatM + HALF) / CELL));
+    const j1 = Math.min(N - 1, Math.floor((maxZ + policyLatM + HALF) / CELL));
+    const blockedUntil = terrainHeight(b.x, b.z) + b.h + policyVertM;
     for (let j = j0; j <= j1; j++) {
       for (let i = i0; i <= i1; i++) {
         const x = gx(i), z = iToZ(j);
-        if (pointInPoly(x, z, worldPoly) || nearPoly(x, z, worldPoly, SAFETY_M)) {
+        if (pointInPoly(x, z, worldPoly) || (policyLatM > 0 && nearPoly(x, z, worldPoly, policyLatM))) {
           const k = idx(i, j);
-          if (top > heightField[k]) heightField[k] = top;
+          if (blockedUntil > heightField[k]) heightField[k] = blockedUntil;
         }
       }
     }
@@ -1019,7 +1155,7 @@ function computeFlyable(alt) {
   let count = 0;
   let coreCount = 0;
   for (let k = 0; k < N * N; k++) {
-    flyable[k] = heightField[k] + SAFETY_M < alt ? 1 : 0;
+    flyable[k] = heightField[k] <= alt ? 1 : 0;
     count += flyable[k];
     const i = k % N, j = (k / N) | 0;
     if (isCoreCell(i, j)) coreCount += flyable[k];
@@ -1030,36 +1166,53 @@ function computeFlyable(alt) {
   };
 }
 
+function snapInward(edge, a) {
+  const depth = Math.max(1, Math.round(BOUNDARY_SNAP_M / CELL));
+  for (let d = 0; d < depth; d++) {
+    let i = 0, j = 0;
+    if (edge === 'top') { i = a; j = d; }
+    else if (edge === 'bottom') { i = a; j = N - 1 - d; }
+    else if (edge === 'left') { i = d; j = a; }
+    else { i = N - 1 - d; j = a; }
+    const k = idx(i, j);
+    if (flyable[k]) return k;
+  }
+  return null;
+}
+
 function boundaryAnchors() {
   const anchors = [];
-  const depth = Math.max(1, Math.round(BOUNDARY_SNAP_M / CELL));
-  const snap = (edge, a) => {
-    for (let d = 0; d < depth; d++) {
-      let i = 0, j = 0;
-      if (edge === 'top') { i = a; j = d; }
-      else if (edge === 'bottom') { i = a; j = N - 1 - d; }
-      else if (edge === 'left') { i = d; j = a; }
-      else { i = N - 1 - d; j = a; }
-      const k = idx(i, j);
-      if (flyable[k]) return k;
+  const pick = (edge) => {
+    const runs = [];
+    let run = [];
+    for (let a = 0; a < N; a++) {
+      const k = snapInward(edge, a);
+      if (k != null) run.push(k);
+      else if (run.length) { runs.push(run); run = []; }
     }
-    return null;
-  };
-  const pick = (edge, n) => {
-    const gates = [];
-    for (let a = 0; a < n; a++) {
-      const k = snap(edge, a);
-      if (k !== null) gates.push(k);
+    if (run.length) runs.push(run);
+    if (!runs.length) return;
+    const total = runs.reduce((s, r) => s + r.length, 0);
+    const want = Math.min(entriesPerEdge, total);
+    const seen = new Set();
+    for (let t = 0; t < want; t++) {
+      let pos = (t + 0.5) / want * total;
+      let acc = 0;
+      for (const r of runs) {
+        if (acc + r.length > pos) {
+          const k = r[Math.min(r.length - 1, Math.floor(pos - acc))];
+          if (!seen.has(k)) { seen.add(k); anchors.push(k); }
+          break;
+        }
+        acc += r.length;
+      }
     }
-    if (!gates.length) return;
-    const want = Math.min(entriesPerEdge, gates.length);
-    for (let t = 0; t < want; t++) anchors.push(gates[Math.floor((t + 0.5) / want * gates.length)]);
   };
-  pick('top', N);
-  pick('bottom', N);
-  pick('left', N);
-  pick('right', N);
-  return [...new Set(anchors)];
+  pick('top');
+  pick('bottom');
+  pick('left');
+  pick('right');
+  return anchors;
 }
 
 class MinHeap {
@@ -1130,10 +1283,11 @@ function dijkstra(src) {
 
 function edgeOf(k) {
   const i = k % N, j = (k / N) | 0;
-  if (j === 0) return 'top';
-  if (j === N - 1) return 'bottom';
-  if (i === 0) return 'left';
-  if (i === N - 1) return 'right';
+  const depth = Math.max(1, Math.round(BOUNDARY_SNAP_M / CELL));
+  if (j <= depth) return 'top';
+  if (j >= N - 1 - depth) return 'bottom';
+  if (i <= depth) return 'left';
+  if (i >= N - 1 - depth) return 'right';
   return 'inner';
 }
 
@@ -1285,7 +1439,7 @@ function updateRouteOpacity() {
 function makeRouteBandMesh(paths, alt, opacity, flyable) {
   const positions = [];
   const indices = [];
-  const halfWidth = 1.35;
+  const halfWidth = 2.4;
   for (const cells of paths) {
     const poly = flyable ? smoothRoutePath(cells, flyable) : cells.map(cellCenterXZ);
     for (let p = 0; p < poly.length - 1; p++) {
@@ -1469,17 +1623,43 @@ function squareClipPath(S) {
   ]];
 }
 
-// 给定一组建筑 → 它们 footprint 外扩 FLYABLE_VISUAL_BUFFER_M 的并集(Clipper 整数 Paths)。
-function bufferedObstaclePaths(buildings, S) {
-  const paths = buildings
-    .map(b => b.localPoly.map(p => ({ X: Math.round((p[0] + b.x) * S), Y: Math.round((p[1] + b.z) * S) })))
-    .filter(path => path.length >= 3);
-  if (!paths.length) return null;
-  const co = new ClipperLib.ClipperOffset(2, 0.25 * S);
-  co.AddPaths(paths, ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+// 给定一组建筑 → 它们 footprint 外扩给定半径的并集(Clipper 整数 Paths)。
+// radii 可选：与 buildings 等长、每栋各自的外扩距离(米)；省略 = 全部 FLYABLE_VISUAL_BUFFER_M
+//（此时只有一个半径桶，输出与旧实现逐字节相同）。joinType 可选，默认 jtMiter。
+function bufferedObstaclePaths(buildings, S, radii, joinType) {
+  const buckets = new Map();
+  buildings.forEach((b, i) => {
+    const r = radii ? radii[i] : FLYABLE_VISUAL_BUFFER_M;
+    if (!(r >= 0.4)) return; // 外扩≈0 的楼不参与（三维量法在屋顶以上会收缩到 0）
+    const key = Math.round(r);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(b);
+  });
   const out = new ClipperLib.Paths();
-  co.Execute(out, FLYABLE_VISUAL_BUFFER_M * S);
+  for (const [r, group] of buckets) {
+    const paths = group
+      .map(b => b.localPoly.map(p => ({ X: Math.round((p[0] + b.x) * S), Y: Math.round((p[1] + b.z) * S) })))
+      .filter(path => path.length >= 3);
+    if (!paths.length) continue;
+    const co = new ClipperLib.ClipperOffset(2, 0.25 * S);
+    co.AddPaths(paths, joinType || ClipperLib.JoinType.jtMiter, ClipperLib.EndType.etClosedPolygon);
+    const part = new ClipperLib.Paths(); // Execute 会先 Clear(solution)，不能直接写进累积容器
+    co.Execute(part, r * S);
+    for (const p of part) out.push(p);
+  }
   return out.length ? out : null;
+}
+
+// 整数路径 → 带孔实体环：自并一次拿到 PolyTree（各半径桶的结果可能重叠）。
+function clipperPathsToSolids(paths) {
+  if (!paths || !paths.length) return [];
+  const c = new ClipperLib.Clipper();
+  c.AddPaths(paths, ClipperLib.PolyType.ptSubject, true);
+  const tree = new ClipperLib.PolyTree();
+  c.Execute(ClipperLib.ClipType.ctUnion, tree, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+  const solids = [];
+  collectClipperSolids(tree, solids);
+  return solids;
 }
 
 // PolyTree 的所有环(int),供后续布尔(梯田 ledge)复用。
@@ -1522,14 +1702,20 @@ function differenceSolids(subjPaths, clipPaths, S) {
 // 实现:把每栋楼的"封顶高度"= ceil(屋顶+CLEARANCE) 作高度断点,逐高度带只减去仍在挡的楼
 // (Clipper buffer+difference),侧墙逐带挤出;每带交界处补一张"已开出区域"的水平盖(屋顶面),
 // 最底封地板、最高封天花板 → 得到一个在每栋楼上方阶梯式打开的可飞体。
-function addBufferedVolume(yBase, yMax, positions, indices, outlinePositions) {
-  if (typeof ClipperLib === 'undefined' || !obstacleBuildings.length) return false;
+// opts 可选：buildings（默认 obstacleBuildings）/ releaseM(b)（该楼不再阻挡的高度增量，
+// 默认 FLYABLE_VISUAL_CLEARANCE_M；返回 Infinity 表示全程阻挡）/ radiusM(b, yBand)（该带该楼的外扩半径，
+// 默认 FLYABLE_VISUAL_BUFFER_M）。省略 opts 时行为与本函数旧实现逐字节相同。
+function addBufferedVolume(yBase, yMax, positions, indices, outlinePositions, opts) {
+  const obs = opts?.buildings || obstacleBuildings;
+  if (typeof ClipperLib === 'undefined' || !obs.length) return false;
   const S = CLIP_SCALE;
   const STEP = FLYABLE_VISUAL_BAND_M;
+  const releaseM = opts?.releaseM || (() => FLYABLE_VISUAL_CLEARANCE_M);
+  const radiusM = opts?.radiusM || (() => FLYABLE_VISUAL_BUFFER_M);
 
-  // 每栋楼:从 yBase 一直挡到 屋顶+CLEARANCE(向上取整到 STEP,保证间距≥5m);clamp 到 [yBase,yMax]
-  const obstacles = obstacleBuildings.map(b => {
-    const top = Math.max(yBase, Math.min(yMax, Math.ceil((b.h + FLYABLE_VISUAL_CLEARANCE_M) / STEP) * STEP));
+  // 每栋楼:从 yBase 一直挡到 屋顶+释放间距(向上取整到 STEP,保证间距≥5m);clamp 到 [yBase,yMax]
+  const obstacles = obs.map(b => {
+    const top = Math.max(yBase, Math.min(yMax, Math.ceil((b.h + releaseM(b)) / STEP) * STEP));
     return { b, top };
   }).filter(o => o.top > yBase + 1e-6);
 
@@ -1557,7 +1743,7 @@ function addBufferedVolume(yBase, yMax, positions, indices, outlinePositions) {
     const yA = cuts[i], yB = cuts[i + 1];
     if (yB - yA < 1e-6) continue;
     const blockers = obstacles.filter(o => o.top > yA + 1e-6).map(o => o.b);
-    const buffered = blockers.length ? bufferedObstaclePaths(blockers, S) : null;
+    const buffered = blockers.length ? bufferedObstaclePaths(blockers, S, blockers.map(b => radiusM(b, yA))) : null;
     const { solids, paths } = flyableRegion(buffered, S);
 
     // 侧墙:逐带挤面但不画轮廓(相邻带共面,填充连成一片)
@@ -1592,22 +1778,45 @@ function addBufferedVolume(yBase, yMax, positions, indices, outlinePositions) {
   return built;
 }
 
-function rebuildFlyableVolume() {
+function stopVolumeWorker() {
+  if (volumeWorker) {
+    volumeWorker.terminate();
+    volumeWorker = null;
+  }
+}
+
+function applyVolumeMesh(data) {
   clearFlyableVolume();
   flyableVolumeGroup.visible = flyableVolumeVisible;
-  if (!flyableVolumeVisible || !obstacleBuildings.length) return;
+  if (!flyableVolumeVisible) return;
   const positions = [];
   const indices = [];
   const outlinePositions = [];
-  const ok = addBufferedVolume(FLYABLE_VISUAL_BASE_M, ALT_MAX, positions, indices, outlinePositions);
-  if (!ok) return;
+  const yFloor = data.bands?.[0]?.yA ?? FLYABLE_VISUAL_BASE_M;
+  const yTop = data.bands?.length ? data.bands[data.bands.length - 1].yB : ALT_MAX;
+  for (const band of data.bands || []) {
+    for (const s of band.solids || []) emitWalls([s.outer, ...s.holes], band.yA, band.yB, positions, indices);
+  }
+  for (const s of data.floor || []) {
+    emitCap(s.outer, s.holes, yFloor, false, positions, indices);
+    emitRingOutline([s.outer, ...s.holes], yFloor, outlinePositions);
+  }
+  for (const ledge of data.ledges || []) {
+    for (const s of ledge.solids || []) {
+      emitCap(s.outer, s.holes, ledge.y, true, positions, indices);
+      emitRingOutline([s.outer, ...s.holes], ledge.y, outlinePositions);
+    }
+  }
+  for (const s of data.ceiling || []) {
+    emitCap(s.outer, s.holes, yTop, true, positions, indices);
+    emitRingOutline([s.outer, ...s.holes], yTop, outlinePositions);
+  }
   if (!positions.length || !indices.length) return;
   const geom = new THREE.BufferGeometry();
   geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geom.setIndex(indices);
   geom.computeBoundingSphere();
-  const mat = flyableVolumeMat.clone();
-  const mesh = new THREE.Mesh(geom, mat);
+  const mesh = new THREE.Mesh(geom, flyableVolumeMat.clone());
   mesh.renderOrder = 2;
   flyableVolumeGroup.add(mesh);
   if (outlinePositions.length) {
@@ -1617,6 +1826,50 @@ function rebuildFlyableVolume() {
     outline.renderOrder = 3;
     flyableVolumeGroup.add(outline);
   }
+}
+
+function scheduleVolumeRebuild() {
+  const version = ++volumeVersion;
+  stopVolumeWorker();
+  flyableVolumeGroup.visible = flyableVolumeVisible;
+  if (!flyableVolumeVisible || !obstacleBuildings.length) {
+    clearFlyableVolume();
+    return;
+  }
+  const spec = flyableVolumeSpec || policyVolumeSpec();
+  const buildings = (spec.buildings || obstacleBuildings).map(b => ({
+    x: b.x, z: b.z, h: b.h, localPoly: b.localPoly,
+  }));
+  volumeWorker = new Worker('volume-worker.js?v=ux-37');
+  volumeWorker.onmessage = ev => {
+    if (ev.data.version !== volumeVersion) return;
+    if (ev.data.type === 'error') {
+      console.warn('volume worker', ev.data.message);
+      return;
+    }
+    applyVolumeMesh(ev.data);
+  };
+  volumeWorker.onerror = err => {
+    console.warn(err);
+    stopVolumeWorker();
+  };
+  volumeWorker.postMessage({
+    type: 'compute',
+    version,
+    buildings,
+    yBase: FLYABLE_VISUAL_BASE_M,
+    yMax: Number.isFinite(spec.yMax) ? spec.yMax : ALT_MAX,
+    bandM: FLYABLE_VISUAL_BAND_M,
+    rangeHalf: FLYABLE_RANGE_HALF,
+    clipScale: CLIP_SCALE,
+    releaseM: spec.gallery ? undefined : (typeof spec.releaseM === 'function' ? spec.releaseM() : policyVertM),
+    radiusM: spec.gallery ? undefined : (typeof spec.radiusM === 'function' ? spec.radiusM() : Math.max(policyLatM, 0.5)),
+    gallery: spec.gallery || null,
+  });
+}
+
+function rebuildFlyableVolume() {
+  scheduleVolumeRebuild();
 }
 
 function drawAnchors(anchors, alt, baseOpacity) {
@@ -1631,18 +1884,48 @@ function drawAnchors(anchors, alt, baseOpacity) {
   anchorGroup.add(points);
 }
 
+function pathOd(cells) {
+  if (!cells || cells.length < 2) return '';
+  return `${edgeNameOfCell(cells[0])}>${edgeNameOfCell(cells[cells.length - 1])}`;
+}
+
+function pathInOdFilter(cells) {
+  if (!playOdSet) return true;
+  return playOdSet.has(pathOd(cells));
+}
+
+function visibleSummaryPaths(s) {
+  return (s.paths || []).filter(pathInOdFilter);
+}
+
 async function drawAltitudeResult(result, version) {
   if (version !== computeVersion) return;
   result.flyable = new Uint8Array(result.flyable);
-  const routeOpacity = 0.010 + 0.070 * result.weight;
-  const anchorOpacity = 0.045 + 0.16 * result.weight;
+  const routeOpacity = 0.16 + 0.42 * result.weight;
+  const anchorOpacity = 0.12 + 0.28 * result.weight;
   drawAnchors(result.anchors, result.alt, anchorOpacity);
-  const routeMesh = makeRouteBandMesh(result.paths, result.alt, routeOpacity, result.flyable);
+  const routeMesh = makeRouteBandMesh(visibleSummaryPaths(result), result.alt, routeOpacity, result.flyable);
   if (routeMesh) { bindRouteOpacity(routeMesh, routeOpacity, 0.55); routeMesh.userData.altitude = result.alt; routeGroup.add(routeMesh); }
   await nextFrame();
   if (version !== computeVersion) return;
   totalRoutes += result.pathCount || result.paths.length;
   routeSummaries.push(result);
+  applyRouteVisibility();
+}
+
+function rebuildRouteMeshes() {
+  disposeRouteLayer();
+  for (const s of routeSummaries) {
+    const routeOpacity = 0.16 + 0.42 * s.weight;
+    const anchorOpacity = 0.12 + 0.28 * s.weight;
+    drawAnchors(s.anchors || [], s.alt, anchorOpacity);
+    const routeMesh = makeRouteBandMesh(visibleSummaryPaths(s), s.alt, routeOpacity, s.flyable);
+    if (routeMesh) {
+      bindRouteOpacity(routeMesh, routeOpacity, 0.55);
+      routeMesh.userData.altitude = s.alt;
+      routeGroup.add(routeMesh);
+    }
+  }
   applyRouteVisibility();
 }
 
@@ -1688,6 +1971,68 @@ function decodePrecomputed(raw) {
 
 function usingCapacity() {
   return routeSource === 'capacity' && capacityField && precomputed?.raw?.id === currentBlock?.id;
+}
+
+function usingPlayback() {
+  return Boolean(flightData && flightRoutes && flightRoutes.length);
+}
+
+function edgeNameOfCell(k) {
+  const i = k % N, j = (k / N) | 0;
+  const depth = Math.max(1, Math.round(BOUNDARY_SNAP_M / CELL));
+  if (j <= depth) return 'S';
+  if (j >= N - 1 - depth) return 'N';
+  if (i <= depth) return 'W';
+  if (i >= N - 1 - depth) return 'E';
+  return '?';
+}
+
+function buildLiveFlightsFromSummaries() {
+  const routes = [];
+  const flights = [];
+  const CRUISE_MPS = 22;
+  let maxDur = 24;
+  for (const s of routeSummaries) {
+    const fly = s.flyable;
+    for (const cells of (s.paths || [])) {
+      if (!cells || cells.length < 2) continue;
+      const xz = fly ? smoothRoutePath(cells, fly) : cells.map(cellCenterXZ);
+      if (xz.length < 2) continue;
+      const p = xz.map(([x, z]) => [x, -z, s.alt + 2.4]);
+      const c = flightCumlen(p);
+      const L = c[c.length - 1] || 1;
+      const dur = Math.max(12, L / CRUISE_MPS);
+      maxDur = Math.max(maxDur, dur);
+      const h = Math.round(s.alt);
+      const od = `${edgeNameOfCell(cells[0])}>${edgeNameOfCell(cells[cells.length - 1])}`;
+      routes.push({ p, c, L, h, col: altitudeColorHex(h), od, id: routes.length, live: true });
+      const nOnPath = policyUavSepM > 0
+        ? Math.max(1, Math.min(4, Math.floor(L / Math.max(policyUavSepM, 80))))
+        : (L > 420 ? 3 : L > 220 ? 2 : 1);
+      for (let k = 0; k < nOnPath; k++) {
+        flights.push([routes.length - 1, (k / nOnPath) * dur, dur]);
+      }
+    }
+  }
+  if (!routes.length) {
+    flightData = null;
+    flightRoutes = null;
+    return;
+  }
+  const period = Math.max(24, Math.ceil(maxDur));
+  for (const f of flights) f[2] = period;
+  flightRoutes = routes;
+  flightData = { flights, t_eval_s: period, n_flights: flights.length, live: true };
+}
+
+function flightProgress(t0, t1) {
+  const span = Math.max(1e-3, flightData?.live ? (flightData.t_eval_s || (t1 - t0)) : (t1 - t0));
+  if (flightData?.live) {
+    let u = playbackT / span + t0 / span;
+    return ((u % 1) + 1) % 1;
+  }
+  if (playbackT < t0 || playbackT > t1) return null;
+  return (playbackT - t0) / span;
 }
 
 function usingNoiseV2() {
@@ -1763,17 +2108,9 @@ function colorNoiseV2Mesh(useLaeq) {
   if (!noiseV2Mesh || !noiseV2) return;
   const colors = noiseV2Mesh.geometry.getAttribute('color');
   const n = noiseV2.raw.n;
-  const L = noiseV2.laeq[noiseV2Tier] || noiseV2.laeq.refl;
-  const lo = noiseV2.raw.vp5;
-  const hi = noiseV2.raw.vp95;
   const gray = [0.76, 0.76, 0.745];
   for (let i = 0; i < n; i++) {
-    let rgb = gray;
-    if (useLaeq) {
-      const t = clamp01((L[i] - lo) / (hi - lo || 1));
-      rgb = colorRamp(t, 'coolwarm');
-    }
-    for (let k = 0; k < 4; k++) colors.setXYZ(i * 4 + k, rgb[0], rgb[1], rgb[2]);
+    for (let k = 0; k < 4; k++) colors.setXYZ(i * 4 + k, gray[0], gray[1], gray[2]);
   }
   colors.needsUpdate = true;
 }
@@ -1821,33 +2158,17 @@ function nearestNoiseV2Facet(x, y, z) {
 
 function applyNoiseV2Visibility() {
   if (!noiseV2Mesh) return;
-  noiseV2Mesh.visible = usingNoiseV2() && (noiseEnabled || (Boolean(currentBlock?.noiseV2) && buildingsVisible));
-  colorNoiseV2Mesh(noiseEnabled);
+  noiseV2Mesh.visible = Boolean(currentBlock?.noiseV2) && buildingsVisible;
+  colorNoiseV2Mesh(false);
 }
 
 function syncChannelUI() {
   syncSceneLegend();
-  const v2 = usingNoiseV2() || Boolean(currentBlock?.noiseV2);
   const wrapV2 = $('noiseV2Wrap');
   const wrapFour = $('channelFourWrap');
-  if (wrapV2) wrapV2.style.display = v2 ? '' : 'none';
-  if (wrapFour) wrapFour.style.display = v2 ? 'none' : '';
-  if (v2 && noiseV2) {
-    $('channelV').textContent = NOISE_V2_TIERS[noiseV2Tier] || 'refl';
-    if ($('laeqMin')) $('laeqMin').textContent = `${noiseV2.raw.vp5.toFixed(1)} dB`;
-    if ($('laeqMax')) $('laeqMax').textContent = `${noiseV2.raw.vp95.toFixed(1)} dB`;
-    const st = noiseV2.raw.tiers?.[noiseV2Tier] || {};
-    const share = st.path_energy_share || {};
-    if ($('noiseV2Stats')) {
-      $('noiseV2Stats').textContent =
-        `面积加权 L_Aeq ${Number(st.LAeq_area_weighted_dB || 0).toFixed(2)} dB · Gini ${Number(st.gini || 0).toFixed(3)}` +
-        (noiseV2Tier === 'refl'
-          ? ` · 直达 ${(share.direct * 100).toFixed(0)}% / 反射 ${(share.reflected * 100).toFixed(0)}% / 绕射 ${(share.diffraction * 100).toFixed(0)}%`
-          : '');
-    }
-  } else {
-    $('channelV').textContent = (CHANNELS[externalityChannel] || CHANNELS.noise).label;
-  }
+  if (wrapV2) wrapV2.style.display = 'none';
+  if (wrapFour) wrapFour.style.display = '';
+  $('channelV').textContent = (CHANNELS[externalityChannel] || CHANNELS.noise).label;
 }
 
 async function ensurePrecomputed(blockId) {
@@ -2118,11 +2439,20 @@ function writeTrail(line, route, u, colorHex) {
 }
 
 function onPlayFilterChange() {
+  if (!computing && routeSummaries.length) rebuildRouteMeshes();
   rebuildFocusRibbons();
   syncPlayFilterUI();
   placeDrones();
   drawMiniMap();
   syncSheetNavigation();
+  if (routeSource === 'gallery') drawGalleryKeepAway();
+  if (noiseEnabled) scheduleExternalityLayer();
+}
+
+function setOdPreset(role) {
+  const preset = OD_PRESETS.find(p => p.role === role);
+  playOdSet = preset?.ods ? new Set(preset.ods) : null;
+  onPlayFilterChange();
 }
 
 function togglePlayOd(od) {
@@ -2146,27 +2476,23 @@ function buildPlayFilterChips() {
       b.addEventListener('click', onClick);
       odBox.appendChild(b);
     };
-    add('全部', { role: 'all' }, () => { playOdSet = null; onPlayFilterChange(); });
-    add('对穿', { role: 'opp' }, () => { playOdSet = new Set([...OPPOSITE_OD]); onPlayFilterChange(); });
-    PLAY_ODS.forEach(od => add(odLabel(od), { od }, () => togglePlayOd(od)));
+    OD_PRESETS.forEach(p => add(p.label, { role: p.role }, () => setOdPreset(p.role)));
   }
-
 }
 
 function syncPlayFilterUI() {
   buildPlayFilterChips();
   const odBox = $('playOdChips');
   if (odBox) {
-    const oppOn = playOdSet && setsEqual(playOdSet, OPPOSITE_OD);
     odBox.querySelectorAll('button').forEach(btn => {
-      const on = btn.dataset.role === 'all' ? !playOdSet
-        : btn.dataset.role === 'opp' ? Boolean(oppOn)
-        : Boolean(playOdSet && playOdSet.has(btn.dataset.od));
+      const preset = OD_PRESETS.find(p => p.role === btn.dataset.role);
+      const on = !preset?.ods ? !playOdSet
+        : Boolean(playOdSet && setsEqual(playOdSet, new Set(preset.ods)));
       btn.classList.toggle('on', on);
     });
   }
   if ($('playOdV')) $('playOdV').textContent = playOdSet ? [...playOdSet].map(odLabel).join(' · ') : '全部';
-  $('filterSummary').textContent = playbackFilterLabel();
+  if ($('filterSummary')) $('filterSummary').textContent = playbackFilterLabel();
 }
 
 function fmtPlaybackClock(t) {
@@ -2205,7 +2531,7 @@ function setPlaybackTime(t) {
 }
 
 function placeDrones() {
-  const live = usingCapacity() && flightData && flightRoutes && aircraftVisible;
+  const live = usingPlayback() && aircraftVisible;
   if (droneMesh) droneMesh.visible = Boolean(live);
   if (droneAccentMesh) droneAccentMesh.visible = Boolean(live);
   trailGroup.visible = Boolean(live);
@@ -2218,23 +2544,30 @@ function placeDrones() {
   const trails = [];
   let n = 0;
   let nFocus = 0;
+  const placed = [];
+  const sep2 = policyUavSepM > 0 ? policyUavSepM * policyUavSepM : 0;
   for (let i = 0; i < fl.length && n < MAX_DRONES; i++) {
     const ri = fl[i][0];
     const t0 = fl[i][1];
     const t1 = fl[i][2];
-    if (playbackT < t0 || playbackT > t1) continue;
+    const u = flightProgress(t0, t1);
+    if (u == null) continue;
     const route = flightRoutes[ri];
     if (!route || route.p.length < 2) continue;
-    // Height is a hard visibility filter; ghosting applies only within this layer.
     if (playAltSet && !playAltSet.has(route.h)) continue;
     const focused = routeFocused(ri, route);
     if (!focused) continue;
     nFocus++;
-    const u = (playbackT - t0) / Math.max(1e-3, t1 - t0);
     const p = atFlightRoute(route, u);
+    const x = p[0], y = p[2], z = -p[1];
+    if (sep2 > 0 && placed.some(q => {
+      const dx = x - q.x, dy = y - q.y, dz = z - q.z;
+      return dx * dx + dy * dy + dz * dz < sep2;
+    })) continue;
+    placed.push({ x, y, z });
     const p0 = atFlightRoute(route, Math.max(0, u - 0.003));
     const p1 = atFlightRoute(route, Math.min(1, u + 0.003));
-    droneDummy.position.set(p[0], p[2], -p[1]);
+    droneDummy.position.set(x, y, z);
     droneDummy.rotation.set(0, Math.atan2(p1[1] - p0[1], p1[0] - p0[0]), 0);
     const scale = 0.32; // Keep all aircraft at the unfocused reference size.
     droneDummy.scale.set(scale, scale, scale);
@@ -2264,23 +2597,18 @@ function placeDrones() {
 
 function syncPlaybackUI() {
   syncSheetNavigation();
-  const show = usingCapacity() && Boolean(flightData);
-  if ($('playbackWrap')) $('playbackWrap').style.display = show ? '' : 'none';
+  const show = usingPlayback();
+  if ($('playbackWrap')) $('playbackWrap').style.display = 'none';
   const hud = $('playHud');
   if (hud) hud.classList.toggle('on', show);
   droneGroup.visible = show && aircraftVisible;
   if (show) {
     ensureDroneMesh();
-    buildPlayFilterChips();
-    syncPlayFilterUI();
-    rebuildFocusRibbons();
     setPlaybackTime(playbackT);
     placeDrones();
+    if ($('filterSummary')) $('filterSummary').textContent = playbackFilterLabel();
     const nFlights = flightData.n_flights || (flightData.flights || []).length;
-    if ($('playbackNote')) {
-      $('playbackNote').textContent =
-        `真实一小时排班，共 ${nFlights.toLocaleString()} 架次。展示折线已绕开建筑（容量/噪声仍用原排班几何）；高度与方向控制当前显示。`;
-    }
+    if ($('playHudAir')) $('playHudAir').textContent = `当前显示 ${nFlights} 架`;
   } else {
     if (droneMesh) droneMesh.visible = false;
     if (droneAccentMesh) droneAccentMesh.visible = false;
@@ -2330,54 +2658,21 @@ function sampleCapacityField(x, y, z, channel) {
 }
 
 function syncRouteSourceUI() {
-  routeOpacityScale = routeOpacityBySource[routeSource];
+  routeOpacityScale = routeOpacityBySource.probe;
   $('routeOpacity').value = String(Math.round(routeOpacityScale * 100));
   $('opacityV').textContent = String(Math.round(routeOpacityScale * 100));
-  const capOn = usingCapacity();
-  const generation = $('routeGenerationWrap');
-  if (generation) generation.style.display = capOn ? 'none' : '';
   const density = $('density');
   if (density) {
-    density.disabled = capOn;
-    if (capOn) {
-      density.value = 2;
-      $('densityV').textContent = 2;
-    } else {
-      density.value = entriesPerEdge;
-      $('densityV').textContent = entriesPerEdge;
-    }
+    density.disabled = false;
+    density.value = entriesPerEdge;
+    $('densityV').textContent = entriesPerEdge;
   }
   const gap = $('heightGapV');
-  if (gap) gap.textContent = capOn ? '20 m' : '10 m';
-  const capInput = document.querySelector('input[name="routeSource"][value="capacity"]');
-  capInput.disabled = !PRECOMPUTED_FILES[currentBlock?.id];
-  capInput.parentElement.title = capInput.disabled ? '当前街区没有预计算排班数据' : '';
+  if (gap) gap.textContent = `${HEIGHT_GAP} m`;
   const note = $('routeSourceNote');
   const sub = $('sandboxSub');
-  if (routeSource === 'capacity' && currentBlock && !PRECOMPUTED_FILES[currentBlock.id]) {
-    if (note) note.textContent = '当前场景没有排班数据，已使用交互航线。';
-    if (sub) sub.textContent = '500 m 研究区 · 800 m halo';
-  } else if (routeSource === 'capacity' && !capOn) {
-    if (note) note.textContent = '正在加载当前街区的容量排班…';
-    if (sub) sub.textContent = `${currentBlock.name} · 排班加载中`;
-  } else if (capOn) {
-    if (note) {
-      note.textContent = usingNoiseV2()
-        ? '回放一小时排班；噪声为整小时预计算结果。'
-        : '容量排班仅保留东西 / 南北对向航线。';
-    }
-    if (sub) {
-      sub.textContent = usingNoiseV2()
-        ? 'Hong Kong OH 15_0 · 容量排班 + 噪声 v2'
-        : '容量排班 · 对向航线';
-    }
-  } else if (usingNoiseV2()) {
-    if (note) note.textContent = '交互生成航线；噪声仍为原情景预计算结果。';
-    if (sub) sub.textContent = currentBlock.id === 'rep-oh-hongkong' ? 'Hong Kong OH 15_0 · 白模 / 交互航线' : `${currentBlock.name} · 交互航线`;
-  } else {
-    if (note) note.textContent = '从 800 m halo 对边生成航线。';
-    if (sub) sub.textContent = '500 m 研究区 · 800 m halo';
-  }
+  if (note) note.textContent = `${policyRuleText()} · 800 m 外缘对穿`;
+  if (sub) sub.textContent = `${currentBlock?.name || ''} · ${policyRuleText()}`;
 }
 
 function restoreProbeAltitudes() {
@@ -2391,7 +2686,7 @@ function computeFlyableAt(alt) {
   let count = 0;
   let coreCount = 0;
   for (let k = 0; k < N * N; k++) {
-    fly[k] = heightField[k] + SAFETY_M < alt ? 1 : 0;
+    fly[k] = heightField[k] <= alt ? 1 : 0;
     count += fly[k];
     const i = k % N;
     const j = (k / N) | 0;
@@ -2403,24 +2698,251 @@ function computeFlyableAt(alt) {
   };
 }
 
-async function drawCapacityRoutes(version) {
+// ============ 净空规则对照：数据与几何 ============
+// 三个旋钮（galleryParams：净空距离 / 量法 / 离人距离）→ 逐高度半径 → 粉色禁区层、
+// 可飞体块、可飞百分比。矩阵与面板在文件末尾。预计算过参数的组合才有排班航线与容量。
+
+function galleryPlaceForBlock(block) {
+  return GALLERY_PLACES.find(p => p.sandboxId === block?.id) || null;
+}
+
+function galleryTagForBlock(block) {
+  return galleryPlaceForBlock(block)?.tag || null;
+}
+
+async function ensureGallery() {
+  if (galleryCells) return galleryCells;
+  if (!galleryLoading) {
+    galleryLoading = fetch(GALLERY_FILE)
+      .then(res => { if (!res.ok) throw new Error(`gallery ${res.status}`); return res.json(); })
+      .then(json => {
+        galleryCells = new Map((json.cells || []).map(c => [c.id, c]));
+        return galleryCells;
+      })
+      .catch(err => { console.warn(err); galleryLoading = null; return null; }); // 失败可重试
+  }
+  return galleryLoading;
+}
+
+// 当前参数三元组对应的预计算格；没有 → null（自定义参数：只有几何，没有排班与容量）
+function galleryCellFor(tag) {
+  if (!galleryCells || !tag) return null;
+  for (const pkg of GALLERY_PACKAGES) {
+    const cell = galleryCells.get(`${tag}_${pkg}`);
+    if (!cell) continue;
+    if (Number(cell.d_obs) === galleryParams.d &&
+        cell.building_metric === galleryParams.metric &&
+        Number(cell.pedestrian_clearance_m) === galleryParams.pedestrianM) return cell;
+  }
+  return null;
+}
+
+// 列头文案 = 参数本身（不出现任何辖区名）
+function galleryPackageLabel(cell) {
+  const d = Number(cell?.d_obs ?? galleryParams.d);
+  const ped = Number(cell?.pedestrian_clearance_m ?? galleryParams.pedestrianM);
+  if (ped > 0) return `离人${ped}`;
+  return `${d}m${cell?.building_metric === 'horizontal' ? '平' : ''}`;
+}
+
+function galleryRuleText() {
+  const parts = [`${galleryParams.d} m ${GALLERY_METRIC_LABEL[galleryParams.metric]}`];
+  if (galleryParams.pedestrianM > 0) parts.push(`离人 ${galleryParams.pedestrianM} m`);
+  return parts.join(' · ');
+}
+
+// 逐高度净空半径：与管线（policy_sweep_run.py）和原页面 keepAwayRadius() 同口径。
+// 离人规则与高度无关；水平量法取常数（屋顶正上方也不放行）；三维量法在屋顶以上按
+// √(d²−dz²) 收缩、dz≥d 后归零（可以从屋顶“抄近路”）。
+function galleryKeepAwayRadius(b, alt) {
+  const { d, metric, pedestrianM } = galleryParams;
+  if (pedestrianM > 0) return GALLERY_RING_M + pedestrianM;
+  if (metric === 'horizontal') return d;
+  if (alt <= b.h) return d;
+  const dz = alt - b.h;
+  if (dz >= d) return 0;
+  return Math.sqrt(d * d - dz * dz);
+}
+
+// 四态分类：逐字对应原页面 outcome()
+function galleryOutcome(cell) {
+  if (!cell) return 'loading';
+  const routes = cell.routes || [];
+  const throughUsed = routes.filter(r => OPPOSITE_OD.has(r.od) && r.used);
+  if (cell.capacity_status !== 'ok') {
+    if (cell.capacity_reason === 'empty_routes' || cell.probe_connected) return 'empty_path';
+    return 'blocked';
+  }
+  if (throughUsed.length === 0) return 'corners_only';
+  return 'ok';
+}
+
+// 该规则的高度层：预计算格给的是带高度上限的层高；自定义参数退回主沙盘的默认高度阶梯，
+// 保证高度地图永远非空（12 个 no_connection 格没有航线，不能让 altitudes 为空）。
+function galleryAltsFor(cell) {
+  const fromData = (cell?.layers || []).map(l => Number(l.h)).filter(Number.isFinite);
+  const base = fromData.length ? fromData : buildAltitudes(HEIGHT_GAP);
+  return [...new Set(base)].sort((a, b) => a - b);
+}
+
+// 半径与高度无关的规则（水平量法 / 离人距离）：全高度共用一张切片，
+// 省掉 5 倍重复外扩——实测东京 1167 栋下单张切片就要 0.4 s，重复算是纯浪费。
+function galleryRuleAltIndependent() {
+  return galleryParams.pedestrianM > 0 || galleryParams.metric === 'horizontal';
+}
+
+// 一个高度上的净空切片：外扩并集（画粉色禁区）+ 可飞面（算可飞%、喂体块）。
+// 外扩用 jtMiter 而非圆角：与主沙盘可飞体块同一套（受 ClipperLib 的 miter limit 限制），
+// 且在东京这种千栋级街区快 2.6 倍（实测 1152 ms → 441 ms）。
+function gallerySliceFor(alt) {
+  const sliceAlt = galleryRuleAltIndependent() ? 0 : alt;
+  const key = `${galleryTagForBlock(currentBlock)}|${galleryParams.d}|${galleryParams.metric}|${galleryParams.pedestrianM}|${sliceAlt}`;
+  const hit = gallerySliceCache.get(key);
+  if (hit) return hit;
+  const radii = obstacleBuildings.map(b => galleryKeepAwayRadius(b, sliceAlt));
+  const buffered = bufferedObstaclePaths(obstacleBuildings, CLIP_SCALE, radii, ClipperLib.JoinType.jtMiter);
+  const region = flyableRegion(buffered, CLIP_SCALE);
+  const slice = { solids: clipperPathsToSolids(buffered), region };
+  gallerySliceCache.set(key, slice);
+  return slice;
+}
+
+// 用画布把可飞面栅格化成 N×N（不要逐格点包含判定——那是一圈外环加上千个孔）
+function galleryFlyableAt(alt) {
+  const { region } = gallerySliceFor(alt);
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = N;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#000';
+  const path = new Path2D();
+  const addRing = ring => {
+    ring.forEach(([x, z], i) => {
+      const px = (x + HALF) / CELL, py = (z + HALF) / CELL;
+      if (i) path.lineTo(px, py); else path.moveTo(px, py);
+    });
+    path.closePath();
+  };
+  for (const s of region.solids) {
+    addRing(s.outer);
+    for (const h of s.holes) addRing(h);
+  }
+  ctx.fill(path, 'evenodd');
+  const img = ctx.getImageData(0, 0, N, N).data;
+  const fly = new Uint8Array(N * N);
+  let count = 0, coreCount = 0;
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      if (img[(j * N + i) * 4 + 3] > 127) {
+        fly[idx(i, j)] = 1; count++;
+        if (isCoreCell(i, j)) coreCount++;
+      }
+    }
+  }
+  return { flyable: fly, flyPct: { all: count / (N * N), core: coreCount / (CORE_N * CORE_N) } };
+}
+
+// 禁区层画在高度地图当前选中的那一层上（沿用“高度地图是唯一选层入口”的约定）
+function galleryKeepAlt() {
+  if (!altitudes.length) return ALT_MIN;
+  return altitudes[Math.max(0, Math.min(selectedHeightIndex, altitudes.length - 1))];
+}
+
+function clearGalleryKeepAway() {
+  for (const child of galleryKeepGroup.children) child.geometry?.dispose(); // 材质共用，不 dispose
+  galleryKeepGroup.clear();
+}
+
+function drawGalleryKeepAway() {
+  clearGalleryKeepAway();
+  galleryKeepGroup.visible = routeSource === 'gallery' && galleryKeepVisible && Boolean(currentBlock);
+  if (!galleryKeepGroup.visible) return;
+  const alt = galleryKeepAlt();
+  const { solids } = gallerySliceFor(alt);
+  const positions = [], indices = [];
+  for (const s of solids) emitCap(s.outer, s.holes, alt + 0.4, true, positions, indices);
+  if (!positions.length) return;
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  const mesh = new THREE.Mesh(geom, galleryKeepMat);
+  mesh.renderOrder = 6;
+  galleryKeepGroup.add(mesh);
+}
+
+// 可飞体块按所选规则重算：水平量法与离人规则全程阻挡（直棱柱），
+// 三维量法按屋顶以上收缩（梯田）；体块封顶在该规则的最高层高。
+function galleryVolumeSpec(cell) {
+  const alts = galleryAltsFor(cell);
+  return {
+    buildings: obstacleBuildings,
+    yMax: Math.min(ALT_MAX, Math.max(...alts, FLYABLE_VISUAL_BASE_M)),
+    gallery: {
+      d: galleryParams.d,
+      metric: galleryParams.metric,
+      pedestrianM: galleryParams.pedestrianM,
+      ringM: GALLERY_RING_M,
+    },
+  };
+}
+
+async function recomputeGallery(version) {
+  const loaded = await ensureGallery();
+  if (version !== computeVersion) return false;
+  if (!loaded || !galleryTagForBlock(currentBlock)) return false;
+  const cell = galleryCellFor(galleryTagForBlock(currentBlock));
+  const routes = cell?.routes || [];
+  flyableVolumeSpec = galleryVolumeSpec(cell);
+  // 规则对照不叠外部性：cell.noise 是标量、与噪声 v2 的面片口径不同，混图例会讲错话
+  noiseEnabled = false;
+  const noiseBox = $('noiseToggle');
+  if (noiseBox) noiseBox.checked = false;
+  const busy = $('busy');
+  if (busy) busy.textContent = cell ? '加载净空规则航线…' : '按当前参数重算净空几何…';
+  const ok = await drawCapacityRoutes(version, {
+    routes,
+    alts: galleryAltsFor(cell),
+    flyableAt: alt => galleryFlyableAt(alt),
+  });
+  if (!ok || version !== computeVersion) return false;
+  drawGalleryKeepAway();
+  rebuildFlyableVolume();
+  updateMetrics();
+  drawMiniMap();
+  syncRouteSourceUI();
+  syncPlaybackUI();
+  syncSceneLegend();
+  paintGalleryMatrix();
+  writeGalleryStatus(cell);
+  return true;
+}
+
+// opts 可选（净空规则模式用）：routes（改用这组航线）/ alts（改用这组高度层，
+// 没有航线的格子高度地图也不至于空）/ flyableAt(alt)（改用这套可飞面）。
+// 省略 opts 时（容量排班）行为与旧实现一致。
+async function drawCapacityRoutes(version, opts) {
   const byAlt = new Map();
-  for (const r of flightRoutes || precomputed.raw.routes) {
+  for (const r of opts?.routes || flightRoutes || precomputed.raw.routes) {
     const alt = r.h;
     if (!byAlt.has(alt)) byAlt.set(alt, []);
     byAlt.get(alt).push(r.p.map(([e, n, u]) => [e, u, -n]));
   }
-  altitudes = [...byAlt.keys()].sort((a, b) => a - b);
+  const altList = opts?.alts?.length ? opts.alts : [...byAlt.keys()];
+  altitudes = [...new Set(altList)].sort((a, b) => a - b);
+  if (!altitudes.length) altitudes = [ALT_MIN]; // 兜底：Math.max(...[]) 会得到 -Infinity
   maxHeightWeight = Math.max(...altitudes.map(heightWeight));
   buildMapTiles();
   for (const alt of altitudes) {
     if (version !== computeVersion) return false;
-    const polys = byAlt.get(alt);
-    const { flyable: fly, flyPct } = computeFlyableAt(alt);
+    const polys = byAlt.get(alt) || [];
+    const { flyable: fly, flyPct } = opts?.flyableAt ? opts.flyableAt(alt) : computeFlyableAt(alt);
     const weight = heightWeight(alt) / maxHeightWeight;
     const routeOpacity = 0.010 + 0.070 * weight;
-    const mesh = makeWorldRibbonMesh(polys, routeOpacity, altitudeColorHex(alt));
-    if (mesh) { bindRouteOpacity(mesh, routeOpacity, 0.55); routeGroup.add(mesh); }
+    if (polys.length) {
+      const mesh = makeWorldRibbonMesh(polys, routeOpacity, altitudeColorHex(alt));
+      // userData.altitude：高度层筛选要用（容量模式靠 usingCapacity() 短路，probe 模式由 drawAltitudeResult 设置）
+      if (mesh) { mesh.userData.altitude = alt; bindRouteOpacity(mesh, routeOpacity, 0.55); routeGroup.add(mesh); }
+    }
     totalRoutes += polys.length;
     routeSummaries.push({
       alt,
@@ -2440,7 +2962,7 @@ async function drawCapacityRoutes(version) {
 
 function startProbeWorker(version, resolve) {
   activeComputeDone = resolve;
-  routeWorker = new Worker('route-worker.js?v=' + Date.now());  // cache-bust: always load latest worker
+  routeWorker = new Worker('route-worker.js?v=ux-38');
   routeWorker.onmessage = event => {
     const { type, result, version: msgVersion } = event.data;
     if (msgVersion !== computeVersion || msgVersion !== version) return;
@@ -2453,9 +2975,12 @@ function startProbeWorker(version, resolve) {
         routeWorker = null;
         activeComputeDone = null;
         routeSummaries.sort((a, b) => a.alt - b.alt);
+        rebuildRouteMeshes();
         updateMetrics();
         drawMiniMap();
-        rebuildFlyableVolume();
+        buildLiveFlightsFromSummaries();
+        syncPlayFilterUI();
+        syncPlaybackUI();
         if (noiseEnabled) scheduleExternalityLayer();
         resolve(true);
       });
@@ -2479,6 +3004,8 @@ function startProbeWorker(version, resolve) {
     maxHeightWeight,
     altitudes: altitudes.slice(),
     heightFieldBuffer,
+    padM: 0,
+    uavSepM: policyUavSepM,
   }, [heightFieldBuffer]);
 }
 
@@ -2488,40 +3015,15 @@ async function recompute(version) {
   externalityVersion++;
   clearNoiseLayer();
   disposeRouteLayer();
-  clearFlyableVolume();
   totalRoutes = 0;
   routeSummaries = [];
   routeDrawChain = Promise.resolve();
   precomputed = null;
   capacityField = null;
-
-  if (routeSource === 'capacity') {
-    try {
-      const [pc] = await Promise.all([
-        ensurePrecomputed(currentBlock?.id),
-        ensureFlights(currentBlock?.id),
-      ]);
-      if (version !== computeVersion) return false;
-      precomputed = pc;
-    } catch (err) {
-      console.warn(err);
-      precomputed = null;
-    }
-    if (precomputed) capacityField = precomputed;
-    if (usingCapacity()) {
-      const busy = $('busy');
-      if (busy) busy.textContent = '加载容量航线与 SZU 噪声...';
-      const ok = await drawCapacityRoutes(version);
-      if (!ok || version !== computeVersion) return false;
-      updateMetrics();
-      drawMiniMap();
-      rebuildFlyableVolume();
-      if (noiseEnabled) scheduleExternalityLayer();
-      syncRouteSourceUI();
-      syncPlaybackUI();
-      syncSceneLegend();
-      return true;
-    }
+  flyableVolumeSpec = policyVolumeSpec();
+  if (typeof clearGalleryKeepAway === 'function') {
+    clearGalleryKeepAway();
+    galleryKeepGroup.visible = false;
   }
 
   flightData = null;
@@ -2593,51 +3095,36 @@ function drawMiniMap() {
     const toX = wx => (wx + HALF) / DOMAIN * W;
     const toY = wz => H - (wz + HALF) / DOMAIN * H;
     // The map and 3D filter ribbons use the same scheduled routes and OD labels.
-    const mapPaths = s.worldPaths && usingCapacity() && flightRoutes
-      ? flightRoutes.filter(r => r.h === s.alt && (!playOdSet || playOdSet.has(r.od))).map(r => r.p.map(p => [p[0], -p[1]]))
-      : s.worldPaths;
-    if (mapPaths) {
-      for (const path of mapPaths) {
-        let drawing = false;
-        ctx.beginPath();
-        for (const [wx, wz] of path) {
-          if (Math.abs(wx) > HALF || Math.abs(wz) > HALF) {
-            if (drawing) {
-              ctx.stroke();
-              ctx.beginPath();
-              drawing = false;
-            }
-            continue;
-          }
-          const x = toX(wx);
-          const y = toY(wz);
-          if (!drawing) {
-            ctx.moveTo(x, y);
-            drawing = true;
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-        if (drawing) ctx.stroke();
-      }
+    let mapPaths;
+    if (s.worldPaths && flightRoutes) {
+      mapPaths = flightRoutes.filter(r => r.h === s.alt && routeInFilter(r)).map(r => r.p.map(p => [p[0], -p[1]]));
+    } else if (s.worldPaths) {
+      mapPaths = s.worldPaths;
     } else {
-      for (const path of s.paths) {
-        let drawing = false;
-        ctx.beginPath();
-        for (const k of path) {
-          const i = k % N;
-          const j = (k / N) | 0;
-          const x = (i + 0.5) / N * W;
-          const y = H - (j + 0.5) / N * H;
-          if (!drawing) {
-            ctx.moveTo(x, y);
-            drawing = true;
-          } else {
-            ctx.lineTo(x, y);
+      mapPaths = visibleSummaryPaths(s).map(path => path.map(k => [gx(k % N), iToZ((k / N) | 0)]));
+    }
+    for (const path of mapPaths) {
+      let drawing = false;
+      ctx.beginPath();
+      for (const [wx, wz] of path) {
+        if (Math.abs(wx) > HALF || Math.abs(wz) > HALF) {
+          if (drawing) {
+            ctx.stroke();
+            ctx.beginPath();
+            drawing = false;
           }
+          continue;
         }
-        if (drawing) ctx.stroke();
+        const x = toX(wx);
+        const y = toY(wz);
+        if (!drawing) {
+          ctx.moveTo(x, y);
+          drawing = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
       }
+      if (drawing) ctx.stroke();
     }
     ctx.globalAlpha = 1;
     const x0 = CORE_OFFSET / N * W;
@@ -2650,7 +3137,7 @@ function drawMiniMap() {
     ctx.strokeStyle = '#1677ff';
     ctx.strokeRect(1, 1, W - 2, H - 2);
     const cap = $(`mapCap-${si}`);
-    if (cap) { cap.textContent = `${mapPaths ? mapPaths.length : s.pathCount || s.paths.length} 条 · 可飞 ${Math.round(s.flyPct.core * 100)}%`; }
+    if (cap) { cap.textContent = `${mapPaths.length} 条 · 可飞 ${Math.round(s.flyPct.core * 100)}%`; }
   });
 }
 
@@ -2660,11 +3147,40 @@ function cellToVec(k, alt) {
 
 function collectNoiseSegments() {
   const segments = [];
+  if (flightRoutes && flightRoutes.length) {
+    const routes = flightRoutes.filter(routeInFilter);
+    const stride = Math.max(1, Math.ceil(routes.length / (NOISE_MAX_PATHS_PER_ALT * Math.max(1, altitudes.length))));
+    for (let ri = 0; ri < routes.length; ri += stride) {
+      const route = routes[ri];
+      const pts = route.p;
+      if (!pts || pts.length < 2) continue;
+      const step = Math.max(1, Math.floor(pts.length / 24));
+      for (let i = 0; i < pts.length - 1; i += step) {
+        const pa = pts[i];
+        const pb = pts[Math.min(pts.length - 1, i + step)];
+        const a = new THREE.Vector3(pa[0], pa[2], -pa[1]);
+        const b = new THREE.Vector3(pb[0], pb[2], -pb[1]);
+        const hx = b.x - a.x;
+        const hz = b.z - a.z;
+        const hLen = Math.hypot(hx, hz) || 1;
+        segments.push({
+          a, b,
+          amp: heightWeight(route.h) / maxHeightWeight * stride * step,
+          dirX: hx / hLen,
+          dirZ: hz / hLen,
+          alt: route.h,
+        });
+        if (segments.length >= NOISE_MAX_SEGMENTS) return segments;
+      }
+    }
+    return segments;
+  }
   for (const s of routeSummaries) {
-    if (!s.paths.length) continue;
-    const stride = Math.max(1, Math.ceil(s.paths.length / NOISE_MAX_PATHS_PER_ALT));
-    for (let pi = 0; pi < s.paths.length; pi += stride) {
-      const path = s.paths[pi];
+    const paths = visibleSummaryPaths(s);
+    if (!paths.length) continue;
+    const stride = Math.max(1, Math.ceil(paths.length / NOISE_MAX_PATHS_PER_ALT));
+    for (let pi = 0; pi < paths.length; pi += stride) {
+      const path = paths[pi];
       const cellStep = Math.max(1, Math.floor(path.length / 24));
       for (let ci = 0; ci < path.length - 1; ci += cellStep) {
         const a = cellToVec(path[ci], s.alt);
@@ -2673,8 +3189,7 @@ function collectNoiseSegments() {
         const hz = b.z - a.z;
         const hLen = Math.hypot(hx, hz) || 1;
         segments.push({
-          a,
-          b,
+          a, b,
           amp: s.weight * stride * cellStep,
           dirX: hx / hLen,
           dirZ: hz / hLen,
@@ -2746,7 +3261,12 @@ function noiseAt(px, py, pz, segments, channel = externalityChannel) {
       const angularSize = sigmoid((115 - Math.sqrt(d2)) / 28);
       v += s.amp * highAnglePenalty * sameHeightBoost * angularSize / (155 + d2 * 0.82);
     } else {
+      // Direct spherical spreading + ground image source (coarse 1st-order reflection).
       v += s.amp / (420 + d2);
+      const imgA = { x: s.a.x, y: -Math.abs(s.a.y), z: s.a.z };
+      const imgB = { x: s.b.x, y: -Math.abs(s.b.y), z: s.b.z };
+      const d2r = pointSegmentDistanceSq3(px, py, pz, imgA, imgB);
+      v += 0.47 * s.amp / (420 + d2r);
     }
   }
   return v;
@@ -2786,6 +3306,7 @@ function scheduleExternalityLayer() {
   clearTimeout(externalityTimer);
   const version = ++externalityVersion;
   $('busy').classList.add('on');
+  $('busy').textContent = '估算当前航线的影响...';
   externalityTimer = setTimeout(async () => {
     await nextFrame();
     await buildNoiseLayer(version);
@@ -2795,14 +3316,8 @@ function scheduleExternalityLayer() {
 
 async function buildNoiseLayer(version) {
   clearNoiseLayer();
-  if (usingNoiseV2()) {
-    colorNoiseV2Mesh(noiseEnabled);
-    applyNoiseV2Visibility();
-    return;
-  }
-  const capOn = usingCapacity();
-  const segments = capOn ? [] : collectNoiseSegments();
-  if (!capOn && !segments.length) return;
+  const segments = collectNoiseSegments();
+  if (!segments.length) return;
   const channel = CHANNELS[externalityChannel] || CHANNELS.noise;
   const chKey = externalityChannel;
 
@@ -2815,9 +3330,7 @@ async function buildNoiseLayer(version) {
       const z = -CORE_HALF + CORE_DOMAIN * j / NOISE_GRID;
       const y = terrainVisualHeight(x, z) + 0.42;
       groundPositions.push(x, y, z);
-      const raw = capOn
-        ? sampleCapacityGround(x, z, chKey)
-        : noiseAt(x, y, z, segments);
+      const raw = noiseAt(x, y, z, segments);
       groundValues.push(channel.ground ? raw * channel.ground : 0);
     }
     if (j % 5 === 4) {
@@ -2844,7 +3357,7 @@ async function buildNoiseLayer(version) {
       const wx = pos.getX(i) + b.group.position.x;
       const wy = pos.getY(i) + b.group.position.y;
       const wz = pos.getZ(i) + b.group.position.z;
-      const raw = capOn ? sampleCapacityField(wx, wy, wz, chKey) : noiseAt(wx, wy, wz, segments);
+      const raw = noiseAt(wx, wy, wz, segments);
       probeValues.push(raw * channel.facade);
     }
     overlayGeoms.push({ b, geom });
@@ -2883,7 +3396,7 @@ async function buildNoiseLayer(version) {
       const wx = pos.getX(i) + b.group.position.x;
       const wy = pos.getY(i) + b.group.position.y;
       const wz = pos.getZ(i) + b.group.position.z;
-      const value = (capOn ? sampleCapacityField(wx, wy, wz, chKey) : noiseAt(wx, wy, wz, segments)) * channel.facade;
+      const value = noiseAt(wx, wy, wz, segments) * channel.facade;
       const rawHot = Math.log1p(value / norm * 3.2) / Math.log1p(3.2);
       const hot = 0.10 + 0.90 * rawHot;
       const c = colorRamp(hot, channel.palette);
@@ -2930,12 +3443,11 @@ function applyRouteVisibility() {
   routeGroup.visible = routesVisible && !focused;
   anchorGroup.visible = routesVisible && !focused;
   focusRibbonGroup.visible = routesVisible && focused;
-  droneGroup.visible = usingCapacity() && Boolean(flightData) && aircraftVisible;
+  droneGroup.visible = usingPlayback() && aircraftVisible;
 }
 
 function applyAuxiliaryBuildingVisibility() {
-  // Replace duplicate white geometry only after a usable voxel mesh has loaded.
-  const replaceWhiteModel = usingNoiseV2() && Boolean(noiseV2Mesh) && (noiseEnabled || Boolean(currentBlock?.noiseV2));
+  const replaceWhiteModel = Boolean(currentBlock?.noiseV2) && Boolean(noiseV2Mesh) && !(currentBlock.buildings && currentBlock.buildings.length);
   for (const b of buildings) {
     if (!b.group) continue;
     if (replaceWhiteModel) {
@@ -3076,18 +3588,6 @@ $('presets').addEventListener('change', e => {
   loadPreset(e.target.value);
 });
 
-document.querySelectorAll('input[name="routeSource"]').forEach(input => {
-  input.addEventListener('change', e => {
-    if (!e.target.checked) return;
-    routeSource = e.target.value;
-    routeSourcePreference = routeSource;
-    playAltSet = null;
-    syncRouteSourceUI(); syncPlaybackUI(); syncSceneLegend();
-    routeSummaries = []; buildMapTiles(); $('altLegend').textContent = '正在更新航线…';
-    scheduleCompute();
-  });
-});
-
 $('density').addEventListener('input', e => {
   if (e.target.disabled) return;
   entriesPerEdge = +e.target.value;
@@ -3174,9 +3674,6 @@ bindPlaybackControls();
 $('noiseToggle').addEventListener('change', e => {
   noiseEnabled = e.target.checked;
   applyAuxiliaryBuildingVisibility();
-  if (usingNoiseV2()) {
-    return;
-  }
   if (noiseEnabled) {
     scheduleExternalityLayer();
   } else {
@@ -3243,10 +3740,7 @@ $('heightGuideToggle').addEventListener('change', e => {
   heightGuideGroup.visible = heightGuidesVisible;
 });
 
-$('flyableVolumeToggle').addEventListener('change', e => {
-  flyableVolumeVisible = e.target.checked;
-  rebuildFlyableVolume();
-});
+$('flyableVolumeToggle').addEventListener('change', e => setFlyableVolumeVisible(e.target.checked));
 
 // ===== 空中探针:在空中点一个无人机,直接看它在地面投出的单源风险分布 =====
 let probeMode = false;
@@ -3538,21 +4032,26 @@ function fitScene() {
 
 function syncSceneLegend() {
   if (!$('sceneLegendTitle')) return;
-  const v2 = usingNoiseV2();
   const title = $('sceneLegendTitle'), bar = $('sceneLegendBar'), scale = $('sceneLegendScale');
   if (noiseEnabled) {
-    title.textContent = v2 ? `噪声 · ${NOISE_V2_TIERS[noiseV2Tier]}` : `${(CHANNELS[externalityChannel] || CHANNELS.noise).label} · 浏览器估算`;
+    title.textContent = `${(CHANNELS[externalityChannel] || CHANNELS.noise).label} · 当前航线粗估`;
     bar.style.background = 'linear-gradient(90deg,#3b4cc0 0%,#6888ee 18%,#aac6fd 36%,#f2f2f2 50%,#fcbea1 64%,#db5e4b 82%,#b40426 100%)';
-    scale.textContent = v2 ? `${noiseV2.raw.vp5.toFixed(1)} — ${noiseV2.raw.vp95.toFixed(1)} dB · L_Aeq` : '低 ← 相对影响 → 高';
-    $('sceneLegendNote').textContent = v2 ? '色带按 P5–P95 截断；端点外数值使用边界颜色。' : '仅用于比较空间分布，不作为论文定量结果。';
+    scale.textContent = '低 ← 相对影响 → 高';
+    $('sceneLegendNote').textContent = $('routeToggle').checked
+      ? '带子颜色是巡航高度；地面/立面是当前航线的相对影响。只看分布，不作论文定量。'
+      : '随航线、方向筛选和净空旋钮重算；只看分布，不作论文定量。';
   } else {
     const routesOn = $('routeToggle').checked;
     title.textContent = routesOn ? '航线 · 巡航高度' : '街区形态 · 可飞空间';
     bar.style.background = routesOn ? 'linear-gradient(90deg,#440154,#3b528b,#21918c,#5ec962,#fde725)' : '#d8dde1';
-    scale.textContent = routesOn ? `${Math.min(...altitudes)} m — ${Math.max(...altitudes)} m` : '黑框：500 m 核心区 · 外围：缓冲区';
-    $('sceneLegendNote').textContent = routesOn ? (usingCapacity() ? '在地图选层，在地图下方筛选方向。' : '交互航线连接缓冲区对边；颜色表示巡航高度。') : '左侧查看各高度切片，浅色表示可飞空间。';
+    scale.textContent = routesOn
+      ? (altitudes.length ? `${Math.min(...altitudes)} m — ${Math.max(...altitudes)} m` : '—')
+      : '黑框：500 m 核心区 · 外围：缓冲区';
+    $('sceneLegendNote').textContent = routesOn
+      ? '800 m 外缘对穿；颜色表示巡航高度。'
+      : '蓝色体块是当前侧向/纵向净空下的可飞空间。';
   }
-  $('sceneScope').textContent = v2 ? '噪声为原情景整小时预计算结果。播放、筛选及交互航线调整仅改变航线显示，噪声不重算。' : '当前为交互航线探索，非正式计算结果。';
+  $('sceneScope').textContent = '机间距为任意两机三维距离。入口铺在未挡住的开口上。';
   $('impactToggle').checked = noiseEnabled;
 }
 
@@ -3562,12 +4061,17 @@ function setLayer(id, checked) {
 }
 
 function applyDisplayPreset(tab) {
-  // Spatial inspection shares the current scene and playback with the route panel.
+  // Tabs only open tools. Do not hide routes just because impact coloring is on.
   if (tab === 'settings' || tab === 'view') return;
-  setLayer('routeToggle', tab === 'routes');
-  setLayer('aircraftToggle', tab === 'routes');
-  setLayer('noiseToggle', tab === 'analysis');
   setLayer('buildingToggle', true);
+  if (tab === 'routes') {
+    setLayer('routeToggle', true);
+    setLayer('aircraftToggle', true);
+  }
+  if (tab === 'analysis') {
+    setLayer('routeToggle', true);
+    setLayer('noiseToggle', true);
+  }
   syncSceneLegend();
 }
 
@@ -3590,7 +4094,7 @@ $('panelToggle').addEventListener('click', () => {
 $('clearFilters').addEventListener('click', () => { playOdSet = null; onPlayFilterChange(); });
 $('impactToggle').addEventListener('change', e => setLayer('noiseToggle', e.target.checked));
 // Keep controls in small, named pages instead of stacking a scrolling form.
-const sheetSelections = {view:'overview',routes:'height',analysis:'model'};
+const sheetSelections = {view:'overview',routes:'policy',analysis:'model'};
 let selectedHeightIndex = 0;
 let sheetRegistry = {};
 function syncSheetNavigation() {
@@ -3600,7 +4104,10 @@ function syncSheetNavigation() {
   sheetSelections.view = altitudeIndex >= 0 ? 'single' : 'overview';
   if (altitudeIndex >= 0) selectedHeightIndex = altitudeIndex;
   const tab = document.body.dataset.view || 'routes';
-  const pages = (sheetRegistry[tab] || []).filter(p => (!p.capacity || routeSource === 'capacity') && (!p.interactive || routeSource === 'probe'));
+  const pages = (sheetRegistry[tab] || []).filter(p =>
+    (!p.capacity || routeSource === 'capacity') &&
+    (!p.interactive || routeSource === 'probe') &&
+    (!p.gallery || routeSource === 'gallery'));
   $('sheetNav').classList.toggle('singleSection', pages.length <= 1);
   const selected = pages.find(p => p.id === sheetSelections[tab]) || pages[0];
   const pendingCapacity = routeSource === 'capacity' && !usingCapacity();
@@ -3695,14 +4202,12 @@ function organizeViewPanel(pages) {
 
 function organizePanelPages() {
   const panel = $('controlPanel');
-  const routePanel = document.querySelector('[data-panel="routes"]');
   const spatial = document.querySelector('[data-panel="view"]');
   const analysis = document.querySelector('[data-panel="analysis"]');
-  const mode = $('routeSourceRadios').closest('.controlGroup');
-  mode.id = 'globalRouteMode';
-  const generation = $('routeGenerationWrap');
+  const policy = $('policyWrap');
 
-  const layers = document.querySelector('.layerList').closest('.controlGroup');
+  // 限定在视图面板内查找：净空规则 sheet 里也有一份 .layerList，全局 query 会选错
+  const layers = spatial.querySelector('.layerList').closest('.controlGroup');
   const settingsSource = spatial.querySelector('details');
   const settingsFields = [...settingsSource.querySelector('.controlGrid').children];
   const cameraPage = document.createElement('div'), lightPage = document.createElement('div');
@@ -3729,9 +4234,9 @@ function organizePanelPages() {
   const selectHeight = i => {setSharedHeight(i);$('heightBack').focus({preventScroll:true});};
   grid.addEventListener('click',e => {const tile=e.target.closest('.mapTile');if(tile) selectHeight([...grid.children].indexOf(tile));});
   grid.addEventListener('keydown',e => {if(e.key==='Enter'||e.key===' '){const tile=e.target.closest('.mapTile');if(tile){e.preventDefault();selectHeight([...grid.children].indexOf(tile));}}});
-  function add(tab,id,label,node,capacity=false,interactive=false) {
+  function add(tab,id,label,node,capacity=false,interactive=false,gallery=false) {
     node.classList.add('deckSheet');node.dataset.sheet=id;
-    (sheetRegistry[tab] ||= []).push({id,label,node,capacity,interactive});
+    (sheetRegistry[tab] ||= []).push({id,label,node,capacity,interactive,gallery});
     document.querySelector(`[data-panel="${tab}"]`).appendChild(node);
   }
   const heightPage = document.createElement('div');heightPage.id='heightPage';
@@ -3739,7 +4244,7 @@ function organizePanelPages() {
   add('routes','height','高度地图',heightPage);
   const pending = document.createElement('p');pending.id='capacityPending';pending.className='sub';pending.textContent='正在准备排班航线…';$('playbackWrap').prepend(pending);
   heightPage.appendChild($('playbackWrap'));
-  add('routes','generation','航线生成',generation,false,true);
+  add('routes','policy','净空规则',policy);
   add('analysis','model','影响模型',model);add('analysis','probe','点位取样',probe);
   organizeViewPanel([{label:'图层',node:layers},{label:'视角',node:cameraPage},{label:'光照',node:lightPage}]);
   spatial.remove();
@@ -3752,17 +4257,176 @@ function organizePanelPages() {
   $('heightPrev').addEventListener('click',()=>{setSharedHeight(selectedHeightIndex - 1);});
   $('heightNext').addEventListener('click',()=>{setSharedHeight(selectedHeightIndex + 1);});
   syncSheetNavigation();
+  syncPlayFilterUI();
 }
 organizePanelPages();
+
+// ---- 净空规则对照：矩阵、旋钮、状态行 ----
+function galleryCellTitle(tag, pkgId) {
+  const cell = galleryCells?.get(`${tag}_${pkgId}`) || null;
+  const place = GALLERY_PLACES.find(p => p.tag === tag);
+  const block = BLOCKS.find(b => b.id === place?.sandboxId);
+  const label = cell ? galleryPackageLabel(cell) : '—';
+  const kind = GALLERY_KIND_LABEL[galleryOutcome(cell)];
+  const cap = cell?.capacity_per_hour != null ? ` · ${Math.round(cell.capacity_per_hour).toLocaleString('en-US')} 架次/时` : '';
+  return `${block?.name || tag} · 净空 ${label} · ${kind}${cap}`;
+}
+
+function buildGalleryMatrix() {
+  const root = $('galleryMatrix');
+  if (!root || root.dataset.ready) return;
+  const head = document.createElement('div');
+  head.className = 'galleryRow galleryHead';
+  head.appendChild(document.createElement('span'));
+  for (const pkg of GALLERY_PACKAGES) {
+    const span = document.createElement('span');
+    const cell = galleryCells?.get(`${GALLERY_PLACES[0].tag}_${pkg}`);
+    span.textContent = cell ? galleryPackageLabel(cell) : '—';
+    head.appendChild(span);
+  }
+  root.appendChild(head);
+  for (const place of GALLERY_PLACES) {
+    const row = document.createElement('div');
+    row.className = 'galleryRow';
+    const lab = document.createElement('button');
+    lab.type = 'button';
+    lab.className = 'galleryLab';
+    lab.dataset.row = place.tag;
+    lab.textContent = place.label;
+    lab.title = `加载 ${BLOCKS.find(b => b.id === place.sandboxId)?.name || place.tag}`;
+    lab.setAttribute('aria-label', lab.title);
+    lab.addEventListener('click', () => {
+      const block = BLOCKS.find(b => b.id === place.sandboxId);
+      if (block) { routeSourcePreference = 'gallery'; loadPreset(block.name); }
+    });
+    row.appendChild(lab);
+    for (const pkg of GALLERY_PACKAGES) {
+      const cellBtn = document.createElement('button');
+      cellBtn.type = 'button';
+      cellBtn.className = 'galleryCell';
+      cellBtn.dataset.cell = `${place.tag}|${pkg}`;
+      cellBtn.addEventListener('click', () => selectGalleryCell(place.tag, pkg));
+      row.appendChild(cellBtn);
+    }
+    root.appendChild(row);
+  }
+  root.dataset.ready = '1';
+  paintGalleryMatrix();
+}
+
+function paintGalleryMatrix() {
+  const root = $('galleryMatrix');
+  if (!root || !root.dataset.ready) return;
+  const curTag = galleryTagForBlock(currentBlock);
+  for (const btn of root.querySelectorAll('[data-cell]')) {
+    const [tag, pkgId] = btn.dataset.cell.split('|');
+    const cell = galleryCells?.get(`${tag}_${pkgId}`) || null;
+    btn.dataset.kind = galleryOutcome(cell);
+    const matched = Boolean(cell) && tag === curTag &&
+      Number(cell.d_obs) === galleryParams.d &&
+      cell.building_metric === galleryParams.metric &&
+      Number(cell.pedestrian_clearance_m) === galleryParams.pedestrianM;
+    btn.classList.toggle('on', matched);
+    const title = galleryCellTitle(tag, pkgId);
+    btn.title = title;
+    btn.setAttribute('aria-label', title);
+  }
+  for (const el of root.querySelectorAll('.galleryLab')) el.classList.toggle('on', el.dataset.row === curTag);
+}
+
+function writeGalleryStatus(cell) {
+  const el = $('galleryStatus');
+  if (!el) return;
+  const kind = galleryOutcome(cell);
+  el.dataset.kind = kind;
+  const cap = cell?.capacity_per_hour != null ? `${Math.round(cell.capacity_per_hour).toLocaleString('en-US')} 架次/时` : '—';
+  el.textContent = cell ? `${GALLERY_KIND_LABEL[kind]} · ${cap}` : `自定义 · ${galleryRuleText()} · ${cap}`;
+}
+
+function syncGalleryControls() {
+  const dEl = $('galleryD'), dV = $('galleryDV');
+  if (dEl) dEl.value = String(galleryParams.d);
+  if (dV) dV.textContent = String(galleryParams.d);
+  const pedEl = $('galleryPed'), pedV = $('galleryPedV');
+  if (pedEl) pedEl.value = String(galleryParams.pedestrianM);
+  if (pedV) pedV.textContent = galleryParams.pedestrianM > 0 ? `${galleryParams.pedestrianM} m` : '关';
+  const chips = $('galleryMetricChips');
+  if (chips) for (const b of chips.querySelectorAll('button')) b.classList.toggle('on', b.dataset.metric === galleryParams.metric);
+}
+
+// 切到净空规则模式（不重建建筑；换街区仍走 loadPreset）
+function enterGalleryMode() {
+  const switched = routeSource !== 'gallery';
+  routeSource = 'gallery';
+  routeSourcePreference = 'gallery';
+  const input = document.querySelector('input[name="routeSource"][value="gallery"]');
+  if (input && !input.checked) input.checked = true;
+  sheetSelections.routes = 'gallery';
+  if (switched) { playAltSet = null; syncRouteSourceUI(); syncPlaybackUI(); syncSceneLegend(); }
+}
+
+// live = 拖动滑块中：读数/高亮立刻跟手，重活（外扩、体块、航线）等停手 220 ms 再做
+function setGalleryParams(patch, live = false) {
+  galleryParams = { ...galleryParams, ...patch };
+  syncGalleryControls();
+  gallerySliceCache.clear();
+  paintGalleryMatrix();
+  writeGalleryStatus(galleryCellFor(galleryTagForBlock(currentBlock)));
+  enterGalleryMode();
+  clearTimeout(galleryComputeTimer);
+  if (live) {
+    galleryComputeTimer = setTimeout(() => { drawGalleryKeepAway(); scheduleCompute(); }, 220);
+    return;
+  }
+  scheduleCompute();
+}
+
+function selectGalleryCell(tag, pkg) {
+  const cell = galleryCells?.get(`${tag}_${pkg}`);
+  if (!cell) return;
+  galleryParams = {
+    d: Number(cell.d_obs),
+    metric: cell.building_metric || 'euclidean_3d',
+    pedestrianM: Number(cell.pedestrian_clearance_m || 0),
+  };
+  syncGalleryControls();
+  enterGalleryMode();
+  gallerySliceCache.clear();
+  paintGalleryMatrix();
+  const place = GALLERY_PLACES.find(p => p.tag === tag);
+  if (tag !== galleryTagForBlock(currentBlock) && place) {
+    const block = BLOCKS.find(b => b.id === place.sandboxId);
+    if (block) { loadPreset(block.name); return; }
+  }
+  scheduleCompute();
+}
+
+function setFlyableVolumeVisible(v) {
+  flyableVolumeVisible = v;
+  const a = $('flyableVolumeToggle');
+  if (a && a.checked !== v) a.checked = v;
+  rebuildFlyableVolume();
+}
+
+$('policyLat').addEventListener('input', e => setPolicyParams({ lat: +e.target.value }, true));
+$('policyVert').addEventListener('input', e => setPolicyParams({ vert: +e.target.value }, true));
+$('policySep').addEventListener('input', e => setPolicyParams({ uavSep: +e.target.value }, true));
+$('policyPresets').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-lat]');
+  if (!btn) return;
+  setPolicyParams({ lat: +btn.dataset.lat, vert: +btn.dataset.vert });
+});
+
 document.querySelectorAll('#controlPanel input, #viewPanel input').forEach(input => input.addEventListener('change', syncSceneLegend));
 if (window.innerWidth <= 600) document.body.classList.add('panelCollapsed');
 syncPanelHandle();
+syncPolicyControls();
 
 function animate(t) {
   requestAnimationFrame(animate);
   const dt = lastAnimMs == null ? 0 : Math.min(0.1, (t - lastAnimMs) / 1000);
   lastAnimMs = t;
-  if (playbackPlaying && usingCapacity() && flightData) {
+  if (playbackPlaying && usingPlayback() && flightData) {
     setPlaybackTime(playbackT + dt * playbackRate);
     placeDrones();
   }

@@ -266,7 +266,7 @@
   .deckSheet>.lbl{margin-bottom:2px}.deckSheet .sub{font-size:11px;line-height:1.5;margin-top:0}
   .deckSheet .row{margin-bottom:4px}.deckSheet .k,.deckSheet .v{font-size:12px}
   .deckSheet .controlGroup{margin:0;padding:10px}.deckSheet .radioChip{font-size:11px;min-height:32px;padding:6px}
-  #playOdChips{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:0}
+  #playOdChips{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 0 8px}
   .chipRow button{font-size:11px;min-height:26px;padding:3px 2px}
   #clearFilters{order:20;margin-top:auto;margin-bottom:0}
   .deckSheet .routeFocus{margin:0;padding:0;border:0}
@@ -305,12 +305,11 @@
   }
 
   #panelShell{height:min(760px,calc(100dvh - 36px))}
-  #globalRouteMode{flex:none;margin:10px 0 0;padding:10px 0 0;border:0;border-top:1px solid #e8edf0;border-radius:0;background:none}
-  #globalRouteMode>.lbl{font-size:10px;margin-bottom:5px}
-  #globalRouteMode .radioChip{font-size:11px;min-height:30px;padding:5px 6px}
   #routeSourceNote{font-size:10px;line-height:1.4;min-height:28px;margin:5px 0 0!important}
+  #policyPresets{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 0 8px}
+  #policyHint{margin-top:8px;font-size:10px;line-height:1.45;color:#627481}
   #sheetNav.singleSection{display:none}
-  #panelDeck:has([data-panel="routes"].active [data-sheet="generation"].sheetActive){margin-top:12px}
+  #panelDeck:has([data-panel="routes"].active [data-sheet="policy"].sheetActive){margin-top:12px}
   #heightOverview,#heightSingle{min-height:0}
   #mapsGrid.allHeights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(var(--height-rows),minmax(0,1fr));gap:9px 6px;flex:1;min-height:0}
   #mapsGrid.allHeights .mapTile{height:auto;min-height:0;padding:4px;border:1px solid #e3e9ed;border-radius:6px;cursor:pointer;overflow:hidden}
@@ -358,8 +357,9 @@
   .workspaceTools .sceneLegend{position:static;width:100%;max-width:none;box-sizing:border-box}
   @media(max-height:640px){.viewSettingsPage .layerRow{padding:3px;min-height:25px}.viewSettingsDeck{padding-bottom:8px}.workspaceTools:has(#viewPanel.expanded) .sceneLegend{display:none}}
 
-  #sandboxSub,#routeSourceNote,#playbackNote,#sceneLegendNote,#sceneScope,.sceneHint,
-  #noiseV2Note,#channelFourWrap>.sub{display:none!important}
+  #sandboxSub,#playbackNote,#sceneLegendNote,#sceneScope,.sceneHint,
+  #noiseV2Note{display:none!important}
+  #channelFourWrap>.sub{display:block!important;font-size:11px;line-height:1.45;margin:0 0 8px;color:#627481}
   #playPinV:empty{display:none}
   [data-sheet="model"]>.lbl,[data-sheet="model"]>.row:has(#channelV),#noiseV2Wrap>.laeqBar,#noiseV2Wrap>.laeqBarRow{display:none}
   .panelHeader{padding:0}.panelHeader h1{font-size:14px;margin:0}
@@ -372,6 +372,33 @@
   #heightPage #playbackWrap .row{margin-bottom:6px}
   #clearFilters[hidden]{display:none}
   #panelDeck:has([data-panel="routes"].active){margin-top:10px}
+
+  /* 净空规则：4 街区 × 6 组参数的对照矩阵，格子只有状态色，不带任何辖区名 */
+  #routeSourceRadios{grid-template-columns:repeat(3,1fr)}
+  #galleryWrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:9px;overflow-y:auto;overflow-x:hidden}
+  #galleryMatrix{display:flex;flex-direction:column;gap:3px;flex:none}
+  .galleryRow{display:grid;grid-template-columns:52px repeat(6,minmax(0,1fr));gap:3px}
+  .galleryRow.galleryHead span{display:flex;align-items:flex-end;justify-content:center;min-height:24px;padding-bottom:2px;
+    font-size:9px;line-height:1.1;font-weight:700;color:#6b757e;text-align:center}
+  .galleryLab{display:flex;align-items:center;min-height:26px;padding:0 5px;border:0;border-radius:5px;background:none;
+    font-size:10px;font-weight:700;color:#4a545d;cursor:pointer;font-variant-numeric:tabular-nums}
+  .galleryLab:hover{background:#f0f5f8}
+  .galleryLab.on{background:#e8eff5;color:#12303f}
+  .galleryCell{min-height:26px;padding:0;border:1px solid #dde3e8;border-radius:5px;background:#f4f6f8;cursor:pointer}
+  .galleryCell:hover{border-color:#93a6b4}
+  .galleryCell[data-kind="ok"]{background:#e7f5ee;border-color:#9fd0b6}
+  .galleryCell[data-kind="corners_only"]{background:#fdf3e2;border-color:#ecd3a4}
+  .galleryCell[data-kind="empty_path"]{background:#f1eefa;border-color:#cabfe6}
+  .galleryCell[data-kind="blocked"]{background:#fdecea;border-color:#eebcb6}
+  .galleryCell.on{outline:2px solid #253f4d;outline-offset:1px}
+  #galleryStatus{flex:none;margin:0;font-size:12px;font-weight:650;color:#4a545d;font-variant-numeric:tabular-nums}
+  #galleryStatus[data-kind="ok"]{color:#2c7a52}
+  #galleryStatus[data-kind="corners_only"]{color:#8a5a12}
+  #galleryStatus[data-kind="empty_path"]{color:#5b4a86}
+  #galleryStatus[data-kind="blocked"]{color:#a63a33}
+  #galleryWrap .slider{margin:0}
+  #galleryMetricChips{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:0}
+  .layerMark.keepaway{background:#d94841}
 
   #heightBack{align-self:flex-start;flex:none;background:none;border:0;border-radius:5px;padding:2px 6px 4px 0;min-height:26px;font-size:12px;color:#4c6574}
   #heightBack:hover{color:#1677db;background:#f0f5f8}
@@ -413,7 +440,6 @@
 
       <h1>低空沙盘</h1>
       <p class="sub" id="sandboxSub">500 m 研究区 · 800 m halo</p>
-      <p class="sub"><a href="policy-gallery.html">过境规则对照馆</a>：四个街区 × 六套过境规则，给没做过这个项目的人看（不替换本沙盘）。</p>
     </div>
 
     <div class="sceneBlock">
@@ -421,14 +447,7 @@
       <select class="presets" id="presets"></select>
     </div>
 
-    <div class="controlGroup">
-      <label class="lbl">航线模式</label>
-      <div class="radioGrid" id="routeSourceRadios">
-        <label class="radioChip"><input type="radio" name="routeSource" value="probe" checked>交互航线</label>
-        <label class="radioChip"><input type="radio" name="routeSource" value="capacity">容量排班</label>
-      </div>
-      <p class="sub" id="routeSourceNote" style="margin-top:8px">从 800 m halo 对边生成航线。</p>
-    </div>
+    <p class="sub" id="routeSourceNote" style="margin-top:10px">从 800 m 外缘对穿。彩色带子是航线，小飞机沿带子飞；等「计算多高度航线」结束后才会出现。</p>
 
     <div class="tabBar" id="tabBar">
       <button class="tabBtn active" data-tab="routes" type="button">航线</button>
@@ -438,20 +457,36 @@
     <div class="tabPanel active" data-panel="routes">
       <div id="playbackWrap" class="controlGroup" style="display:none">
         <button id="clearFilters" type="button" hidden>清除方向</button>
-        <div class="row"><span class="k">方向</span><span class="v" id="playOdV">全部</span></div>
-        <div class="chipRow" id="playOdChips"></div>
         <p class="sub" id="playbackNote">真实一小时排班。无人机顶色按巡航高度映射；含转弯方向。</p>
         <p class="sub" style="margin-top:8px"><a href="why-wall-clip.html">为什么会穿墙？</a> 30 秒动画：格子路、拉直、和新检查。</p>
       </div>
-      <div class="controlGroup" id="routeGenerationWrap">
-        <label class="lbl">航线生成</label>
-        <div class="controlGrid">
-          <div class="slider span2">
-            <div class="row"><span class="k">入口密度</span><span class="v"><span id="densityV">6</span> /边</span></div>
-            <input type="range" id="density" min="2" max="20" step="1" value="6">
-          </div>
-          <div class="span2 row" style="margin:0"><span class="k">高度间隔</span><span class="v" id="heightGapV">10 m</span></div>
+      <div class="controlGroup" id="policyWrap">
+        <label class="lbl">净空与间距</label>
+        <div class="chipRow" id="policyPresets" role="group" aria-label="净空预设">
+          <button type="button" data-lat="10" data-vert="100">街道穿行</button>
+          <button type="button" data-lat="100" data-vert="10">屋顶飞越</button>
+          <button type="button" data-lat="5" data-vert="5" class="on">对称 5 m</button>
         </div>
+        <div class="slider">
+          <div class="row"><span class="k">侧向净空</span><span class="v"><span id="policyLatV">5</span> m</span></div>
+          <input type="range" id="policyLat" min="0" max="120" step="1" value="5" aria-label="侧向净空，离墙水平距离">
+        </div>
+        <div class="slider">
+          <div class="row"><span class="k">纵向净空</span><span class="v"><span id="policyVertV">5</span> m</span></div>
+          <input type="range" id="policyVert" min="0" max="120" step="1" value="5" aria-label="纵向净空，屋顶以上距离">
+        </div>
+        <div class="slider">
+          <div class="row"><span class="k">机间距</span><span class="v"><span id="policySepV">20</span> m</span></div>
+          <input type="range" id="policySep" min="0" max="80" step="1" value="20" aria-label="任意两架飞机之间的最短三维距离">
+        </div>
+        <div class="slider">
+          <div class="row"><span class="k">800 m 边缘入口</span><span class="v"><span id="densityV">6</span> /边</span></div>
+          <input type="range" id="density" min="2" max="20" step="1" value="6" aria-label="每边入口数">
+        </div>
+        <div class="row"><span class="k">航线方向</span><span class="v" id="playOdV">全部</span></div>
+        <div class="chipRow odFilterChips" id="playOdChips" role="group" aria-label="航线方向"></div>
+        <div class="row" style="margin:0"><span class="k">高度间隔</span><span class="v" id="heightGapV">10 m</span></div>
+        <p class="sub" id="policyHint" style="margin-top:8px">侧向 = 离墙要留多远；纵向 = 屋顶上面还要再留多高。机间距是任意两架飞机的三维距离：不同高度、不同航线都算。间距加严时留下的航线是宽松时的子集。入口先找边上没被挡住的口，再均匀铺上去。</p>
       </div>
     </div>
 
@@ -460,14 +495,14 @@
         <label class="lbl">自定义图层</label>
         <div class="layerList">
           <label class="layerRow"><span class="layerMark route"></span><span class="layerText">航线</span><input type="checkbox" id="routeToggle" checked><span class="toggle"></span></label>
-          <label class="layerRow"><span class="layerMark aircraft"></span><span class="layerText">排班飞机</span><input type="checkbox" id="aircraftToggle" checked><span class="toggle"></span></label>
+          <label class="layerRow"><span class="layerMark aircraft"></span><span class="layerText">飞行中的无人机</span><input type="checkbox" id="aircraftToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark burden"></span><span class="layerText">外部性叠加</span><input type="checkbox" id="noiseToggle"><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark terrain"></span><span class="layerText">DEM 地形</span><input type="checkbox" id="demToggle"><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark building"></span><span class="layerText">建筑</span><input type="checkbox" id="buildingToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark shadow"></span><span class="layerText">阴影</span><input type="checkbox" id="shadowToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark halo"></span><span class="layerText">辅助建筑</span><input type="checkbox" id="haloToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark guide"></span><span class="layerText">高度边界</span><input type="checkbox" id="heightGuideToggle"><span class="toggle"></span></label>
-          <label class="layerRow"><span class="layerMark volume"></span><span class="layerText">可飞体块</span><input type="checkbox" id="flyableVolumeToggle"><span class="toggle"></span></label>
+          <label class="layerRow"><span class="layerMark volume"></span><span class="layerText">可飞体块</span><input type="checkbox" id="flyableVolumeToggle" checked><span class="toggle"></span></label>
           <label class="layerRow"><span class="layerMark terrain"></span><span class="layerText">高度尺</span><input type="checkbox" id="heightScaleToggle" checked><span class="toggle"></span></label>
         </div>
       </div>
@@ -476,8 +511,8 @@
         <div class="detailsBody">
           <div class="controlGrid" style="margin-top:10px">
             <div class="slider span2">
-              <div class="row"><span class="k">航线透明度</span><span class="v"><span id="opacityV">20</span>%</span></div>
-              <input type="range" id="routeOpacity" min="20" max="400" step="10" value="20">
+              <div class="row"><span class="k">航线透明度</span><span class="v"><span id="opacityV">120</span>%</span></div>
+              <input type="range" id="routeOpacity" min="20" max="400" step="10" value="120">
             </div>
             <div class="slider">
               <div class="row"><span class="k">水平角</span><span class="v"><span id="azimuthV">-46</span>°</span></div>
@@ -512,18 +547,8 @@
       <div class="controlGroup">
         <label class="lbl">影响分析</label><label class="layerRow"><span class="layerText">显示影响着色</span><input type="checkbox" id="impactToggle"><span class="toggle"></span></label>
         <div class="row"><span class="k">模型</span><span class="v" id="channelV">噪声</span></div>
-        <div id="noiseV2Wrap" style="display:none">
-          <p class="sub" id="noiseV2Note" style="margin:0 0 8px">整小时预计算面片声级 L<sub>Aeq</sub>。时间回放、航线筛选和入口密度不会重算这张噪声图。</p>
-          <div class="radioGrid" id="noiseV2Radios">
-            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="iso">各向同性</label>
-            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="dir">指向性</label>
-            <label class="radioChip"><input type="radio" name="noiseV2Tier" value="refl" checked>反射与绕射</label>
-          </div>
-          <div class="laeqBar" id="laeqBar" aria-hidden="true"></div>
-          <div class="laeqBarRow"><span id="laeqMin">— dB</span><span>L<sub>Aeq</sub></span><span id="laeqMax">— dB</span></div>
-          <p class="sub" id="noiseV2Stats" style="margin-top:8px"></p>
-        </div>
-        <div id="channelFourWrap"><p class="sub">浏览器简化估算，用于交互探索，不作为论文定量结果。</p>
+        <div id="noiseV2Wrap" style="display:none"></div>
+          <div id="channelFourWrap"><p class="sub">按当前航线做浏览器粗估，用来看空间分布，不是论文定量结果。噪声通道含一阶地面反射。着色和航线带子可以同时开。</p>
           <div class="kernelSketch" id="kernelSketch" data-channel="noise" aria-label="外部性影响范围示意">
             <svg viewBox="0 0 420 150" aria-hidden="true">
               <line class="sketchGround" x1="26" y1="104" x2="394" y2="104"/>
@@ -583,6 +608,6 @@
 <script src="vendor/OrbitControls.js"></script>
 <script src="vendor/clipper.js"></script>
 <script src="data/city-blocks.js"></script>
-<script src="app.js?v=ux-32"></script>
+<script src="app.js?v=ux-39"></script>
 </body>
 </html>
