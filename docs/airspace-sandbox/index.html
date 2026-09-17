@@ -85,6 +85,16 @@
   .layerMark.route{background:#1677ff}.layerMark.burden{background:#d75f4b}.layerMark.terrain{background:#7d8791}
   .layerMark.building{background:#d8d8d4}.layerMark.shadow{background:#2d333a}.layerMark.halo{background:#b8c1cb}
   .layerMark.guide{background:#4f9cf5}.layerMark.volume{background:#9fd3ff}.layerMark.aircraft{background:#38bdf8}
+  .protoBar{position:absolute;z-index:8;left:50%;bottom:96px;transform:translateX(-50%);display:none;
+    align-items:center;justify-content:center;gap:8px;padding:8px 10px;border-radius:999px;background:rgba(23,25,28,.88);color:#fff;
+    font-size:12px;box-shadow:0 10px 28px rgba(0,0,0,.22);flex-wrap:wrap;max-width:min(920px,calc(100vw - 36px))}
+  .protoBar.on{display:flex}
+  .protoBar b{font-size:11px;letter-spacing:.4px;color:#9fd3ff}
+  .protoBar button{min-height:28px;padding:3px 10px;border-radius:999px;border-color:transparent;background:#3a4048;color:#fff}
+  .protoBar button.on{background:#fff;color:#17191c}
+  .protoBar button.dim{opacity:.38}
+  .protoBar .split{width:1px;height:16px;background:#5c636b;flex:none}
+  .protoBar .hint{color:#c5ccd3;font-size:11px}
   .playHud{position:absolute;z-index:6;right:18px;bottom:18px;display:none;width:min(520px,calc(100vw - 36px));
     background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:11px 13px 12px;
     font-size:13px;font-variant-numeric:tabular-nums;box-shadow:0 10px 28px rgba(25,30,35,.11);backdrop-filter:blur(14px)}
@@ -412,6 +422,16 @@
   <aside class="sceneLegend" aria-label="当前图例与结果口径"><strong id="sceneLegendTitle">航线 · 巡航高度</strong><div id="sceneLegendBar"></div><div id="sceneLegendScale"></div><p id="sceneLegendNote"></p><p id="sceneScope"></p></aside>
   <div class="sceneHint">拖动旋转 · 滚轮缩放 · 黑框为 500 m 研究区</div>
   <div id="busy">计算多高度航线...</div>
+  <div id="protoBar" class="protoBar" aria-label="时序原型切换">
+    <b>PROTOTYPE</b>
+    <button type="button" data-impact="live">瞬时</button>
+    <button type="button" data-impact="total">区域总量</button>
+    <span class="split" aria-hidden="true"></span>
+    <button type="button" data-variant="instant">跟机热点</button>
+    <button type="button" data-variant="wake">尾迹</button>
+    <button type="button" data-variant="corridor">走廊+机位</button>
+    <span class="hint">地面+立面 · 浏览器粗核，不是 SZU refl</span>
+  </div>
   <div id="playHud" class="playHud" aria-label="排班回放">
     <p id="filterSummary">全部方向 · 全部高度</p>
     <div class="playHudTop">
@@ -546,6 +566,12 @@
     <div class="tabPanel" data-panel="analysis">
       <div class="controlGroup">
         <label class="lbl">影响分析</label><label class="layerRow"><span class="layerText">显示影响着色</span><input type="checkbox" id="impactToggle"><span class="toggle"></span></label>
+        <div class="row"><span class="k">时间口径</span><span class="v" id="impactTimeV">区域总量</span></div>
+        <div class="radioGrid" id="impactTimeRadios">
+          <label class="radioChip"><input type="radio" name="impactTime" value="live">瞬时 · 跟随机位</label>
+          <label class="radioChip"><input type="radio" name="impactTime" value="total" checked>区域总量</label>
+        </div>
+        <p class="sub">瞬时 = 这一秒天上飞机的地面+立面；区域总量 = 当前全部航线的累积分布。两者都上墙，不只是地面。</p>
         <div class="row"><span class="k">模型</span><span class="v" id="channelV">噪声</span></div>
         <div id="noiseV2Wrap" style="display:none"></div>
         <div id="channelFourWrap"><p class="sub">按当前航线做浏览器粗估，用来看空间分布，不是论文定量结果。噪声通道含一阶地面反射。着色和航线带子可以同时开。</p>
@@ -608,6 +634,6 @@
 <script src="vendor/OrbitControls.js"></script>
 <script src="vendor/clipper.js"></script>
 <script src="data/city-blocks.js"></script>
-<script src="app.js?v=ux-39"></script>
+<script src="app.js?v=ux-46"></script>
 </body>
 </html>

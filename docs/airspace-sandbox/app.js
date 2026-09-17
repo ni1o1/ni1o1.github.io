@@ -227,6 +227,17 @@ let playbackPlaying = true;
 let playbackRate = 5;
 let playbackT = 0;
 let lastAnimMs = null;
+// PROTOTYPE (?variant=instant|wake|corridor, ?impact=live|total): live heat on ground+facades, or regional total.
+let impactTimeMode = 'total';
+let timelineHeatMesh = null;
+let timelineHeatColors = null;
+let timelineHeatPos = null;
+let timelineWake = [];
+let timelineLastSimT = null;
+let timelineLastPaintT = -1;
+let timelinePinned = false;
+let liveFacadeGroup = null;
+let liveFacades = null;
 let aircraftVisible = true;
 const PLAY_ODS = ['E>W', 'W>E', 'N>S', 'S>N'];
 const OD_PRESETS = [
@@ -1049,6 +1060,7 @@ async function loadPreset(name) {
   rawBuildings.forEach(raw => buildings.push(makeBuilding(raw, true)));
   if (noiseV2) ensureNoiseV2Mesh();
   if (typeof clearProbeFacade === 'function') clearProbeFacade();  // 换街区→立面缓存失效
+  if (typeof disposeLiveFacades === 'function') disposeLiveFacades();
   applyAuxiliaryBuildingVisibility();
   applyPolicyVolume();
   if ($('presets').value !== currentBlock.name) $('presets').value = currentBlock.name;
@@ -2479,7 +2491,7 @@ function onPlayFilterChange() {
   drawMiniMap();
   syncSheetNavigation();
   if (routeSource === 'gallery') drawGalleryKeepAway();
-  if (noiseEnabled) scheduleExternalityLayer();
+  if (noiseEnabled) applyImpactTimeMode();
 }
 
 function setOdPreset(role) {
@@ -2625,7 +2637,9 @@ function placeDrones() {
   if (droneAccentMesh.instanceColor) droneAccentMesh.instanceColor.needsUpdate = true;
   ensureTrailLines(trails.length);
   trails.forEach((item, i) => writeTrail(trailGroup.children[i], item.route, item.u, item.col));
-  if ($('playHudAir')) $('playHudAir').textContent = `当前显示 ${n} 架`;
+  if ($('playHudAir')) {
+    $('playHudAir').textContent = `当前显示 ${n} 架`;
+  }
 }
 
 function syncPlaybackUI() {
@@ -2639,7 +2653,9 @@ function syncPlaybackUI() {
     ensureDroneMesh();
     setPlaybackTime(playbackT);
     placeDrones();
-    if ($('filterSummary')) $('filterSummary').textContent = playbackFilterLabel();
+    if ($('filterSummary')) $('filterSummary').textContent = timelineVariant()
+      ? (impactTimeMode === 'live' ? '原型 · 全部航线 · 瞬时影响（非 SZU refl）' : '原型 · 全部航线 · 区域总量（非 SZU refl）')
+      : playbackFilterLabel();
     const nFlights = flightData.n_flights || (flightData.flights || []).length;
     if ($('playHudAir')) $('playHudAir').textContent = `当前显示 ${nFlights} 架`;
   } else {
@@ -2995,7 +3011,7 @@ async function drawCapacityRoutes(version, opts) {
 
 function startProbeWorker(version, resolve) {
   activeComputeDone = resolve;
-  routeWorker = new Worker('route-worker.js?v=ux-39');
+  routeWorker = new Worker('route-worker.js?v=ux-41');
   routeWorker.onmessage = event => {
     const { type, result, version: msgVersion } = event.data;
     if (msgVersion !== computeVersion || msgVersion !== version) return;
@@ -3012,9 +3028,10 @@ function startProbeWorker(version, resolve) {
         updateMetrics();
         drawMiniMap();
         buildLiveFlightsFromSummaries();
+        applyTimelinePrototype();
         syncPlayFilterUI();
         syncPlaybackUI();
-        if (noiseEnabled) scheduleExternalityLayer();
+        if (noiseEnabled) applyImpactTimeMode();
         resolve(true);
       });
     }
@@ -3332,10 +3349,13 @@ function clearNoiseLayer() {
 function setNoiseLayerVisible(visible) {
   if (noiseGroundMesh) noiseGroundMesh.visible = visible;
   for (const item of noiseOverlays) item.mesh.visible = visible;
+  if (timelineHeatMesh) timelineHeatMesh.visible = visible && impactTimeMode === 'live';
+  if (liveFacadeGroup) liveFacadeGroup.visible = visible && impactTimeMode === 'live' && !probeMode;
   if (usingNoiseV2()) applyNoiseV2Visibility();
 }
 
 function scheduleExternalityLayer() {
+  if (impactTimeMode === 'live') return;
   clearTimeout(externalityTimer);
   const version = ++externalityVersion;
   $('busy').classList.add('on');
@@ -3708,10 +3728,12 @@ $('noiseToggle').addEventListener('change', e => {
   noiseEnabled = e.target.checked;
   applyAuxiliaryBuildingVisibility();
   if (noiseEnabled) {
-    scheduleExternalityLayer();
+    applyImpactTimeMode();
   } else {
     externalityVersion++;
     clearNoiseLayer();
+    disposeTimelineHeat();
+    disposeLiveFacades();
   }
 });
 
@@ -3726,9 +3748,7 @@ document.querySelectorAll('input[name="externalityChannel"]').forEach(input => {
       void sketch.offsetWidth;
       sketch.dataset.channel = externalityChannel;
     }
-    if (noiseEnabled) {
-      scheduleExternalityLayer();
-    }
+    if (noiseEnabled) applyImpactTimeMode();
     if (probeMode) rebuildProbe();
   });
 });
@@ -4067,12 +4087,18 @@ function syncSceneLegend() {
   if (!$('sceneLegendTitle')) return;
   const title = $('sceneLegendTitle'), bar = $('sceneLegendBar'), scale = $('sceneLegendScale');
   if (noiseEnabled) {
-    title.textContent = `${(CHANNELS[externalityChannel] || CHANNELS.noise).label} · 当前航线粗估`;
+    const ch = (CHANNELS[externalityChannel] || CHANNELS.noise).label;
+    const live = impactTimeMode === 'live';
+    title.textContent = live ? `${ch} · 瞬时` : `${ch} · 区域总量`;
     bar.style.background = 'linear-gradient(90deg,#3b4cc0 0%,#6888ee 18%,#aac6fd 36%,#f2f2f2 50%,#fcbea1 64%,#db5e4b 82%,#b40426 100%)';
     scale.textContent = '低 ← 相对影响 → 高';
-    $('sceneLegendNote').textContent = $('routeToggle').checked
-      ? '带子颜色是巡航高度；地面/立面是当前航线的相对影响。只看分布，不作论文定量。'
-      : '随航线、方向筛选和净空旋钮重算；只看分布，不作论文定量。';
+    $('sceneLegendNote').textContent = live
+      ? '地面和立面跟着这一秒天上的飞机走。浏览器粗核，不是 SZU refl。'
+      : '地面和立面是当前全部航线的累积分布。只看空间格局，不作论文定量。';
+    const variant = timelineVariant();
+    $('sceneScope').textContent = live
+      ? (variant === 'wake' ? '尾迹 = 最近几秒的位置。' : variant === 'corridor' ? '淡走廊是全部航线，亮斑是当前机位。' : '热点来自当前这一秒天上的飞机。')
+      : '机间距为任意两机三维距离。加入口只加密，不挤掉已有航线。';
   } else {
     const routesOn = $('routeToggle').checked;
     title.textContent = routesOn ? '航线 · 巡航高度' : '街区形态 · 可飞空间';
@@ -4083,8 +4109,8 @@ function syncSceneLegend() {
     $('sceneLegendNote').textContent = routesOn
       ? '800 m 外缘对穿；颜色表示巡航高度。'
       : '蓝色体块是当前侧向/纵向净空下的可飞空间。';
+    $('sceneScope').textContent = '机间距为任意两机三维距离。加入口只加密，不挤掉已有航线。';
   }
-  $('sceneScope').textContent = '机间距为任意两机三维距离。加入口只加密，不挤掉已有航线。';
   $('impactToggle').checked = noiseEnabled;
 }
 
@@ -4455,6 +4481,330 @@ if (window.innerWidth <= 600) document.body.classList.add('panelCollapsed');
 syncPanelHandle();
 syncPolicyControls();
 
+function readImpactTimeMode() {
+  const q = new URLSearchParams(location.search).get('impact');
+  if (q === 'live' || q === 'total') return q;
+  return timelineVariant() ? 'live' : 'total';
+}
+
+function syncImpactTimeUI() {
+  document.querySelectorAll('input[name="impactTime"]').forEach(input => {
+    input.checked = input.value === impactTimeMode;
+  });
+  if ($('impactTimeV')) $('impactTimeV').textContent = impactTimeMode === 'live' ? '瞬时' : '区域总量';
+  const bar = $('protoBar');
+  if (bar) {
+    bar.querySelectorAll('button[data-impact]').forEach(btn => {
+      btn.classList.toggle('on', btn.dataset.impact === impactTimeMode);
+    });
+    bar.querySelectorAll('button[data-variant]').forEach(btn => {
+      btn.classList.toggle('dim', impactTimeMode !== 'live');
+      btn.classList.toggle('on', impactTimeMode === 'live' && btn.dataset.variant === (timelineVariant() || 'instant'));
+    });
+  }
+}
+
+function setImpactTimeMode(mode) {
+  if (mode !== 'live' && mode !== 'total') return;
+  impactTimeMode = mode;
+  const url = new URL(location.href);
+  url.searchParams.set('impact', mode);
+  if (mode === 'live' && !timelineVariant()) url.searchParams.set('variant', 'instant');
+  history.replaceState({}, '', url);
+  syncImpactTimeUI();
+  applyImpactTimeMode();
+  syncSceneLegend();
+}
+
+function applyImpactTimeMode() {
+  syncImpactTimeUI();
+  if (!noiseEnabled) {
+    disposeTimelineHeat();
+    disposeLiveFacades();
+    setNoiseLayerVisible(false);
+    return;
+  }
+  if (impactTimeMode === 'total') {
+    disposeTimelineHeat();
+    disposeLiveFacades();
+    scheduleExternalityLayer();
+  } else {
+    clearNoiseLayer();
+    ensureTimelineHeat();
+    ensureLiveFacades();
+    paintTimelineHeat(true);
+  }
+  if ($('filterSummary') && timelineVariant()) {
+    $('filterSummary').textContent = impactTimeMode === 'live'
+      ? '原型 · 全部航线 · 瞬时影响（非 SZU refl）'
+      : '原型 · 全部航线 · 区域总量（非 SZU refl）';
+  }
+  syncSceneLegend();
+}
+
+function disposeLiveFacades() {
+  if (!liveFacadeGroup) return;
+  for (const child of liveFacadeGroup.children) {
+    child.geometry?.dispose();
+    child.material?.dispose();
+  }
+  liveFacadeGroup.clear();
+  scene.remove(liveFacadeGroup);
+  liveFacadeGroup = null;
+  liveFacades = null;
+}
+
+function ensureLiveFacades() {
+  if (liveFacades && liveFacades.length) {
+    liveFacadeGroup.visible = true;
+    return;
+  }
+  disposeLiveFacades();
+  liveFacadeGroup = new THREE.Group();
+  liveFacadeGroup.renderOrder = 5;
+  scene.add(liveFacadeGroup);
+  liveFacades = [];
+  for (const b of buildings) {
+    if (b.isHalo || !b.box || !buildingTouchesCore(b)) continue;
+    const geom = b.box.geometry.clone();
+    geom.computeVertexNormals();
+    const pos = geom.getAttribute('position');
+    const normal = geom.getAttribute('normal');
+    const count = pos.count;
+    const world = new Float32Array(count * 3);
+    const bx = b.group.position.x, by = b.group.position.y, bz = b.group.position.z;
+    for (let i = 0; i < count; i++) {
+      const lx = pos.getX(i) + normal.getX(i) * 0.45;
+      const ly = pos.getY(i) + normal.getY(i) * 0.45;
+      const lz = pos.getZ(i) + normal.getZ(i) * 0.45;
+      pos.setXYZ(i, lx, ly, lz);
+      world[i * 3] = lx + bx;
+      world[i * 3 + 1] = ly + by;
+      world[i * 3 + 2] = lz + bz;
+    }
+    pos.needsUpdate = true;
+    geom.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(count * 3), 3));
+    const mesh = new THREE.Mesh(geom, noiseMat.clone());
+    mesh.position.set(bx, by, bz);
+    mesh.renderOrder = 5;
+    liveFacadeGroup.add(mesh);
+    liveFacades.push({ mesh, world, count });
+  }
+}
+
+function liveNoiseSegments(poses) {
+  const segs = [];
+  const pushPose = (p, amp) => {
+    segs.push({
+      a: new THREE.Vector3(p.x - 8, p.y, p.z),
+      b: new THREE.Vector3(p.x + 8, p.y, p.z),
+      amp, dirX: 1, dirZ: 0, alt: p.y,
+    });
+  };
+  const variant = timelineVariant() || 'instant';
+  if (variant === 'corridor') {
+    const routes = flightRoutes || [];
+    const per = Math.max(3, Math.floor(36 / Math.max(1, routes.length)));
+    for (const route of routes) {
+      const pts = route.p || [];
+      const step = Math.max(1, Math.floor(pts.length / per));
+      for (let i = 0; i < pts.length; i += step) {
+        const x = pts[i][0], y = pts[i][2], z = -pts[i][1];
+        segs.push({
+          a: new THREE.Vector3(x - 6, y, z),
+          b: new THREE.Vector3(x + 6, y, z),
+          amp: 0.18, dirX: 1, dirZ: 0, alt: y,
+        });
+      }
+    }
+  }
+  if (variant === 'wake') {
+    for (let i = 0; i < timelineWake.length; i++) {
+      const age = 1 - i / Math.max(1, timelineWake.length);
+      for (const p of capPoses(timelineWake[i], 28)) pushPose(p, 0.28 + 0.72 * age);
+    }
+  }
+  for (const p of capPoses(poses, 36)) pushPose(p, variant === 'corridor' ? 1.35 : 1);
+  return segs;
+}
+
+function timelineVariant() {
+  const q = new URLSearchParams(location.search).get('variant');
+  return q === 'instant' || q === 'wake' || q === 'corridor' ? q : null;
+}
+
+function setTimelineVariant(name) {
+  const url = new URL(location.href);
+  url.searchParams.set('variant', name);
+  url.searchParams.set('impact', 'live');
+  history.replaceState({}, '', url);
+  impactTimeMode = 'live';
+  syncImpactTimeUI();
+  const bar = $('protoBar');
+  if (bar) bar.classList.add('on');
+  if (timelinePinned && noiseEnabled) {
+    ensureTimelineHeat();
+    ensureLiveFacades();
+    paintTimelineHeat(true);
+    syncSceneLegend();
+    return;
+  }
+  applyTimelinePrototype();
+  applyImpactTimeMode();
+  syncPlaybackUI();
+}
+
+function disposeTimelineHeat() {
+  if (!timelineHeatMesh) return;
+  noiseGroup.remove(timelineHeatMesh);
+  timelineHeatMesh.geometry.dispose();
+  timelineHeatMesh.material.dispose();
+  timelineHeatMesh = null;
+  timelineHeatColors = null;
+  timelineHeatPos = null;
+  timelineWake = [];
+}
+
+function ensureTimelineHeat() {
+  if (timelineHeatMesh) return;
+  const n = NOISE_GRID;
+  const positions = [];
+  const indices = [];
+  for (let j = 0; j <= n; j++) {
+    for (let i = 0; i <= n; i++) {
+      const x = -CORE_HALF + CORE_DOMAIN * i / n;
+      const z = -CORE_HALF + CORE_DOMAIN * j / n;
+      positions.push(x, terrainVisualHeight(x, z) + 0.55, z);
+    }
+  }
+  for (let j = 0; j < n; j++) {
+    for (let i = 0; i < n; i++) {
+      const a = j * (n + 1) + i;
+      indices.push(a, a + 1, a + n + 2, a, a + n + 2, a + n + 1);
+    }
+  }
+  const colors = new Float32Array(positions.length);
+  const geom = new THREE.BufferGeometry();
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  timelineHeatMesh = new THREE.Mesh(geom, noiseMat.clone());
+  timelineHeatMesh.renderOrder = 4;
+  noiseGroup.add(timelineHeatMesh);
+  timelineHeatPos = geom.getAttribute('position');
+  timelineHeatColors = geom.getAttribute('color');
+}
+
+function timelineAircraftPoses() {
+  if (!flightRoutes?.length || !flightData) return [];
+  const out = [];
+  for (const f of flightData.flights || []) {
+    const u = flightProgress(f[1], f[2]);
+    if (u == null) continue;
+    const route = flightRoutes[f[0]];
+    if (!route || route.p.length < 2) continue;
+    const p = atFlightRoute(route, u);
+    out.push({ x: p[0], y: p[2], z: -p[1] });
+  }
+  return out;
+}
+
+function capPoses(poses, maxN) {
+  if (poses.length <= maxN) return poses;
+  const step = Math.ceil(poses.length / maxN);
+  return poses.filter((_, i) => i % step === 0);
+}
+
+function paintTimelineHeat(force) {
+  if (impactTimeMode !== 'live' || !timelineHeatMesh || !timelineHeatColors || !timelineHeatPos) return;
+  if (!force && timelineLastPaintT >= 0 && Math.abs(playbackT - timelineLastPaintT) < 0.22) return;
+  timelineLastPaintT = playbackT;
+  const poses = timelineAircraftPoses();
+  if (poses.length) {
+    if (timelineLastSimT == null || Math.abs(playbackT - timelineLastSimT) > 0.35) {
+      timelineWake.push(poses.map(p => ({ ...p })));
+      if (timelineWake.length > 14) timelineWake.shift();
+      timelineLastSimT = playbackT;
+    }
+  }
+  const channel = CHANNELS[externalityChannel] || CHANNELS.noise;
+  const segs = liveNoiseSegments(poses);
+  if (!segs.length) return;
+  const n = timelineHeatPos.count;
+  const groundVals = new Float32Array(n);
+  let peak = 1e-12;
+  for (let i = 0; i < n; i++) {
+    const v = noiseAt(timelineHeatPos.getX(i), timelineHeatPos.getY(i), timelineHeatPos.getZ(i), segs) * channel.ground;
+    groundVals[i] = v;
+    if (v > peak) peak = v;
+  }
+  if (liveFacades) {
+    for (const f of liveFacades) {
+      f.vals = f.vals || new Float32Array(f.count);
+      const step = Math.max(1, Math.floor(f.count / 36));
+      for (let i = 0; i < f.count; i += step) {
+        const v = noiseAt(f.world[i * 3], f.world[i * 3 + 1], f.world[i * 3 + 2], segs) * channel.facade;
+        const until = Math.min(f.count, i + step);
+        for (let k = i; k < until; k++) f.vals[k] = v;
+        if (v > peak) peak = v;
+      }
+    }
+  }
+  const norm = Math.max(1e-9, peak * 0.72);
+  for (let i = 0; i < n; i++) {
+    const t = Math.log1p(groundVals[i] / norm * 3.2) / Math.log1p(3.2);
+    const c = colorRamp(t, channel.palette);
+    timelineHeatColors.setXYZ(i, c[0], c[1], c[2]);
+  }
+  timelineHeatColors.needsUpdate = true;
+  if (liveFacades) {
+    for (const f of liveFacades) {
+      const col = f.mesh.geometry.getAttribute('color');
+      for (let i = 0; i < f.count; i++) {
+        const t = Math.log1p(f.vals[i] / norm * 3.2) / Math.log1p(3.2);
+        const c = colorRamp(0.10 + 0.90 * Math.min(1, t), channel.palette);
+        col.setXYZ(i, c[0], c[1], c[2]);
+      }
+      col.needsUpdate = true;
+    }
+  }
+  void force;
+}
+
+function applyTimelinePrototype() {
+  const variant = timelineVariant();
+  const bar = $('protoBar');
+  if (bar) {
+    bar.classList.toggle('on', Boolean(variant) || impactTimeMode === 'live');
+  }
+  syncImpactTimeUI();
+  if (!variant) {
+    timelinePinned = false;
+    return;
+  }
+  if (!routeSummaries.some(s => (s.paths || []).length)) return;
+  timelinePinned = true;
+  rebuildRouteMeshes();
+  updateMetrics();
+  buildLiveFlightsFromSummaries();
+  const nAir = flightData?.n_flights || 0;
+  noiseEnabled = true;
+  if ($('noiseToggle')) $('noiseToggle').checked = true;
+  if ($('impactToggle')) $('impactToggle').checked = true;
+  setPlaybackRate(1);
+  setPlaybackPlaying(true);
+  playbackT = 0;
+  timelineWake = [];
+  timelineLastSimT = null;
+  if ($('filterSummary')) {
+    $('filterSummary').textContent = impactTimeMode === 'live'
+      ? '原型 · 全部航线 · 瞬时影响（非 SZU refl）'
+      : '原型 · 全部航线 · 区域总量（非 SZU refl）';
+  }
+  if ($('playHudAir')) $('playHudAir').textContent = `当前显示 ${nAir} 架`;
+}
+
 function animate(t) {
   requestAnimationFrame(animate);
   const dt = lastAnimMs == null ? 0 : Math.min(0.1, (t - lastAnimMs) / 1000);
@@ -4463,6 +4813,7 @@ function animate(t) {
     setPlaybackTime(playbackT + dt * playbackRate);
     placeDrones();
   }
+  if (noiseEnabled && impactTimeMode === 'live') paintTimelineHeat();
   if (drawerMotionUntil) { onResize(); if (t >= drawerMotionUntil) drawerMotionUntil = 0; }
   flushCompute();
   controls.target.copy(ORBIT_TARGET);
@@ -4478,6 +4829,22 @@ updateSunDirection();
 updateBuildingAppearance();
 applyShadowMode();
 applyCameraAngles();
+$('protoBar')?.querySelectorAll('button[data-variant]').forEach(btn => {
+  btn.addEventListener('click', () => setTimelineVariant(btn.dataset.variant));
+});
+$('protoBar')?.querySelectorAll('button[data-impact]').forEach(btn => {
+  btn.addEventListener('click', () => setImpactTimeMode(btn.dataset.impact));
+});
+document.querySelectorAll('input[name="impactTime"]').forEach(input => {
+  input.addEventListener('change', e => {
+    if (e.target.checked) setImpactTimeMode(e.target.value);
+  });
+});
+impactTimeMode = readImpactTimeMode();
+syncImpactTimeUI();
+if (timelineVariant() || impactTimeMode === 'live') {
+  if ($('protoBar')) $('protoBar').classList.add('on');
+}
 currentPreset = (BLOCKS.find(b => b.id === 'rep-oh-hongkong') || BLOCKS.find(b => b.id === 'hk-54-29-noisev2') || BLOCKS[0]).name;
 loadPreset(currentPreset);
 onResize();

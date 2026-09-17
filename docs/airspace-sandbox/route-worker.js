@@ -287,16 +287,35 @@ function orderCandidates(results) {
       });
     }
   }
-  // Coarse (few-entry) pairs first, then denser ones; within a generation,
-  // prefer the cruise band. Prefix-stable as entriesPerEdge grows.
+  // Coarse (few-entry) pairs first so adding gates cannot drop existing flights.
+  // Within a generation and altitude, keep the remote EW/NS interleave so one
+  // direction cannot starve the other under 3D spacing.
   out.sort((a, b) =>
     a.gen - b.gen ||
     Math.abs(a.alt - WEIGHT_CENTER) - Math.abs(b.alt - WEIGHT_CENTER) ||
     a.alt - b.alt ||
-    (a.fam === 'EW' && b.fam !== 'EW' ? -1 : a.fam !== 'EW' && b.fam === 'EW' ? 1 : 0) ||
+    a.cells[0] - b.cells[0] ||
+    a.cells[a.cells.length - 1] - b.cells[b.cells.length - 1] ||
     a.cells.length - b.cells.length);
-  if (out.length > MAX_PACK_CANDIDATES) out.length = MAX_PACK_CANDIDATES;
-  return out;
+  const mixed = [];
+  for (let i = 0; i < out.length; ) {
+    let j = i + 1;
+    while (
+      j < out.length &&
+      out[j].gen === out[i].gen &&
+      out[j].alt === out[i].alt
+    ) j++;
+    const ew = [];
+    const ns = [];
+    for (let k = i; k < j; k++) (out[k].fam === 'EW' ? ew : ns).push(out[k]);
+    for (let k = 0; k < Math.max(ew.length, ns.length); k++) {
+      if (ew[k]) mixed.push(ew[k]);
+      if (ns[k]) mixed.push(ns[k]);
+    }
+    i = j;
+  }
+  if (mixed.length > MAX_PACK_CANDIDATES) mixed.length = MAX_PACK_CANDIDATES;
+  return mixed;
 }
 
 function thinAll3D(results, sepM) {
