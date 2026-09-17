@@ -209,6 +209,8 @@ function altitudeColorCss(alt) {
   return '#' + altitudeColorHex(alt).toString(16).padStart(6, '0');
 }
 const MAX_DRONES = 700;
+const CRUISE_MPS = 22;
+const LIVE_HORIZON_S = 3600;
 const NOISE_V2_TIERS = { iso: '各向同性', dir: '指向性', refl: '反射与绕射' };
 const SURFACE_NAMES = ['ground', 'facade', 'roof', 'soffit'];
 const OPPOSITE_OD = new Set(['E>W', 'W>E', 'N>S', 'S>N']);
@@ -2032,11 +2034,44 @@ function edgeNameOfCell(k) {
   return '?';
 }
 
+function pathSlotCount(lengthM) {
+  return policyUavSepM > 0
+    ? Math.max(1, Math.min(4, Math.floor(lengthM / Math.max(policyUavSepM, 80))))
+    : (lengthM > 420 ? 3 : lengthM > 220 ? 2 : 1);
+}
+
+function liveThroughputPerHour(routes = flightRoutes) {
+  let n = 0;
+  for (const route of routes || []) {
+    if (!routeInFilter(route)) continue;
+    const dur = Math.max(1e-3, route.dur || (route.L || 1) / CRUISE_MPS);
+    n += (route.nOnPath || 1) * (LIVE_HORIZON_S / dur);
+  }
+  return Math.round(n);
+}
+
+function fmtFlightsPerHour(n) {
+  return Math.round(n).toLocaleString('zh-CN');
+}
+
+function syncAirThroughputHud(nAir) {
+  const el = $('playHudAir');
+  if (!el || !flightData) return;
+  const air = nAir != null ? nAir : (flightData.n_flights || (flightData.flights || []).length);
+  if (flightData.live) {
+    el.textContent = `空中 ${air} 架 · 通行 ${fmtFlightsPerHour(liveThroughputPerHour())} 架次/时`;
+    return;
+  }
+  const cap = precomputed?.raw?.source?.summary?.capacity_stable_hour;
+  el.textContent = cap != null
+    ? `空中 ${air} 架 · 通行 ${fmtFlightsPerHour(cap)} 架次/时`
+    : `当前显示 ${air} 架`;
+}
+
 function buildLiveFlightsFromSummaries() {
   const routes = [];
   const flights = [];
-  const CRUISE_MPS = 22;
-  let maxDur = 24;
+  let throughput = 0;
   for (const s of routeSummaries) {
     const fly = s.flyable;
     for (const cells of (s.paths || [])) {
@@ -2047,13 +2082,11 @@ function buildLiveFlightsFromSummaries() {
       const c = flightCumlen(p);
       const L = c[c.length - 1] || 1;
       const dur = Math.max(12, L / CRUISE_MPS);
-      maxDur = Math.max(maxDur, dur);
+      const nOnPath = pathSlotCount(L);
       const h = Math.round(s.alt);
       const od = `${edgeNameOfCell(cells[0])}>${edgeNameOfCell(cells[cells.length - 1])}`;
-      routes.push({ p, c, L, h, col: altitudeColorHex(h), od, id: routes.length, live: true });
-      const nOnPath = policyUavSepM > 0
-        ? Math.max(1, Math.min(4, Math.floor(L / Math.max(policyUavSepM, 80))))
-        : (L > 420 ? 3 : L > 220 ? 2 : 1);
+      routes.push({ p, c, L, h, col: altitudeColorHex(h), od, id: routes.length, live: true, dur, nOnPath });
+      throughput += nOnPath * (LIVE_HORIZON_S / dur);
       for (let k = 0; k < nOnPath; k++) {
         flights.push([routes.length - 1, (k / nOnPath) * dur, dur]);
       }
@@ -2064,18 +2097,23 @@ function buildLiveFlightsFromSummaries() {
     flightRoutes = null;
     return;
   }
-  const period = Math.max(24, Math.ceil(maxDur));
-  for (const f of flights) f[2] = period;
   flightRoutes = routes;
-  flightData = { flights, t_eval_s: period, n_flights: flights.length, live: true };
+  flightData = {
+    flights,
+    t_eval_s: LIVE_HORIZON_S,
+    n_flights: flights.length,
+    live: true,
+    throughput_per_hour: Math.round(throughput),
+  };
 }
 
 function flightProgress(t0, t1) {
-  const span = Math.max(1e-3, flightData?.live ? (flightData.t_eval_s || (t1 - t0)) : (t1 - t0));
   if (flightData?.live) {
-    let u = playbackT / span + t0 / span;
+    const dur = Math.max(1e-3, t1);
+    const u = playbackT / dur + t0 / dur;
     return ((u % 1) + 1) % 1;
   }
+  const span = Math.max(1e-3, t1 - t0);
   if (playbackT < t0 || playbackT > t1) return null;
   return (playbackT - t0) / span;
 }
@@ -2540,10 +2578,14 @@ function syncPlayFilterUI() {
   if ($('filterSummary')) $('filterSummary').textContent = playbackFilterLabel();
 }
 
-function fmtPlaybackClock(t) {
+function fmtPlaybackClock(t, withHour) {
   t = Math.max(0, t);
-  const m = Math.floor(t / 60);
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
   const s = Math.floor(t % 60);
+  if (withHour || h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
   return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
@@ -2556,7 +2598,7 @@ function setPlaybackPlaying(on) {
 
 function setPlaybackRate(v) {
   playbackRate = v;
-  [1, 5, 10, 20].forEach(spd => {
+  [1, 5, 10, 20, 60].forEach(spd => {
     const btn = $('spd' + spd);
     if (btn) btn.classList.toggle('on', spd === v);
   });
@@ -2571,7 +2613,8 @@ function setPlaybackTime(t) {
     $('playBar').value = playbackT;
     $('playBar').style.setProperty('--playback-pct', pct + '%');
   }
-  const clock = fmtPlaybackClock(playbackT) + ' / ' + fmtPlaybackClock(tmax);
+  const hour = tmax >= 3600;
+  const clock = fmtPlaybackClock(playbackT, hour) + ' / ' + fmtPlaybackClock(tmax, hour);
   if ($('playHudClock')) $('playHudClock').textContent = clock;
 }
 
@@ -2639,6 +2682,7 @@ function placeDrones() {
   trails.forEach((item, i) => writeTrail(trailGroup.children[i], item.route, item.u, item.col));
   if ($('playHudAir')) {
     $('playHudAir').textContent = `当前显示 ${n} 架`;
+    syncAirThroughputHud(n);
   }
 }
 
@@ -2657,7 +2701,7 @@ function syncPlaybackUI() {
       ? (impactTimeMode === 'live' ? '原型 · 全部航线 · 瞬时影响（非 SZU refl）' : '原型 · 全部航线 · 区域总量（非 SZU refl）')
       : playbackFilterLabel();
     const nFlights = flightData.n_flights || (flightData.flights || []).length;
-    if ($('playHudAir')) $('playHudAir').textContent = `当前显示 ${nFlights} 架`;
+    syncAirThroughputHud(nFlights);
   } else {
     if (droneMesh) droneMesh.visible = false;
     if (droneAccentMesh) droneAccentMesh.visible = false;
@@ -3025,9 +3069,9 @@ function startProbeWorker(version, resolve) {
         activeComputeDone = null;
         routeSummaries.sort((a, b) => a.alt - b.alt);
         rebuildRouteMeshes();
-        updateMetrics();
         drawMiniMap();
         buildLiveFlightsFromSummaries();
+        updateMetrics();
         applyTimelinePrototype();
         syncPlayFilterUI();
         syncPlaybackUI();
@@ -3098,6 +3142,11 @@ function updateMetrics() {
     const row = document.createElement('div');
     row.className = 'alt';
     row.innerHTML = `<span class="sw altCmapSw"></span><span>容量排班</span><span style="margin-left:auto">稳定容量 ${cap} 架次/时 · 排班记录 ${s.n_flights} 架次</span>`;
+    legend.appendChild(row);
+  } else if (flightData?.live) {
+    const row = document.createElement('div');
+    row.className = 'alt';
+    row.innerHTML = `<span class="sw altCmapSw"></span><span>通行能力</span><span style="margin-left:auto">${fmtFlightsPerHour(liveThroughputPerHour())} 架次/时 · 回放 1 h</span>`;
     legend.appendChild(row);
   }
   routeSummaries.forEach((s, i) => {
@@ -3709,7 +3758,7 @@ if ($('aircraftToggle')) {
 function bindPlaybackControls() {
   if ($('playBtn')) $('playBtn').addEventListener('click', () => setPlaybackPlaying(!playbackPlaying));
   if ($('playHudBtn')) $('playHudBtn').addEventListener('click', () => setPlaybackPlaying(!playbackPlaying));
-  [1, 5, 10, 20].forEach(spd => {
+  [1, 5, 10, 20, 60].forEach(spd => {
     const btn = $('spd' + spd);
     if (btn) btn.addEventListener('click', () => setPlaybackRate(spd));
   });
@@ -4786,13 +4835,12 @@ function applyTimelinePrototype() {
   if (!routeSummaries.some(s => (s.paths || []).length)) return;
   timelinePinned = true;
   rebuildRouteMeshes();
-  updateMetrics();
   buildLiveFlightsFromSummaries();
+  updateMetrics();
   const nAir = flightData?.n_flights || 0;
   noiseEnabled = true;
   if ($('noiseToggle')) $('noiseToggle').checked = true;
   if ($('impactToggle')) $('impactToggle').checked = true;
-  setPlaybackRate(1);
   setPlaybackPlaying(true);
   playbackT = 0;
   timelineWake = [];
@@ -4802,7 +4850,8 @@ function applyTimelinePrototype() {
       ? '原型 · 全部航线 · 瞬时影响（非 SZU refl）'
       : '原型 · 全部航线 · 区域总量（非 SZU refl）';
   }
-  if ($('playHudAir')) $('playHudAir').textContent = `当前显示 ${nAir} 架`;
+  syncAirThroughputHud(nAir);
+  setPlaybackTime(0);
 }
 
 function animate(t) {
