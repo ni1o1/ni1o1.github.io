@@ -228,6 +228,7 @@ let droneColor = null;
 let playbackPlaying = true;
 let playbackRate = 5;
 let playbackT = 0;
+let liveCraft = [];
 let lastAnimMs = null;
 // PROTOTYPE (?variant=instant|wake|corridor, ?impact=live|total): live heat on ground+facades, or regional total.
 let impactTimeMode = 'total';
@@ -257,6 +258,7 @@ let noiseV2Tier = 'refl';
 let noiseV2 = null;
 const noiseV2Cache = {};
 let noiseV2Mesh = null;
+let noiseSurrogate = null;
 let presetLoadToken = 0;
 
 function buildAltitudes(gap) {
@@ -1011,6 +1013,7 @@ function buildHeightGuides() {
 }
 
 async function loadPreset(name) {
+  if (typeof exitListen === 'function') exitListen();
   const token = ++presetLoadToken;
   computeVersion++; externalityVersion++; volumeVersion++;
   stopRouteWorker(); stopVolumeWorker(); needsCompute = false; computing = false;
@@ -1019,6 +1022,7 @@ async function loadPreset(name) {
   currentPreset = name;
   currentBlock = BLOCKS.find(b => b.name === name) || BLOCKS[0];
   noiseV2 = null; precomputed = null; capacityField = null;
+  noiseSurrogate = null;
   flightData = null; flightRoutes = null;
   playOdSet = null; playAltSet = null;
   $('sandboxSub').textContent = `${currentBlock.name} · 加载中`;
@@ -1060,6 +1064,13 @@ async function loadPreset(name) {
   const rawBuildings = currentBlock.buildings || [];
   obstacleBuildings = rawBuildings.map(raw => makeBuilding(raw, false));
   rawBuildings.forEach(raw => buildings.push(makeBuilding(raw, true)));
+  try {
+    await loadNoiseSurrogate(currentBlock.id);
+  } catch (err) {
+    console.warn(err);
+    noiseSurrogate = null;
+  }
+  if (token !== presetLoadToken) return;
   if (noiseV2) ensureNoiseV2Mesh();
   if (typeof clearProbeFacade === 'function') clearProbeFacade();  // 换街区→立面缓存失效
   if (typeof disposeLiveFacades === 'function') disposeLiveFacades();
@@ -2122,6 +2133,182 @@ function usingNoiseV2() {
   return Boolean(noiseV2 && currentBlock && NOISE_V2_FILES[currentBlock.id]);
 }
 
+function usingNoiseSurrogate() {
+  return Boolean(
+    noiseSurrogate && currentBlock
+    && noiseSurrogate.blockId === currentBlock.id
+    && externalityChannel === 'noise'
+  );
+}
+
+function f16BufferToF32(buf) {
+  if (typeof Float16Array === 'function') {
+    const h = new Float16Array(buf);
+    const out = new Float32Array(h.length);
+    out.set(h);
+    return out;
+  }
+  const u16 = new Uint16Array(buf);
+  const out = new Float32Array(u16.length);
+  for (let i = 0; i < u16.length; i++) {
+    const h = u16[i];
+    const s = (h & 0x8000) << 16;
+    const e = (h >> 10) & 0x1f;
+    const f = h & 0x3ff;
+    let bits;
+    if (e === 0) bits = s | (f ? (f << 13) : 0);
+    else if (e === 31) bits = s | 0x7f800000 | (f << 13);
+    else bits = s | ((e + 112) << 23) | (f << 13);
+    out[i] = new Float32Array(new Uint32Array([bits]).buffer)[0];
+  }
+  return out;
+}
+
+async function loadNoiseSurrogate(blockId) {
+  noiseSurrogate = null;
+  try {
+    const res = await fetch(`data/noise-surrogate/${blockId}.meta.json`);
+    if (!res.ok) return null;
+    const meta = await res.json();
+    const [gBuf, fBuf] = await Promise.all([
+      fetch(`data/noise-surrogate/${meta.files.ground}`).then(r => r.arrayBuffer()),
+      fetch(`data/noise-surrogate/${meta.files.facade}`).then(r => r.arrayBuffer()),
+    ]);
+    noiseSurrogate = {
+      ...meta,
+      ground: f16BufferToF32(gBuf),
+      facade: f16BufferToF32(fBuf),
+      facadePts: meta.facadeXyz || [],
+    };
+    return noiseSurrogate;
+  } catch (err) {
+    console.warn('noise surrogate', err);
+    noiseSurrogate = null;
+    return null;
+  }
+}
+
+function poseLutIndex(ia, iz, ix) {
+  const s = noiseSurrogate;
+  return (ia * s.poseNz + iz) * s.poseNx + ix;
+}
+
+function lerpAxis(value, knots) {
+  if (value <= knots[0]) return [0, 0, 1, 0];
+  const last = knots.length - 1;
+  if (value >= knots[last]) return [last, last, 1, 0];
+  let i = 0;
+  while (i < last && knots[i + 1] < value) i++;
+  const t = (value - knots[i]) / Math.max(1e-9, knots[i + 1] - knots[i]);
+  return [i, i + 1, 1 - t, t];
+}
+
+function addPoseLut(x, y, z, amp, gAcc, fAcc) {
+  const s = noiseSurrogate;
+  if (!s || !(amp > 0)) return;
+  const [ix0, ix1, wx0, wx1] = lerpAxis(x, s.poseXs);
+  const [iz0, iz1, wz0, wz1] = lerpAxis(z, s.poseZs);
+  const [ia0, ia1, wa0, wa1] = lerpAxis(y, s.poseAlts);
+  const corners = [
+    [ia0, iz0, ix0, wa0 * wz0 * wx0],
+    [ia0, iz0, ix1, wa0 * wz0 * wx1],
+    [ia0, iz1, ix0, wa0 * wz1 * wx0],
+    [ia0, iz1, ix1, wa0 * wz1 * wx1],
+    [ia1, iz0, ix0, wa1 * wz0 * wx0],
+    [ia1, iz0, ix1, wa1 * wz0 * wx1],
+    [ia1, iz1, ix0, wa1 * wz1 * wx0],
+    [ia1, iz1, ix1, wa1 * wz1 * wx1],
+  ];
+  const nG = s.nGround;
+  const nF = s.nFacade;
+  for (const [ia, iz, ix, w] of corners) {
+    if (!(w > 1e-8)) continue;
+    const base = poseLutIndex(ia, iz, ix);
+    const gw = amp * w;
+    const gOff = base * nG;
+    const fOff = base * nF;
+    const g = s.ground;
+    const f = s.facade;
+    for (let i = 0; i < nG; i++) gAcc[i] += gw * g[gOff + i];
+    if (fAcc) for (let i = 0; i < nF; i++) fAcc[i] += gw * f[fOff + i];
+  }
+}
+
+function nearestFacadeIndex(wx, wy, wz) {
+  const pts = noiseSurrogate?.facadePts;
+  if (!pts || !pts.length) return 0;
+  let best = 0;
+  let bestD = 1e30;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    const d = (p[0] - wx) ** 2 + (p[1] - wy) ** 2 + (p[2] - wz) ** 2;
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
+}
+
+function bindFacadeLutIndices(item) {
+  if (!noiseSurrogate?.facadePts || !item?.world) return;
+  const idx = new Int32Array(item.count);
+  const step = Math.max(1, Math.floor(item.count / 36));
+  for (let i = 0; i < item.count; i += step) {
+    const id = nearestFacadeIndex(item.world[i * 3], item.world[i * 3 + 1], item.world[i * 3 + 2]);
+    const until = Math.min(item.count, i + step);
+    for (let k = i; k < until; k++) idx[k] = id;
+  }
+  item.lutIndex = idx;
+}
+
+function composeSurrogateFromPoses(poses) {
+  const gAcc = new Float32Array(noiseSurrogate.nGround);
+  const fAcc = new Float32Array(noiseSurrogate.nFacade);
+  for (const p of poses) addPoseLut(p.x, p.y, p.z, p.amp == null ? 1 : p.amp, gAcc, fAcc);
+  return { gAcc, fAcc };
+}
+
+function totalComposePoses() {
+  const poses = [];
+  const pushRoutePts = (pts, amp) => {
+    if (!pts || pts.length < 2) return;
+    let acc = 0;
+    for (let i = 1; i < pts.length; i++) {
+      const ax = pts[i - 1][0], ay = pts[i - 1][2], az = -pts[i - 1][1];
+      const bx = pts[i][0], by = pts[i][2], bz = -pts[i][1];
+      const ds = Math.hypot(bx - ax, by - ay, bz - az);
+      const nStep = Math.max(1, Math.ceil(ds / 24));
+      for (let k = 0; k < nStep; k++) {
+        const t = (k + 0.5) / nStep;
+        poses.push({
+          x: ax + (bx - ax) * t,
+          y: ay + (by - ay) * t,
+          z: az + (bz - az) * t,
+          amp: amp * (ds / nStep) / 16,
+        });
+      }
+      acc += ds;
+    }
+    void acc;
+  };
+  if (flightRoutes?.length) {
+    for (const route of flightRoutes) {
+      if (typeof routeInFilter === 'function' && !routeInFilter(route)) continue;
+      pushRoutePts(route.p, route.nOnPath || 1);
+    }
+    return poses;
+  }
+  for (const s of routeSummaries) {
+    for (const cells of (s.paths || [])) {
+      if (!cells || cells.length < 2) continue;
+      const pts = cells.map(c => {
+        const v = cellToVec(c, s.alt);
+        return [v.x, -v.z, v.y];
+      });
+      pushRoutePts(pts, s.weight || 1);
+    }
+  }
+  return poses;
+}
+
 function sampleNoiseV2Grid(arr, x, z) {
   if (!arr || !noiseV2?.height) return null;
   const n = noiseV2.height.n;
@@ -2623,6 +2810,7 @@ function placeDrones() {
   if (droneMesh) droneMesh.visible = Boolean(live);
   if (droneAccentMesh) droneAccentMesh.visible = Boolean(live);
   trailGroup.visible = Boolean(live);
+  liveCraft = [];
   if (!live || !droneMesh) {
     ensureTrailLines(0);
     return;
@@ -2653,6 +2841,7 @@ function placeDrones() {
       return dx * dx + dy * dy + dz * dz < sep2;
     })) continue;
     placed.push({ x, y, z });
+    liveCraft.push({ id: i, x, y, z });
     const p0 = atFlightRoute(route, Math.max(0, u - 0.003));
     const p1 = atFlightRoute(route, Math.min(1, u + 0.003));
     droneDummy.position.set(x, y, z);
@@ -2703,6 +2892,7 @@ function syncPlaybackUI() {
     const nFlights = flightData.n_flights || (flightData.flights || []).length;
     syncAirThroughputHud(nFlights);
   } else {
+    liveCraft = [];
     if (droneMesh) droneMesh.visible = false;
     if (droneAccentMesh) droneAccentMesh.visible = false;
     disposeFocusRibbons();
@@ -3122,6 +3312,7 @@ async function recompute(version) {
 
   flightData = null;
   flightRoutes = null;
+  liveCraft = [];
   restoreProbeAltitudes();
   syncRouteSourceUI();
   syncChannelUI();
@@ -3418,8 +3609,17 @@ function scheduleExternalityLayer() {
 
 async function buildNoiseLayer(version) {
   clearNoiseLayer();
-  const segments = collectNoiseSegments();
-  if (!segments.length) return;
+  const useLut = usingNoiseSurrogate();
+  let composed = null;
+  let segmentsForNoise = null;
+  if (useLut) {
+    const poses = totalComposePoses();
+    if (!poses.length) return;
+    composed = composeSurrogateFromPoses(poses);
+  } else {
+    segmentsForNoise = collectNoiseSegments();
+    if (!segmentsForNoise.length) return;
+  }
   const channel = CHANNELS[externalityChannel] || CHANNELS.noise;
   const chKey = externalityChannel;
 
@@ -3432,7 +3632,9 @@ async function buildNoiseLayer(version) {
       const z = -CORE_HALF + CORE_DOMAIN * j / NOISE_GRID;
       const y = terrainVisualHeight(x, z) + 0.42;
       groundPositions.push(x, y, z);
-      const raw = noiseAt(x, y, z, segments);
+      const raw = useLut
+        ? composed.gAcc[j * (NOISE_GRID + 1) + i]
+        : noiseAt(x, y, z, segmentsForNoise);
       groundValues.push(channel.ground ? raw * channel.ground : 0);
     }
     if (j % 5 === 4) {
@@ -3459,7 +3661,9 @@ async function buildNoiseLayer(version) {
       const wx = pos.getX(i) + b.group.position.x;
       const wy = pos.getY(i) + b.group.position.y;
       const wz = pos.getZ(i) + b.group.position.z;
-      const raw = noiseAt(wx, wy, wz, segments);
+      const raw = useLut
+        ? composed.fAcc[nearestFacadeIndex(wx, wy, wz)]
+        : noiseAt(wx, wy, wz, segmentsForNoise);
       probeValues.push(raw * channel.facade);
     }
     overlayGeoms.push({ b, geom });
@@ -3498,7 +3702,9 @@ async function buildNoiseLayer(version) {
       const wx = pos.getX(i) + b.group.position.x;
       const wy = pos.getY(i) + b.group.position.y;
       const wz = pos.getZ(i) + b.group.position.z;
-      const value = noiseAt(wx, wy, wz, segments) * channel.facade;
+      const value = (useLut
+        ? composed.fAcc[nearestFacadeIndex(wx, wy, wz)]
+        : noiseAt(wx, wy, wz, segmentsForNoise)) * channel.facade;
       const rawHot = Math.log1p(value / norm * 3.2) / Math.log1p(3.2);
       const hot = 0.10 + 0.90 * rawHot;
       const c = colorRamp(hot, channel.palette);
@@ -4142,8 +4348,12 @@ function syncSceneLegend() {
     bar.style.background = 'linear-gradient(90deg,#3b4cc0 0%,#6888ee 18%,#aac6fd 36%,#f2f2f2 50%,#fcbea1 64%,#db5e4b 82%,#b40426 100%)';
     scale.textContent = '低 ← 相对影响 → 高';
     $('sceneLegendNote').textContent = live
-      ? '地面和立面跟着这一秒天上的飞机走。浏览器粗核，不是 SZU refl。'
-      : '地面和立面是当前全部航线的累积分布。只看空间格局，不作论文定量。';
+      ? (usingNoiseSurrogate()
+        ? '地面和立面 = 当前机位单位场相加（dir_proxy LUT）。不是 SZU refl。'
+        : '地面和立面跟着这一秒天上的飞机走。浏览器粗核，不是 SZU refl。')
+      : (usingNoiseSurrogate()
+        ? '地面和立面 = 航线单位场按架次相加。只看空间格局，不作论文定量。'
+        : '地面和立面是当前全部航线的累积分布。只看空间格局，不作论文定量。');
     const variant = timelineVariant();
     $('sceneScope').textContent = live
       ? (variant === 'wake' ? '尾迹 = 最近几秒的位置。' : variant === 'corridor' ? '淡走廊是全部航线，亮斑是当前机位。' : '热点来自当前这一秒天上的飞机。')
@@ -4639,6 +4849,9 @@ function ensureLiveFacades() {
     liveFacadeGroup.add(mesh);
     liveFacades.push({ mesh, world, count });
   }
+  if (usingNoiseSurrogate()) {
+    for (const item of liveFacades) bindFacadeLutIndices(item);
+  }
 }
 
 function liveNoiseSegments(poses) {
@@ -4778,25 +4991,64 @@ function paintTimelineHeat(force) {
     }
   }
   const channel = CHANNELS[externalityChannel] || CHANNELS.noise;
-  const segs = liveNoiseSegments(poses);
-  if (!segs.length) return;
   const n = timelineHeatPos.count;
   const groundVals = new Float32Array(n);
   let peak = 1e-12;
-  for (let i = 0; i < n; i++) {
-    const v = noiseAt(timelineHeatPos.getX(i), timelineHeatPos.getY(i), timelineHeatPos.getZ(i), segs) * channel.ground;
-    groundVals[i] = v;
-    if (v > peak) peak = v;
-  }
-  if (liveFacades) {
-    for (const f of liveFacades) {
-      f.vals = f.vals || new Float32Array(f.count);
-      const step = Math.max(1, Math.floor(f.count / 36));
-      for (let i = 0; i < f.count; i += step) {
-        const v = noiseAt(f.world[i * 3], f.world[i * 3 + 1], f.world[i * 3 + 2], segs) * channel.facade;
-        const until = Math.min(f.count, i + step);
-        for (let k = i; k < until; k++) f.vals[k] = v;
-        if (v > peak) peak = v;
+  if (usingNoiseSurrogate()) {
+    const lutPoses = [];
+    const variant = timelineVariant() || 'instant';
+    if (variant === 'corridor') {
+      for (const route of flightRoutes || []) {
+        const pts = route.p || [];
+        const step = Math.max(1, Math.floor(pts.length / Math.max(3, Math.floor(36 / Math.max(1, (flightRoutes || []).length)))));
+        for (let i = 0; i < pts.length; i += step) {
+          lutPoses.push({ x: pts[i][0], y: pts[i][2], z: -pts[i][1], amp: 0.18 });
+        }
+      }
+    }
+    if (variant === 'wake') {
+      for (let i = 0; i < timelineWake.length; i++) {
+        const age = 1 - i / Math.max(1, timelineWake.length);
+        for (const p of capPoses(timelineWake[i], 28)) lutPoses.push({ ...p, amp: 0.28 + 0.72 * age });
+      }
+    }
+    for (const p of capPoses(poses, 36)) lutPoses.push({ ...p, amp: variant === 'corridor' ? 1.35 : 1 });
+    if (!lutPoses.length) return;
+    const { gAcc, fAcc } = composeSurrogateFromPoses(lutPoses);
+    for (let i = 0; i < n; i++) {
+      const v = gAcc[i] * channel.ground;
+      groundVals[i] = v;
+      if (v > peak) peak = v;
+    }
+    if (liveFacades) {
+      for (const f of liveFacades) {
+        if (!f.lutIndex) bindFacadeLutIndices(f);
+        f.vals = f.vals || new Float32Array(f.count);
+        for (let i = 0; i < f.count; i++) {
+          const v = fAcc[f.lutIndex[i]] * channel.facade;
+          f.vals[i] = v;
+          if (v > peak) peak = v;
+        }
+      }
+    }
+  } else {
+    const segs = liveNoiseSegments(poses);
+    if (!segs.length) return;
+    for (let i = 0; i < n; i++) {
+      const v = noiseAt(timelineHeatPos.getX(i), timelineHeatPos.getY(i), timelineHeatPos.getZ(i), segs) * channel.ground;
+      groundVals[i] = v;
+      if (v > peak) peak = v;
+    }
+    if (liveFacades) {
+      for (const f of liveFacades) {
+        f.vals = f.vals || new Float32Array(f.count);
+        const step = Math.max(1, Math.floor(f.count / 36));
+        for (let i = 0; i < f.count; i += step) {
+          const v = noiseAt(f.world[i * 3], f.world[i * 3 + 1], f.world[i * 3 + 2], segs) * channel.facade;
+          const until = Math.min(f.count, i + step);
+          for (let k = i; k < until; k++) f.vals[k] = v;
+          if (v > peak) peak = v;
+        }
       }
     }
   }
@@ -4854,6 +5106,588 @@ function applyTimelinePrototype() {
   setPlaybackTime(0);
 }
 
+const LISTEN_EYE = 1.6;
+const LISTEN_SPEED = 6;
+const LISTEN_STEP = 0.45;
+const LISTEN_RANGE = 220;
+const LISTEN_RANGE2 = LISTEN_RANGE * LISTEN_RANGE;
+const LISTEN_REF = 1 / (420 + 30 * 30);
+const LISTEN_VOICES = 10;
+const LISTEN_SKINS = {
+  open: { db: 0, hz: 12000, label: '无遮挡' },
+  single: { db: -6, hz: 2800, label: '单层玻璃' },
+  double: { db: -12, hz: 1600, label: '双层玻璃' },
+  multi: { db: -18, hz: 1000, label: '多层玻璃' },
+  wall: { db: -26, hz: 520, label: '墙面' },
+};
+
+let listenMode = null;
+let listenArmed = false;
+let listenFeet = new THREE.Vector3();
+let listenVy = 0;
+let listenYaw = 0;
+let listenPitch = 0;
+let listenSkin = 'open';
+let listenDrag = null;
+let listenKeys = new Set();
+let listenSavedCam = null;
+let listenSavedRate = null;
+let listenAudio = null;
+let listenPrevCraft = new Map();
+let listenPrevEar = new THREE.Vector3();
+let listenStatusAt = 0;
+let listenHaveEar = false;
+
+function listenDbToGain(db) {
+  return 10 ** (db / 20);
+}
+
+function softenListen(x) {
+  const knee = 2.2;
+  if (x <= knee) return x;
+  return knee + (x - knee) / (1 + (x - knee) / 1.4);
+}
+
+function buildingTopY(b) {
+  return b.group.position.y + Math.max(1, b.h - b.minH);
+}
+
+function listenInsideFootprint(b, x, z) {
+  return pointInPoly(x - b.x, z - b.z, b.localPoly);
+}
+
+function listenSolidAt(x, z, feetY) {
+  if (Math.abs(x) > HALF - 0.8 || Math.abs(z) > HALF - 0.8) return true;
+  const terr = terrainVisualHeight(x, z);
+  if (terr > feetY + LISTEN_STEP) return true;
+  for (const b of buildings) {
+    if (!b.group || b.group.visible === false || !b.localPoly) continue;
+    const top = buildingTopY(b);
+    if (top <= feetY + LISTEN_STEP) continue;
+    if (listenInsideFootprint(b, x, z)) return true;
+  }
+  return false;
+}
+
+function listenBlocked(x, z, feetY) {
+  const r = 0.36;
+  return listenSolidAt(x, z, feetY)
+    || listenSolidAt(x + r, z, feetY)
+    || listenSolidAt(x - r, z, feetY)
+    || listenSolidAt(x, z + r, feetY)
+    || listenSolidAt(x, z - r, feetY);
+}
+
+function listenSupportY(x, z, feetY, falling) {
+  const limit = falling ? feetY + 0.05 : feetY + LISTEN_STEP;
+  let y = terrainVisualHeight(x, z);
+  if (y > limit) y = -1e9;
+  for (const b of buildings) {
+    if (!b.group || b.group.visible === false || !b.localPoly) continue;
+    if (!listenInsideFootprint(b, x, z)) continue;
+    const top = buildingTopY(b);
+    if (top <= limit && top > y) y = top;
+  }
+  if (y < -1e8) return terrainVisualHeight(x, z);
+  return y;
+}
+
+function craftKernel(px, py, pz, c) {
+  const dx = px - c.x;
+  const dy = py - c.y;
+  const dz = pz - c.z;
+  const d2 = dx * dx + dy * dy + dz * dz;
+  if (d2 > LISTEN_RANGE2) return 0;
+  const iy = -Math.abs(c.y);
+  const d2r = dx * dx + (py - iy) ** 2 + dz * dz;
+  return 1 / (420 + d2) + 0.47 / (420 + d2r);
+}
+
+function buildDroneLoop(ctx) {
+  const sr = ctx.sampleRate;
+  const dur = 0.5;
+  const n = Math.round(sr * dur);
+  const data = new Float32Array(n);
+  const f0 = 40;
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    const phase = 2 * Math.PI * f0 * t;
+    let s = 0.34 * Math.sin(phase * 2);
+    s += 0.28 * Math.sin(phase * 3 + 0.4);
+    s += 0.18 * Math.sin(phase * 4 + 0.8);
+    s += 0.1 * Math.sin(phase * 5);
+    s += 0.06 * Math.sin(phase * 8);
+    s += 0.05 * Math.sin(phase * 18);
+    const nphase = 2 * Math.PI * i / n;
+    s += 0.08 * Math.sin(nphase * 47);
+    s += 0.05 * Math.sin(nphase * 73 + 1.2);
+    s += 0.04 * Math.sin(nphase * 110 + 0.4);
+    s += 0.03 * Math.sin(nphase * 160);
+    data[i] = s;
+  }
+  let peak = 1e-6;
+  for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(data[i]));
+  const scale = 0.55 / peak;
+  for (let i = 0; i < n; i++) data[i] *= scale;
+  const buf = ctx.createBuffer(1, n, sr);
+  buf.copyToChannel(data, 0);
+  return buf;
+}
+
+function ensureListenAudio() {
+  if (listenAudio) return listenAudio;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  const ctx = new AC();
+  const buf = buildDroneLoop(ctx);
+  const sum = ctx.createGain();
+  const skinFilter = ctx.createBiquadFilter();
+  skinFilter.type = 'lowpass';
+  skinFilter.frequency.value = 12000;
+  skinFilter.Q.value = 0.7;
+  const skinGain = ctx.createGain();
+  const userGain = ctx.createGain();
+  userGain.gain.value = 0.4;
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -3;
+  limiter.knee.value = 8;
+  limiter.ratio.value = 6;
+  limiter.attack.value = 0.004;
+  limiter.release.value = 0.12;
+  sum.connect(skinFilter);
+  skinFilter.connect(skinGain);
+  skinGain.connect(userGain);
+  userGain.connect(limiter);
+  limiter.connect(ctx.destination);
+  const voices = [];
+  for (let i = 0; i < LISTEN_VOICES; i++) {
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const g = ctx.createGain();
+    g.gain.value = 0;
+    const p = ctx.createPanner();
+    p.panningModel = 'HRTF';
+    p.distanceModel = 'inverse';
+    p.refDistance = 1;
+    p.maxDistance = 10000;
+    p.rolloffFactor = 0;
+    src.connect(g);
+    g.connect(p);
+    p.connect(sum);
+    src.start();
+    voices.push({ src, gain: g, panner: p, id: null });
+  }
+  const bedSrc = ctx.createBufferSource();
+  bedSrc.buffer = buf;
+  bedSrc.loop = true;
+  const bedGain = ctx.createGain();
+  bedGain.gain.value = 0;
+  bedSrc.connect(bedGain);
+  bedGain.connect(sum);
+  bedSrc.start();
+  listenAudio = { ctx, voices, bedGain, skinFilter, skinGain, userGain };
+  return listenAudio;
+}
+
+function driveListenParam(param, value) {
+  const now = listenAudio.ctx.currentTime;
+  param.cancelScheduledValues(now);
+  try {
+    param.setValueAtTime(value, now);
+  } catch (err) {
+    param.value = value;
+  }
+}
+
+function silenceListenAudio() {
+  const audio = listenAudio;
+  if (!audio) return;
+  for (const v of audio.voices) {
+    v.id = null;
+    driveListenParam(v.gain.gain, 0);
+    driveListenParam(v.src.playbackRate, 1);
+  }
+  driveListenParam(audio.bedGain.gain, 0);
+  if (audio.ctx.state === 'running') audio.ctx.suspend().catch(() => {});
+}
+
+function setListenUserGain(v) {
+  const audio = listenAudio;
+  if (!audio) return;
+  driveListenParam(audio.userGain.gain, (Number(v) || 0) / 100);
+}
+
+function applyListenSkin() {
+  const audio = listenAudio;
+  const skin = LISTEN_SKINS[listenMode === 'facade' ? listenSkin : 'open'] || LISTEN_SKINS.open;
+  if (!audio) return skin;
+  driveListenParam(audio.skinGain.gain, listenDbToGain(skin.db));
+  driveListenParam(audio.skinFilter.frequency, skin.hz);
+  return skin;
+}
+
+function syncListenSkinButtons() {
+  const row = $('listenSkin');
+  if (!row) return;
+  const show = listenMode === 'facade';
+  row.hidden = !show;
+  row.querySelectorAll('button').forEach(btn => {
+    btn.classList.toggle('on', btn.dataset.skin === listenSkin);
+  });
+}
+
+function syncListenChrome() {
+  const hud = $('listenHud');
+  const arm = $('listenArm');
+  const hint = document.querySelector('.sceneHint');
+  if (hud) hud.hidden = !listenMode;
+  if (arm) {
+    arm.classList.toggle('on', listenArmed || Boolean(listenMode));
+    arm.textContent = listenMode ? '退出听声' : (listenArmed ? '取消选点' : '站到这里听');
+  }
+  if (hint) {
+    if (listenMode === 'facade') hint.textContent = '拖动转头 · Esc 退出 · 隔声档只改变这一点的声音';
+    else if (listenMode === 'walk') hint.textContent = 'WASD 行走 · 拖动转头 · 走下屋顶会落下 · Esc 退出';
+    else if (listenArmed) hint.textContent = '点击屋顶、街道或立面，站到那里听';
+    else hint.textContent = '拖动旋转 · 滚轮缩放 · 黑框为 500 m 研究区';
+  }
+  const help = $('listenHelp');
+  if (help) {
+    help.textContent = listenMode === 'facade'
+      ? '人钉在墙外。无遮挡是满响度；玻璃和墙把整段声音一起减弱。'
+      : '人可以走。约 220 米以外的飞机不计入。耳机里最响的 10 架有方位。';
+  }
+  syncListenSkinButtons();
+}
+
+function exitListen() {
+  if (!listenMode && !listenArmed && !listenSavedCam) {
+    listenArmed = false;
+    syncListenChrome();
+    return;
+  }
+  listenMode = null;
+  listenArmed = false;
+  listenVy = 0;
+  listenKeys.clear();
+  listenDrag = null;
+  listenHaveEar = false;
+  listenPrevCraft.clear();
+  silenceListenAudio();
+  if (listenSavedCam) {
+    camera.position.copy(listenSavedCam.pos);
+    camera.quaternion.copy(listenSavedCam.quat);
+    camera.fov = listenSavedCam.fov;
+    camera.near = listenSavedCam.near;
+    camera.updateProjectionMatrix();
+    listenSavedCam = null;
+  }
+  if (listenSavedRate != null) {
+    setPlaybackRate(listenSavedRate);
+    listenSavedRate = null;
+  }
+  controls.enabled = true;
+  controls.target.copy(ORBIT_TARGET);
+  controls.update();
+  syncListenChrome();
+}
+
+function enterListen(hit) {
+  const n = hit.face
+    ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize()
+    : new THREE.Vector3(0, 1, 0);
+  const facade = Math.abs(n.y) < 0.62 && !listenHitIsGround(hit.object);
+  if (!listenSavedCam) {
+    listenSavedCam = {
+      pos: camera.position.clone(),
+      quat: camera.quaternion.clone(),
+      fov: camera.fov,
+      near: camera.near,
+    };
+  }
+  camera.fov = 72;
+  camera.near = 0.12;
+  camera.updateProjectionMatrix();
+  controls.enabled = false;
+  listenArmed = false;
+  listenVy = 0;
+  listenPitch = 0;
+  listenSkin = 'open';
+  if (facade) {
+    listenMode = 'facade';
+    const outward = n.clone();
+    outward.y = 0;
+    if (outward.lengthSq() < 1e-6) outward.set(1, 0, 0);
+    outward.normalize();
+    const host = buildings.find(item => item.box === hit.object);
+    if (host && listenInsideFootprint(host, hit.point.x + outward.x * 0.8, hit.point.z + outward.z * 0.8)) {
+      outward.multiplyScalar(-1);
+    }
+    let stand = 0.55;
+    if (host) {
+      while (stand < 4 && listenInsideFootprint(host, hit.point.x + outward.x * stand, hit.point.z + outward.z * stand)) {
+        stand += 0.4;
+      }
+    }
+    listenFeet.set(
+      hit.point.x + outward.x * stand,
+      Math.max(hit.point.y, terrainVisualHeight(hit.point.x, hit.point.z) + 1.2),
+      hit.point.z + outward.z * stand
+    );
+    listenYaw = Math.atan2(outward.x, -outward.z);
+  } else {
+    listenMode = 'walk';
+    const x = hit.point.x;
+    const z = hit.point.z;
+    listenFeet.set(x, listenSupportY(x, z, hit.point.y + 0.2, false), z);
+    listenYaw = Math.atan2(-x, z);
+  }
+  const audio = ensureListenAudio();
+  if (audio && audio.ctx.state === 'suspended') audio.ctx.resume();
+  setListenUserGain($('listenGain') ? $('listenGain').value : 40);
+  applyListenSkin();
+  if (!playbackPlaying) setPlaybackPlaying(true);
+  if (listenSavedRate == null) listenSavedRate = playbackRate;
+  setPlaybackRate(1);
+  listenPrevCraft.clear();
+  listenHaveEar = false;
+  syncListenChrome();
+  updateListenCamera();
+  listenStatusAt = -1;
+  updateListen(0.016, 0);
+}
+
+function updateListenMotion(dt) {
+  if (listenMode !== 'walk') return;
+  const fx = Math.sin(listenYaw);
+  const fz = -Math.cos(listenYaw);
+  const rx = Math.cos(listenYaw);
+  const rz = Math.sin(listenYaw);
+  let mx = 0;
+  let mz = 0;
+  if (listenKeys.has('KeyW') || listenKeys.has('ArrowUp')) { mx += fx; mz += fz; }
+  if (listenKeys.has('KeyS') || listenKeys.has('ArrowDown')) { mx -= fx; mz -= fz; }
+  if (listenKeys.has('KeyD') || listenKeys.has('ArrowRight')) { mx += rx; mz += rz; }
+  if (listenKeys.has('KeyA') || listenKeys.has('ArrowLeft')) { mx -= rx; mz -= rz; }
+  const len = Math.hypot(mx, mz);
+  if (len > 0) {
+    const step = LISTEN_SPEED * dt / len;
+    const nx = listenFeet.x + mx * step;
+    const nz = listenFeet.z + mz * step;
+    if (!listenBlocked(nx, nz, listenFeet.y)) {
+      listenFeet.x = nx;
+      listenFeet.z = nz;
+    } else if (!listenBlocked(nx, listenFeet.z, listenFeet.y)) {
+      listenFeet.x = nx;
+    } else if (!listenBlocked(listenFeet.x, nz, listenFeet.y)) {
+      listenFeet.z = nz;
+    }
+  }
+  listenFeet.x = Math.max(-HALF + 0.8, Math.min(HALF - 0.8, listenFeet.x));
+  listenFeet.z = Math.max(-HALF + 0.8, Math.min(HALF - 0.8, listenFeet.z));
+  const drop = listenSupportY(listenFeet.x, listenFeet.z, listenFeet.y, true);
+  if (listenFeet.y > drop + 0.12) {
+    listenVy -= 9.8 * dt;
+    listenFeet.y += listenVy * dt;
+    if (listenFeet.y <= drop) {
+      listenFeet.y = drop;
+      listenVy = 0;
+    }
+  } else {
+    listenVy = 0;
+    listenFeet.y = listenSupportY(listenFeet.x, listenFeet.z, listenFeet.y, false);
+  }
+}
+
+function listenEarPosition() {
+  if (listenMode === 'facade') return listenFeet.clone();
+  return new THREE.Vector3(listenFeet.x, listenFeet.y + LISTEN_EYE, listenFeet.z);
+}
+
+function setPannerPos(panner, x, y, z) {
+  if (panner.positionX) {
+    panner.positionX.value = x;
+    panner.positionY.value = y;
+    panner.positionZ.value = z;
+  } else if (panner.setPosition) {
+    panner.setPosition(x, y, z);
+  }
+}
+
+function updateListenAudio(dt) {
+  const audio = listenAudio;
+  if (!audio || !listenMode) return;
+  const ear = listenEarPosition();
+  const ranked = [];
+  for (const c of liveCraft) {
+    const k = craftKernel(ear.x, ear.y, ear.z, c);
+    if (k > 0) ranked.push({ c, k });
+  }
+  ranked.sort((a, b) => b.k - a.k);
+  let total = 0;
+  for (const item of ranked) total += item.k / LISTEN_REF;
+  const heard = softenListen(total);
+  const scale = total > 1e-8 ? heard / total : 0;
+  const dirN = Math.min(LISTEN_VOICES, ranked.length);
+  const used = new Set();
+  const assigned = new Array(LISTEN_VOICES).fill(null);
+  for (let i = 0; i < dirN; i++) {
+    const id = ranked[i].c.id;
+    const slot = audio.voices.findIndex(v => v.id === id);
+    if (slot >= 0) {
+      assigned[slot] = ranked[i];
+      used.add(i);
+    }
+  }
+  for (let i = 0; i < dirN; i++) {
+    if (used.has(i)) continue;
+    const slot = assigned.findIndex(v => !v);
+    if (slot >= 0) assigned[slot] = ranked[i];
+  }
+  let dirSum = 0;
+  for (let i = 0; i < LISTEN_VOICES; i++) {
+    const voice = audio.voices[i];
+    const item = assigned[i];
+    if (!item) {
+      voice.id = null;
+      driveListenParam(voice.gain.gain, 0);
+      continue;
+    }
+    voice.id = item.c.id;
+    const lin = item.k / LISTEN_REF * scale;
+    dirSum += lin;
+    driveListenParam(voice.gain.gain, lin);
+    setPannerPos(voice.panner, item.c.x, item.c.y, item.c.z);
+    const prev = listenPrevCraft.get(item.c.id);
+    let rate = 1;
+    if (prev && dt > 1e-4 && dt < 0.08) {
+      const vx = (item.c.x - prev.x) / dt;
+      const vy = (item.c.y - prev.y) / dt;
+      const vz = (item.c.z - prev.z) / dt;
+      const lx = item.c.x - ear.x;
+      const ly = item.c.y - ear.y;
+      const lz = item.c.z - ear.z;
+      const llen = Math.hypot(lx, ly, lz) || 1;
+      let approaching = -(vx * lx + vy * ly + vz * lz) / llen;
+      if (listenHaveEar) {
+        const lvx = (ear.x - listenPrevEar.x) / dt;
+        const lvy = (ear.y - listenPrevEar.y) / dt;
+        const lvz = (ear.z - listenPrevEar.z) / dt;
+        approaching += (lvx * lx + lvy * ly + lvz * lz) / llen;
+      }
+      rate = 1 + Math.max(-0.06, Math.min(0.06, approaching / 343));
+    }
+    driveListenParam(voice.src.playbackRate, rate);
+  }
+  const bed = Math.max(0, heard - dirSum);
+  driveListenParam(audio.bedGain.gain, bed);
+  const skinNow = LISTEN_SKINS[listenMode === 'facade' ? listenSkin : 'open'] || LISTEN_SKINS.open;
+  const ahead = new THREE.Vector3();
+  camera.getWorldDirection(ahead);
+  const up = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+  const listener = audio.ctx.listener;
+  if (listener.positionX) {
+    listener.positionX.value = ear.x;
+    listener.positionY.value = ear.y;
+    listener.positionZ.value = ear.z;
+    if (listener.forwardX) {
+      listener.forwardX.value = ahead.x;
+      listener.forwardY.value = ahead.y;
+      listener.forwardZ.value = ahead.z;
+      listener.upX.value = up.x;
+      listener.upY.value = up.y;
+      listener.upZ.value = up.z;
+    }
+  } else if (listener.setPosition) {
+    listener.setPosition(ear.x, ear.y, ear.z);
+    listener.setOrientation(ahead.x, ahead.y, ahead.z, up.x, up.y, up.z);
+  }
+  listenPrevCraft.clear();
+  for (const c of liveCraft) listenPrevCraft.set(c.id, { x: c.x, y: c.y, z: c.z });
+  listenPrevEar.copy(ear);
+  listenHaveEar = true;
+  return { heard, count: ranked.length, dirN, skin: skinNow };
+}
+
+function updateListenCamera() {
+  const ear = listenEarPosition();
+  const cp = Math.cos(listenPitch);
+  const sp = Math.sin(listenPitch);
+  camera.position.copy(ear);
+  camera.up.set(0, 1, 0);
+  camera.lookAt(
+    ear.x + Math.sin(listenYaw) * cp,
+    ear.y + sp,
+    ear.z - Math.cos(listenYaw) * cp
+  );
+}
+
+function updateListen(dt, t) {
+  if (!listenMode) return;
+  try {
+    updateListenMotion(dt);
+    updateListenCamera();
+    const info = updateListenAudio(dt);
+    if (info && t - listenStatusAt > 0.2) {
+      listenStatusAt = t;
+      const rel = info.heard > 1e-4 ? 20 * Math.log10(info.heard) + info.skin.db : -80;
+      const where = listenMode === 'facade' ? `立面 · ${info.skin.label}` : '屋顶 / 街道';
+      const el = $('listenStatus');
+      if (el) {
+        el.textContent = info.count
+          ? `${where} · 相对 30 m ${rel >= 0 ? '+' : ''}${rel.toFixed(0)} dB · 计入 ${info.count} 架`
+          : (flightData
+            ? `${where} · 附近没有计入的飞机`
+            : `${where} · 航线还在计算`);
+      }
+    }
+  } catch (err) {
+    const el = $('listenStatus');
+    if (el) el.textContent = '听声中断：' + (err && err.message ? err.message : err);
+  }
+}
+
+function listenHitIsGround(object) {
+  return object === terrainMesh
+    || object === shadowGroundMesh
+    || object === noiseGroundMesh
+    || object === timelineHeatMesh;
+}
+
+function listenRayHit(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  const ndc = new THREE.Vector2(
+    ((event.clientX - rect.left) / rect.width) * 2 - 1,
+    -((event.clientY - rect.top) / rect.height) * 2 + 1
+  );
+  probeRaycaster.setFromCamera(ndc, camera);
+  const grounds = [];
+  if (terrainMesh) grounds.push(terrainMesh);
+  if (shadowGroundMesh?.visible) grounds.push(shadowGroundMesh);
+  if (noiseGroundMesh?.visible) grounds.push(noiseGroundMesh);
+  if (timelineHeatMesh?.visible) grounds.push(timelineHeatMesh);
+  const savedSides = grounds.map(mesh => {
+    const side = mesh.material.side;
+    mesh.material.side = THREE.DoubleSide;
+    return [mesh, side];
+  });
+  const targets = [];
+  for (const b of buildings) {
+    if (b.box && b.group && b.group.visible !== false) targets.push(b.box);
+  }
+  targets.push(...grounds);
+  if (noiseV2Mesh && noiseV2Mesh.visible) targets.push(noiseV2Mesh);
+  let hit = null;
+  try {
+    hit = probeRaycaster.intersectObjects(targets, false)[0] || null;
+  } finally {
+    for (const [mesh, side] of savedSides) mesh.material.side = side;
+  }
+  return hit;
+}
+
 function animate(t) {
   requestAnimationFrame(animate);
   const dt = lastAnimMs == null ? 0 : Math.min(0.1, (t - lastAnimMs) / 1000);
@@ -4861,13 +5695,18 @@ function animate(t) {
   if (playbackPlaying && usingPlayback() && flightData) {
     setPlaybackTime(playbackT + dt * playbackRate);
     placeDrones();
+  } else if (!flightData) {
+    liveCraft = [];
   }
+  updateListen(dt, t * 0.001);
   if (noiseEnabled && impactTimeMode === 'live') paintTimelineHeat();
   if (drawerMotionUntil) { onResize(); if (t >= drawerMotionUntil) drawerMotionUntil = 0; }
   flushCompute();
-  controls.target.copy(ORBIT_TARGET);
-  controls.update();
-  controls.target.copy(ORBIT_TARGET);
+  if (!listenMode) {
+    controls.target.copy(ORBIT_TARGET);
+    controls.update();
+    controls.target.copy(ORBIT_TARGET);
+  }
   renderer.render(scene, camera);
 }
 
@@ -4898,3 +5737,72 @@ currentPreset = (BLOCKS.find(b => b.id === 'rep-oh-hongkong') || BLOCKS.find(b =
 loadPreset(currentPreset);
 onResize();
 animate(0);
+
+$('listenArm')?.addEventListener('click', () => {
+  if (listenMode) exitListen();
+  else if (listenArmed) {
+    listenArmed = false;
+    syncListenChrome();
+  } else {
+    listenArmed = true;
+    if (probeMode && $('probeToggle')) $('probeToggle').click();
+    syncListenChrome();
+  }
+});
+$('listenExit')?.addEventListener('click', () => exitListen());
+$('listenGain')?.addEventListener('input', e => {
+  if ($('listenGainV')) $('listenGainV').textContent = e.target.value;
+  setListenUserGain(e.target.value);
+});
+$('listenSkin')?.querySelectorAll('button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    listenSkin = btn.dataset.skin || 'open';
+    applyListenSkin();
+    syncListenSkinButtons();
+  });
+});
+window.addEventListener('keydown', e => {
+  if (!listenMode) {
+    if (e.key === 'Escape' && listenArmed) {
+      listenArmed = false;
+      syncListenChrome();
+    }
+    return;
+  }
+  if (e.key === 'Escape') {
+    exitListen();
+    return;
+  }
+  const tag = (e.target && e.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+    listenKeys.add(e.code);
+    e.preventDefault();
+  }
+});
+window.addEventListener('keyup', e => listenKeys.delete(e.code));
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  if (listenMode) {
+    listenDrag = { x: e.clientX, y: e.clientY, id: e.pointerId, look: true };
+    try { renderer.domElement.setPointerCapture(e.pointerId); } catch (err) { /* synthetic pointers have no capture */ }
+  } else if (listenArmed) {
+    listenDrag = { x: e.clientX, y: e.clientY, id: e.pointerId, look: false };
+  }
+});
+renderer.domElement.addEventListener('pointermove', e => {
+  if (!listenDrag || e.pointerId !== listenDrag.id || !listenDrag.look) return;
+  listenYaw -= (e.clientX - listenDrag.x) * 0.004;
+  listenPitch = Math.max(-1.15, Math.min(1.15, listenPitch - (e.clientY - listenDrag.y) * 0.0032));
+  listenDrag.x = e.clientX;
+  listenDrag.y = e.clientY;
+});
+renderer.domElement.addEventListener('pointerup', e => {
+  const drag = listenDrag;
+  if (drag && e.pointerId === drag.id) listenDrag = null;
+  if (listenMode || !listenArmed) return;
+  if (drag && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) return;
+  const hit = listenRayHit(e);
+  if (hit) enterListen(hit);
+});
+syncListenChrome();
