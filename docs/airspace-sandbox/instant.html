@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物理 vs 瞬时网络 · 噪声对照</title>
+<style>
+  :root{
+    --bg:#ffffff; --paper:rgba(255,255,255,.92); --ink:#17191c; --muted:#6d747c;
+    --line:#d9dee4; --soft:#eef1f4; --accent:#1677ff; --panel-width:324px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  #stage{position:fixed;inset:0;display:flex;min-height:100%}
+  .pane{position:relative;flex:1 1 50%;min-width:0;height:100%;overflow:hidden;background:#f4f6f8}
+  .pane canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .paneLabel{position:absolute;z-index:3;left:50%;bottom:18px;transform:translateX(-50%);padding:6px 12px;border-radius:999px;
+    background:rgba(255,255,255,.92);border:1px solid var(--line);font-size:12px;font-weight:750;pointer-events:none}
+  #viewLeft .paneLabel{left:calc(50% + 160px)}
+  .pane.split{border-left:1px solid #c9d0d8}
+  .panel{position:absolute;z-index:5;background:var(--paper);border:1px solid var(--line);
+    box-shadow:0 12px 34px rgba(25,30,35,.10);backdrop-filter:blur(12px);border-radius:14px}
+  #panelShell{position:absolute;z-index:7;left:18px;top:18px;width:var(--panel-width);
+    height:min(720px,calc(100dvh - 36px))}
+  #controlPanel{position:relative;left:0;top:0;width:100%;height:100%;padding:18px 16px 12px;
+    overflow:hidden;display:flex;flex-direction:column}
+  h1{font-size:15px;line-height:1.25;margin:0;font-weight:700}
+  .sub{font-size:11px;color:var(--muted);line-height:1.5;margin:6px 0 0}
+  .sub a{color:#0c63d4;text-decoration:none;font-weight:650}
+  .lbl{display:block;font-size:11px;letter-spacing:.55px;text-transform:uppercase;color:var(--muted);
+    font-weight:700;margin:12px 0 8px}
+  select,button{width:100%;min-height:34px;border:1px solid var(--line);border-radius:7px;background:#fff;
+    color:var(--ink);padding:0 10px;font-size:13px}
+  button{cursor:pointer}
+  button:hover{border-color:#aab4c1}
+  button.on,button.active{border-color:#222;background:#222;color:#fff}
+  .chipRow{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px}
+  .chipRow button{width:auto;flex:1;min-height:28px;font-size:11px;padding:3px 8px}
+  .metric{display:grid;grid-template-columns:1fr auto;gap:10px;padding:7px 0;border-top:1px solid var(--soft);
+    font-variant-numeric:tabular-nums}
+  .metric:first-of-type{border-top:0}
+  .metric span:first-child{font-size:11px;color:var(--muted)}
+  .metric span:last-child{font-size:13px;font-weight:700}
+  #flightRow{display:none;gap:6px;align-items:center;margin-top:8px}
+  #flightRow.on{display:flex}
+  #flightPlay{width:72px;flex:none}
+  #flightScrub{flex:1;min-height:0;accent-color:#1677ff}
+  .exampleList{flex:1;min-height:0;overflow:auto;margin-top:8px;padding-right:2px}
+  .ex{width:100%;text-align:left;margin:0 0 4px;padding:8px 9px;min-height:0;line-height:1.35}
+  .ex b{display:block;font-size:12px}
+  .ex small{color:var(--muted);font-size:10px}
+  .workspaceTools{position:absolute;z-index:7;top:16px;right:18px;display:flex;gap:4px}
+  .workspaceTools button{pointer-events:auto;background:#fff;min-height:34px;width:auto;font-size:12px}
+  .sceneLegend{position:absolute;z-index:4;right:18px;bottom:18px;width:240px;padding:12px;
+    background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:8px;font-size:11px}
+  #legendBar{height:7px;margin-top:8px;border-radius:4px;
+    background:linear-gradient(90deg,#3b4cc0,#6888ee,#aac6fd,#f2f2f2,#fcbea1,#db5e4b,#b40426)}
+  #legendScale{display:flex;justify-content:space-between;color:#6d747c;font-size:10px;margin-top:3px}
+  #busy{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);
+    background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:12px;color:var(--muted)}
+  .switchRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;font-size:13px;cursor:pointer;position:relative}
+  .toggle{width:42px;height:24px;border-radius:999px;background:#dfe4ea;position:relative;flex:none;transition:.16s}
+  .toggle:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.16s}
+  .switchRow input{position:absolute;opacity:0;width:0;height:0;margin:0}
+  .switchRow input:checked + .toggle,.toggle.on{background:#242a31}
+  .switchRow input:checked + .toggle:before,.toggle.on:before{transform:translateX(18px)}
+  @media(max-width:900px){#stage{grid-template-columns:1fr} .pane.split{border-left:0;border-top:1px solid #d5dbe2} #panelShell{height:min(520px,46dvh)}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="pane" id="viewLeft"><div class="paneLabel">物理 · dir</div><canvas id="cLeft"></canvas></div>
+  <div class="pane split" id="viewRight"><div class="paneLabel" id="rightLabel">瞬时网络</div><canvas id="cRight"></canvas></div>
+</div>
+<div class="workspaceTools">
+  <button type="button" id="viewReset">复位</button>
+  <button type="button" id="viewTop">俯视</button>
+  <button type="button" id="viewSide">侧视</button>
+</div>
+<aside class="sceneLegend">
+  <strong id="legendTitle">同一色标 · log(1+能量)</strong>
+  <div id="legendBar"></div>
+  <div id="legendScale"><span id="legLo">低</span><span id="legHi">高</span></div>
+  <p class="sub" style="margin-top:8px">灰白模保持不变。颜色铺在地面网和立面皮肤上，两边共用地面样本的对数色标。</p>
+</aside>
+<div id="busy">载入对照例子…</div>
+<div id="panelShell">
+  <div id="controlPanel" class="panel">
+    <h1>物理 vs 瞬时网络</h1>
+    <p class="sub">左侧物理场，右侧同一条固定航线的瞬时网络。建筑轮廓与沙盘相同，航线是平放的走廊带子。<a href="index.html">回沙盘</a></p>
+    <label class="lbl" for="citySel">城市 / 地块</label>
+    <select id="citySel"></select>
+    <label class="lbl">显示</label>
+    <div class="chipRow">
+      <button type="button" id="modeNear" class="on">地面＋立面</button>
+      <button type="button" id="modeDiff">右侧改差值</button>
+    </div>
+      <label class="switchRow"><span>建筑</span><input type="checkbox" id="bldgToggle" checked><span class="toggle on"></span></label>
+    <label class="switchRow"><span>航线</span><input type="checkbox" id="routeToggle" checked><span class="toggle on"></span></label>
+    <div class="metric"><span>相关</span><span id="mCorr">—</span></div>
+    <div class="metric"><span>平均 |Δ|</span><span id="mDb">—</span></div>
+    <div class="metric"><span>机位</span><span id="mPoses">—</span></div>
+    <label class="lbl">单机</label>
+    <button type="button" id="flightBtn">东京 · 一架飞机沿航线飞</button>
+    <div id="flightRow">
+      <button type="button" id="flightPlay">播放</button>
+      <input id="flightScrub" type="range" min="0" max="1" value="0" step="1">
+    </div>
+    <label class="lbl">场景</label>
+    <div class="exampleList" id="exampleList"></div>
+  </div>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script src="instant.js?v=12"></script>
+</body>
+</html>
