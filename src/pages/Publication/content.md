@@ -17,6 +17,7 @@
 8. [Dong, K., Guo, Z., **Yu, Q.**, Xu, J., & Yan, J. (2026). Data-driven prediction of fine-grained facade solar irradiance for urban PV potential assessment. *Applied Energy, 403*, 127009.](https://doi.org/10.1016/j.apenergy.2025.127009)
 9. [Zhang, Z., Liu, S., **Yu, Q.**, Huang, H., Yang, Y., Liu, Y., & Gao, K. (2026). Cross-city carbon emission estimation for electric mobility services: a transfer learning approach. *Transportation Research Part E: Logistics and Transportation Review, 213*, 104991.](https://doi.org/10.1016/j.tre.2026.104991)
 10. [Xu, X., & **Yu, Q.\*** (2026). Spatiotemporal Decomposition of Urban Traffic Congestion into Recurrent and Incidental Patterns Based on Web Map Data. *Transportation Research Record*, 1-17.](https://doi.org/10.1177/03611981261431731)
+11. [Hui, Y., Wang, P., Liu, Y., & **Yu, Q.** (2026). Dispatch Evaluation and Classified Management Considering Bicycle-Sharing Inner Circulation Area. *Journal of Transportation Systems Engineering and Information Technology, 26*(1), 351-359.](https://doi.org/10.16097/j.cnki.1009-6744.2026.01.032)
 
 ### 2025
 
